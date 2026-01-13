@@ -1,0 +1,853 @@
+import React, { useCallback, useEffect, useRef, useState } from "react";
+import { useNavigate, useLocation } from "react-router-dom";
+import {
+  addDoc,
+  collection,
+  getDocs,
+  query,
+  where,
+} from "firebase/firestore";
+import { db } from "../../config/firebase";
+import { useAuth } from "../../context/AuthContext";
+import {
+  calculateScore,
+  formatTime,
+  getQuestionStatus,
+  getStatusColor,
+  shuffleArray,
+} from "../../utils/testUtils";
+import { useAntiCheat, randomizeTest, useTestSession, useBookmarks, useErrorReport } from "../../hooks";
+import { ViolationModal, PageSpinner, ResumePrompt, ReportModal } from "../../components";
+import logger from "../../utils/logger";
+import { toast } from "react-toastify";
+import { EXAM_PATTERNS } from "../../utils/examPatterns";
+
+const CustomTest = () => {
+  const navigate = useNavigate();
+  const location = useLocation();
+  const { currentUser } = useAuth();
+  const { settings } = location.state || {};
+
+  const [loading, setLoading] = useState(true);
+  const [questions, setQuestions] = useState([]);
+  const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
+  const [responses, setResponses] = useState([]);
+  const [timeRemaining, setTimeRemaining] = useState(0);
+  const [showSubmitModal, setShowSubmitModal] = useState(false);
+  const [showInstantFeedback, setShowInstantFeedback] = useState(false);
+  const [showResumePrompt, setShowResumePrompt] = useState(false);
+  const [resumeData, setResumeData] = useState(null);
+
+  // Shared hooks
+  const { saveSession, loadSavedSession, clearSession } = useTestSession(
+    "customTestSession", "activeTestSession",
+    { mode: "custom", examType: settings?.examType, userId: currentUser?.uid, settings }
+  );
+  const { bookmarkMap, loadBookmarks, toggleBookmark } = useBookmarks(currentUser?.uid, settings?.examType);
+  const {
+    showReportModal, reportText, setReportText, reportSubmitting,
+    openReport, closeReport, submitReport,
+  } = useErrorReport(currentUser?.uid, settings?.examType);
+
+  // Anti-cheat measures
+  const isTestInProgress = !loading && !showResumePrompt && questions.length > 0;
+  
+  // Ref to store submit function for violation auto-submit
+  const submitTestRef = React.useRef(null);
+
+  // Auto-submit handler for violations
+  const handleViolationAutoSubmit = React.useCallback(async () => {
+    toast.error("Test auto-submitted due to multiple fullscreen violations", { autoClose: 5000 });
+    if (submitTestRef.current) {
+      submitTestRef.current();
+    }
+  }, []);
+
+  const { 
+    enterFullscreen, 
+    exitFullscreen, 
+    showViolationModal, 
+    resumeTest,
+    violationCount,
+    remainingWarnings,
+  } = useAntiCheat(isTestInProgress, {
+    onAutoSubmit: handleViolationAutoSubmit,
+    maxFullscreenExits: 2,
+  });
+
+  const sectionMeta = React.useMemo(() => {
+    const pattern = settings?.examType ? EXAM_PATTERNS[settings.examType] : null;
+    if (!pattern || !questions.length) {
+      return [];
+    }
+    return pattern.sections.map((section) => {
+      const indices = questions
+        .map((q, idx) => (q.subject === section.name ? idx : -1))
+        .filter((idx) => idx >= 0);
+      return {
+        name: section.name,
+        startIndex: indices[0] ?? null,
+        count: indices.length,
+      };
+    });
+  }, [questions, settings?.examType]);
+
+  const currentSectionLabel = React.useMemo(() => {
+    if (!sectionMeta.length) {
+      return null;
+    }
+    const match = sectionMeta.find((section) => {
+      if (section.startIndex === null) {
+        return false;
+      }
+      const nextSection = sectionMeta.find(
+        (other) => other.startIndex !== null && other.startIndex > section.startIndex,
+      );
+      const endIndex = nextSection ? nextSection.startIndex - 1 : questions.length - 1;
+      return currentQuestionIndex >= section.startIndex && currentQuestionIndex <= endIndex;
+    });
+    return match?.name || null;
+  }, [currentQuestionIndex, questions.length, sectionMeta]);
+
+  const timerRef = useRef(null);
+  const questionStartRef = useRef(null);
+  const lastQuestionIndexRef = useRef(null);
+
+  const fetchQuestions = useCallback(async () => {
+    try {
+      setLoading(true);
+      let q = query(
+        collection(db, "questions"),
+        where("examType", "==", settings.examType),
+      );
+
+      const snapshot = await getDocs(q);
+      let allQuestions = snapshot.docs.map((doc) => ({
+        id: doc.id,
+        ...doc.data(),
+      }));
+
+      // Apply filters
+      if (settings.subjects.length > 0) {
+        allQuestions = allQuestions.filter((q) =>
+          settings.subjects.includes(q.subject),
+        );
+      }
+      if (settings.topics.length > 0) {
+        allQuestions = allQuestions.filter((q) =>
+          settings.topics.includes(q.topic),
+        );
+      }
+      if (settings.difficulty !== "all") {
+        allQuestions = allQuestions.filter(
+          (q) => q.difficulty === settings.difficulty,
+        );
+      }
+
+      // Shuffle if enabled
+      if (settings.shuffleQuestions) {
+        allQuestions = shuffleArray(allQuestions);
+      }
+
+      // Take required number
+      const selectedQuestions = allQuestions.slice(
+        0,
+        settings.numberOfQuestions,
+      );
+      
+      // Randomize options for each question (anti-cheat measure)
+      const randomizedQuestions = randomizeTest(selectedQuestions, currentUser?.uid);
+      setQuestions(randomizedQuestions);
+
+      // Initialize responses
+      const initialResponses = randomizedQuestions.map((q, index) => ({
+        questionId: q.id,
+        selectedAnswer: null,
+        markedForReview: false,
+        timeTaken: 0,
+        visited: index === 0,
+        locked: false, // Once answered and navigated away, answer is locked
+        marksPerQuestion: 1,
+        negativeMarking: settings.negativeMarking ? -0.33 : 0,
+      }));
+      setResponses(initialResponses);
+
+      // Set timer
+      if (settings.hasTimer) {
+        setTimeRemaining(settings.timeLimit * 60);
+      }
+
+      setLoading(false);
+      // Enter fullscreen when test starts
+      enterFullscreen();
+    } catch (error) {
+      logger.error("Error fetching questions:", error);
+      toast.error("Failed to load questions");
+      navigate("/test-selection");
+    }
+  }, [navigate, settings, currentUser?.uid, enterFullscreen]);
+
+  const restoreSession = useCallback((session) => {
+    setQuestions(session.questions || []);
+    setResponses(session.responses || []);
+    setCurrentQuestionIndex(session.currentQuestionIndex || 0);
+    setTimeRemaining(session.timeRemaining || 0);
+    setShowInstantFeedback(Boolean(session.showInstantFeedback));
+    setLoading(false);
+  }, []);
+
+  const recordTimeSpent = useCallback(() => {
+    if (
+      questionStartRef.current === null ||
+      lastQuestionIndexRef.current === null
+    ) {
+      return;
+    }
+    const delta = Math.floor((Date.now() - questionStartRef.current) / 1000);
+    if (delta <= 0) {
+      questionStartRef.current = Date.now();
+      return;
+    }
+
+    const indexToUpdate = lastQuestionIndexRef.current;
+    setResponses((prev) => {
+      const updated = [...prev];
+      if (updated[indexToUpdate]) {
+        updated[indexToUpdate] = {
+          ...updated[indexToUpdate],
+          timeTaken: (updated[indexToUpdate].timeTaken || 0) + delta,
+        };
+      }
+      return updated;
+    });
+    questionStartRef.current = Date.now();
+  }, []);
+
+  const handleAnswerSelect = (answer) => {
+    // Don't allow changing answer if already locked
+    if (responses[currentQuestionIndex]?.locked) return;
+    
+    const newResponses = [...responses];
+    newResponses[currentQuestionIndex] = {
+      ...newResponses[currentQuestionIndex],
+      selectedAnswer: answer,
+      visited: true,
+    };
+    setResponses(newResponses);
+
+    if (settings.showInstantFeedback) {
+      setShowInstantFeedback(true);
+    }
+  };
+
+  const handleNext = () => {
+    if (settings.showInstantFeedback) {
+      setShowInstantFeedback(false);
+    }
+
+    // Lock the current answer if one was selected
+    if (responses[currentQuestionIndex]?.selectedAnswer) {
+      const lockResponses = [...responses];
+      lockResponses[currentQuestionIndex] = {
+        ...lockResponses[currentQuestionIndex],
+        locked: true,
+      };
+      setResponses(lockResponses);
+    }
+
+    if (currentQuestionIndex < questions.length - 1) {
+      recordTimeSpent();
+      const newIndex = currentQuestionIndex + 1;
+      setResponses(prev => {
+        const newResponses = [...prev];
+        newResponses[newIndex].visited = true;
+        return newResponses;
+      });
+      setCurrentQuestionIndex(newIndex);
+    }
+  };
+
+  const handlePrevious = () => {
+    if (settings.showInstantFeedback) {
+      setShowInstantFeedback(false);
+    }
+
+    // Lock the current answer if one was selected
+    if (responses[currentQuestionIndex]?.selectedAnswer) {
+      const lockResponses = [...responses];
+      lockResponses[currentQuestionIndex] = {
+        ...lockResponses[currentQuestionIndex],
+        locked: true,
+      };
+      setResponses(lockResponses);
+    }
+
+    if (currentQuestionIndex > 0) {
+      recordTimeSpent();
+      setCurrentQuestionIndex(currentQuestionIndex - 1);
+    }
+  };
+
+  const handleMarkForReview = () => {
+    const newResponses = [...responses];
+    newResponses[currentQuestionIndex] = {
+      ...newResponses[currentQuestionIndex],
+      markedForReview: !newResponses[currentQuestionIndex].markedForReview,
+      visited: true,
+    };
+    setResponses(newResponses);
+  };
+
+  const handleClearResponse = () => {
+    if (responses[currentQuestionIndex]?.locked) return;
+    
+    const newResponses = [...responses];
+    newResponses[currentQuestionIndex] = {
+      ...newResponses[currentQuestionIndex],
+      selectedAnswer: null,
+    };
+    setResponses(newResponses);
+    if (settings.showInstantFeedback) {
+      setShowInstantFeedback(false);
+    }
+  };
+
+  const handleSkip = () => {
+    // Mark as visited but NOT locked - user can answer later
+    const newResponses = [...responses];
+    newResponses[currentQuestionIndex] = {
+      ...newResponses[currentQuestionIndex],
+      selectedAnswer: null,
+      visited: true,
+      // Don't lock skipped questions - user can answer them later
+    };
+    setResponses(newResponses);
+    if (settings.showInstantFeedback) {
+      setShowInstantFeedback(false);
+    }
+    // Move to next question
+    if (currentQuestionIndex < questions.length - 1) {
+      recordTimeSpent();
+      const newIndex = currentQuestionIndex + 1;
+      setResponses(prev => {
+        const updated = [...prev];
+        updated[newIndex].visited = true;
+        return updated;
+      });
+      setCurrentQuestionIndex(newIndex);
+    }
+  };
+
+  const goToQuestion = (index) => {
+    if (settings.showInstantFeedback) {
+      setShowInstantFeedback(false);
+    }
+
+    recordTimeSpent();
+    const newResponses = [...responses];
+    newResponses[index].visited = true;
+    setResponses(newResponses);
+    setCurrentQuestionIndex(index);
+  };
+
+  const handleGoToSection = (section) => {
+    if (section.startIndex === null) {
+      return;
+    }
+    recordTimeSpent();
+    setCurrentQuestionIndex(section.startIndex);
+  };
+
+  const submitTest = useCallback(async () => {
+    try {
+      recordTimeSpent();
+      clearInterval(timerRef.current);
+
+      const scoreData = calculateScore(responses, questions);
+      const testData = {
+        userId: currentUser.uid,
+        examType: settings.examType,
+        testMode: "custom",
+        settings: settings,
+        questions: questions.map((q) => q.id),
+        responses: responses,
+        startTime: new Date(
+          Date.now() - (settings.timeLimit * 60 - timeRemaining) * 1000,
+        ).toISOString(),
+        endTime: new Date().toISOString(),
+        timeRemaining: timeRemaining,
+        timeTaken: settings.hasTimer
+          ? settings.timeLimit * 60 - timeRemaining
+          : null,
+        score: scoreData.totalMarks,
+        accuracy: scoreData.accuracy,
+        correct: scoreData.correct,
+        incorrect: scoreData.incorrect,
+        skipped: scoreData.skipped,
+        completed: true,
+      };
+
+      const docRef = await addDoc(collection(db, "tests"), testData);
+      clearSession();
+      
+      // Exit fullscreen before navigating to results
+      exitFullscreen();
+
+      navigate("/test/result", {
+        state: {
+          testId: docRef.id,
+          questions: questions,
+          responses: responses,
+          examType: settings.examType,
+          testMode: "custom",
+        },
+      });
+    } catch (error) {
+      logger.error("Error submitting test:", error);
+      toast.error("Failed to submit test");
+    }
+  }, [
+    clearSession,
+    currentUser,
+    exitFullscreen,
+    navigate,
+    questions,
+    recordTimeSpent,
+    responses,
+    settings,
+    timeRemaining,
+  ]);
+
+  const handleAutoSubmit = useCallback(() => {
+    toast.info("Time is up! Auto-submitting test...");
+    submitTest();
+  }, [submitTest]);
+
+  // Keep submitTestRef updated
+  React.useEffect(() => {
+    submitTestRef.current = submitTest;
+  }, [submitTest]);
+
+  useEffect(() => {
+    if (!settings) {
+      toast.error("No test configuration found");
+      navigate("/test-selection");
+      return;
+    }
+    const saved = loadSavedSession(
+      (s) => s.settings?.examType === settings.examType && s.questions?.length
+    );
+    if (saved) {
+      if (location.state?.resume) {
+        restoreSession(saved);
+      } else {
+        setResumeData(saved);
+        setShowResumePrompt(true);
+        setLoading(false);
+      }
+      return;
+    }
+
+    fetchQuestions();
+  }, [fetchQuestions, restoreSession, loadSavedSession, location.state, navigate, settings]);
+
+  useEffect(() => {
+    loadBookmarks();
+  }, [loadBookmarks]);
+
+  useEffect(() => {
+    if (loading || questions.length === 0) return;
+    saveSession({
+      settings, questions, responses, currentQuestionIndex,
+      timeRemaining, showInstantFeedback,
+    });
+  }, [saveSession, loading, settings, questions, responses, currentQuestionIndex, timeRemaining, showInstantFeedback]);
+
+  useEffect(() => {
+    if (loading || questions.length === 0) {
+      return;
+    }
+    if (lastQuestionIndexRef.current === null) {
+      lastQuestionIndexRef.current = currentQuestionIndex;
+      questionStartRef.current = Date.now();
+      return;
+    }
+    if (lastQuestionIndexRef.current !== currentQuestionIndex) {
+      lastQuestionIndexRef.current = currentQuestionIndex;
+      questionStartRef.current = Date.now();
+    }
+  }, [currentQuestionIndex, loading, questions.length]);
+
+  useEffect(() => {
+    if (settings?.hasTimer && timeRemaining > 0 && !loading) {
+      timerRef.current = setInterval(() => {
+        setTimeRemaining((prev) => {
+          if (prev <= 1) {
+            handleAutoSubmit();
+            return 0;
+          }
+          return prev - 1;
+        });
+      }, 1000);
+
+      return () => clearInterval(timerRef.current);
+    }
+  }, [handleAutoSubmit, loading, settings, timeRemaining]);
+
+  if (loading) {
+    return <PageSpinner message="Loading custom test..." />;
+  }
+
+  if (showResumePrompt && resumeData) {
+    return (
+      <ResumePrompt
+        title="Resume your custom test?"
+        description={`You have an unfinished ${settings?.examType} custom test. Continue or start fresh.`}
+        onResume={async () => {
+          await enterFullscreen();
+          restoreSession(resumeData);
+          setShowResumePrompt(false);
+        }}
+        onStartFresh={async () => {
+          await enterFullscreen();
+          clearSession();
+          setShowResumePrompt(false);
+          fetchQuestions();
+        }}
+      />
+    );
+  }
+
+  const currentQuestion = questions[currentQuestionIndex];
+  const currentResponse = responses[currentQuestionIndex];
+  const isCorrect =
+    currentResponse.selectedAnswer === currentQuestion.correctAnswer;
+  const isBookmarked = Boolean(bookmarkMap[currentQuestion.id]);
+
+  return (
+    <div className="min-h-screen bg-gray-100">
+      {/* Violation Modal */}
+      <ViolationModal
+        isOpen={showViolationModal}
+        onResume={resumeTest}
+        remainingWarnings={remainingWarnings}
+        violationCount={violationCount}
+      />
+      
+      {/* Header */}
+      <div className="bg-white shadow-md sticky top-0 z-10">
+        <div className="max-w-7xl mx-auto px-4 py-3">
+          <div className="flex justify-between items-center">
+            <div>
+              <h1 className="text-xl font-bold text-gray-800">Custom Test</h1>
+              <p className="text-sm text-gray-600">{settings.examType}</p>
+            </div>
+            <div className="flex items-center gap-6">
+              {settings.hasTimer && (
+                <div className="text-center">
+                  <p className="text-sm text-gray-600">Time Remaining</p>
+                  <p
+                    className={`text-2xl font-bold ${timeRemaining < 300 ? "text-red-600" : "text-blue-600"}`}
+                  >
+                    {formatTime(timeRemaining)}
+                  </p>
+                </div>
+              )}
+              <button
+                onClick={() => setShowSubmitModal(true)}
+                className="bg-green-600 text-white px-6 py-2 rounded-lg font-semibold hover:bg-green-700 transition-colors"
+              >
+                Submit Test
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div className="max-w-7xl mx-auto px-4 py-6">
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+          {/* Question Area */}
+          <div className="lg:col-span-2">
+            <div className="bg-white rounded-lg shadow-md p-6 no-select">
+              {sectionMeta.length > 1 && (
+                <div className="mb-6">
+                  <div className="flex flex-wrap gap-2">
+                    {sectionMeta.map((section) => (
+                      <button
+                        key={section.name}
+                        onClick={() => handleGoToSection(section)}
+                        disabled={section.startIndex === null}
+                        className={`px-3 py-1 rounded-full text-xs font-semibold transition-colors ${
+                          currentSectionLabel === section.name
+                            ? "bg-blue-600 text-white"
+                            : "bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-200 hover:bg-gray-200 dark:hover:bg-gray-600"
+                        } ${section.startIndex === null ? "opacity-50 cursor-not-allowed" : ""}`}
+                      >
+                        {section.name} ({section.count})
+                      </button>
+                    ))}
+                  </div>
+                  {currentSectionLabel && (
+                    <p className="text-xs text-gray-500 mt-2">
+                      Current section: {currentSectionLabel}
+                    </p>
+                  )}
+                </div>
+              )}
+              {/* Question Header */}
+              <div className="flex justify-between items-start mb-6">
+                <div>
+                  <span className="bg-blue-100 dark:bg-blue-900 text-blue-800 dark:text-blue-200 text-sm font-semibold px-3 py-1 rounded">
+                    Question {currentQuestionIndex + 1} of {questions.length}
+                  </span>
+                  <p className="text-sm text-gray-600 mt-2">
+                    {currentQuestion.subject} | {currentQuestion.topic}
+                  </p>
+                </div>
+                <div className="flex flex-col items-end gap-2">
+                  <button
+                    onClick={() => toggleBookmark(currentQuestion.id)}
+                    className={`px-3 py-1 rounded text-xs font-semibold ${
+                      isBookmarked
+                        ? "bg-yellow-100 text-yellow-700"
+                        : "bg-gray-100 text-gray-600 hover:bg-gray-200"
+                    }`}
+                  >
+                    {isBookmarked ? "Bookmarked" : "Bookmark"}
+                  </button>
+                  <button
+                    onClick={openReport}
+                    className="px-3 py-1 rounded text-xs font-semibold bg-red-50 text-red-600 hover:bg-red-100"
+                  >
+                    Report Error
+                  </button>
+                </div>
+              </div>
+
+              {/* Question Text */}
+              <div className="mb-6">
+                <p className="text-lg text-gray-800 leading-relaxed">
+                  {currentQuestion.questionText}
+                </p>
+              </div>
+
+              {/* Locked indicator */}
+              {currentResponse.locked && (
+                <div className="mb-4 p-3 bg-amber-50 border border-amber-200 rounded-lg flex items-center gap-2">
+                  <svg className="w-5 h-5 text-amber-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+                  </svg>
+                  <span className="text-sm text-amber-700 font-medium">
+                    Answer locked - You cannot change your response
+                  </span>
+                </div>
+              )}
+
+              {/* Options */}
+              <div className="space-y-3 mb-8">
+                {["A", "B", "C", "D"].map((option) => {
+                  const isSelected = currentResponse.selectedAnswer === option;
+                  const isCorrectOption =
+                    option === currentQuestion.correctAnswer;
+                  const showFeedback =
+                    settings.showInstantFeedback &&
+                    showInstantFeedback &&
+                    isSelected;
+                  const isLocked = currentResponse.locked;
+
+                  return (
+                    <button
+                      key={option}
+                      onClick={() => handleAnswerSelect(option)}
+                      disabled={isLocked}
+                      className={`w-full p-4 rounded-lg border-2 text-left transition-all ${
+                        showFeedback && isCorrectOption
+                          ? "border-green-500 bg-green-50"
+                          : showFeedback && !isCorrectOption
+                            ? "border-red-500 bg-red-50"
+                            : isSelected
+                              ? isLocked
+                                ? "border-blue-600 bg-blue-50 cursor-not-allowed"
+                                : "border-blue-600 bg-blue-50"
+                              : isLocked
+                                ? "border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-700 cursor-not-allowed opacity-60"
+                                : "border-gray-200 dark:border-gray-700 hover:border-blue-300 dark:hover:border-blue-500 hover:bg-gray-50 dark:hover:bg-gray-700"
+                      }`}
+                    >
+                      <div className="flex items-start justify-between">
+                        <div className="flex-1">
+                          <span className="font-semibold text-gray-700">
+                            {option}.
+                          </span>{" "}
+                          <span className="text-gray-800">
+                            {currentQuestion.options[option]}
+                          </span>
+                        </div>
+                        {showFeedback && isSelected && (
+                          <span
+                            className={`font-semibold ml-2 ${isCorrectOption ? "text-green-600" : "text-red-600"}`}
+                          >
+                            {isCorrectOption ? "Correct" : "Wrong"}
+                          </span>
+                        )}
+                      </div>
+                    </button>
+                  );
+                })}
+              </div>
+
+              {/* Instant Feedback */}
+              {settings.showInstantFeedback &&
+                showInstantFeedback &&
+                currentResponse.selectedAnswer && (
+                  <div
+                    className={`mb-6 p-4 rounded-lg border-l-4 ${
+                      isCorrect
+                        ? "bg-green-50 border-green-500"
+                        : "bg-red-50 border-red-500"
+                    }`}
+                  >
+                    <p
+                      className={`font-semibold mb-2 ${isCorrect ? "text-green-800" : "text-red-800"}`}
+                    >
+                      {isCorrect ? "Correct!" : "Incorrect"}
+                    </p>
+                    <p
+                      className={`text-sm ${isCorrect ? "text-green-700" : "text-red-700"}`}
+                    >
+                      {isCorrect
+                        ? "Well done!"
+                        : `The correct answer is ${currentQuestion.correctAnswer}`}
+                    </p>
+                    <div className="mt-3 pt-3 border-t border-gray-300">
+                      <p className="text-sm font-semibold text-gray-800 mb-1">
+                        Explanation:
+                      </p>
+                      <p className="text-sm text-gray-700">
+                        {currentQuestion.solution}
+                      </p>
+                    </div>
+                  </div>
+                )}
+
+              {/* Action Buttons */}
+              <div className="flex flex-wrap gap-3">
+                <button
+                  onClick={handleMarkForReview}
+                  className={`px-6 py-2 rounded-lg font-semibold transition-colors ${
+                    currentResponse.markedForReview
+                      ? "bg-purple-600 text-white"
+                      : "bg-purple-100 text-purple-700 hover:bg-purple-200"
+                  }`}
+                >
+                  {currentResponse.markedForReview
+                    ? "Marked"
+                    : "Mark for Review"}
+                </button>
+                <button
+                  onClick={handleClearResponse}
+                  disabled={!currentResponse.selectedAnswer || currentResponse.locked}
+                  className="px-6 py-2 bg-gray-200 text-gray-700 rounded-lg font-semibold hover:bg-gray-300 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  Clear Response
+                </button>
+                <button
+                  onClick={handleSkip}
+                  disabled={currentResponse.locked || currentQuestionIndex === questions.length - 1}
+                  className="px-6 py-2 bg-yellow-100 text-yellow-700 rounded-lg font-semibold hover:bg-yellow-200 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  Skip
+                </button>
+              </div>
+              {/* Navigation Buttons */}
+              <div className="flex justify-between mt-6 pt-6 border-t">
+                <button
+                  onClick={handlePrevious}
+                  disabled={currentQuestionIndex === 0}
+                  className="px-6 py-2 bg-gray-200 text-gray-700 rounded-lg font-semibold hover:bg-gray-300 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  Previous
+                </button>
+                <button
+                  onClick={handleNext}
+                  disabled={currentQuestionIndex === questions.length - 1}
+                  className="px-6 py-2 bg-blue-600 text-white rounded-lg font-semibold hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  Next
+                </button>
+              </div>
+            </div>
+          </div>
+
+          {/* Question Palette Sidebar */}
+          <div className="lg:col-span-1">
+            <div className="bg-white rounded-lg shadow-md p-6 sticky top-24">
+              <h3 className="font-bold text-gray-800 mb-4">Question Palette</h3>
+
+              {/* Question Grid */}
+              <div className="grid grid-cols-5 gap-2 max-h-96 overflow-y-auto">
+                {questions.map((_, index) => {
+                  const status = getQuestionStatus(responses[index]);
+                  return (
+                    <button
+                      key={index}
+                      onClick={() => goToQuestion(index)}
+                      className={`w-full aspect-square rounded flex items-center justify-center font-semibold text-sm transition-all ${getStatusColor(
+                        status,
+                      )} ${
+                        index === currentQuestionIndex
+                          ? "ring-2 ring-offset-2 ring-blue-600"
+                          : ""
+                      }`}
+                    >
+                      {index + 1}
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Submit Modal */}
+      {showSubmitModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-lg p-8 max-w-md w-full">
+            <h2 className="text-2xl font-bold text-gray-800 mb-4">
+              Submit Test?
+            </h2>
+            <p className="text-gray-600 mb-6">
+              Are you sure you want to submit? You cannot change answers after
+              submission.
+            </p>
+            <div className="flex gap-4">
+              <button
+                onClick={() => setShowSubmitModal(false)}
+                className="flex-1 bg-gray-200 text-gray-700 py-3 rounded-lg font-semibold hover:bg-gray-300 transition-colors"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={submitTest}
+                className="flex-1 bg-green-600 text-white py-3 rounded-lg font-semibold hover:bg-green-700 transition-colors"
+              >
+                Submit
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      <ReportModal
+        isOpen={showReportModal}
+        reportText={reportText}
+        onChangeText={setReportText}
+        onSubmit={() => submitReport(questions[currentQuestionIndex].id)}
+        onClose={closeReport}
+        submitting={reportSubmitting}
+      />
+    </div>
+  );
+};
+export default CustomTest;

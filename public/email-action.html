@@ -1,0 +1,364 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Email Action - UPSC Mock Test Platform</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+    
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+    }
+    
+    .container {
+      background: white;
+      padding: 40px;
+      border-radius: 12px;
+      box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+      max-width: 500px;
+      width: 100%;
+      text-align: center;
+    }
+    
+    h1 {
+      color: #667eea;
+      margin-bottom: 20px;
+      font-size: 24px;
+    }
+    
+    .logo {
+      font-size: 48px;
+      margin-bottom: 20px;
+    }
+    
+    #message {
+      font-size: 18px;
+      margin: 20px 0;
+      padding: 15px;
+      border-radius: 8px;
+    }
+    
+    .success {
+      color: #10b981;
+      background: #d1fae5;
+    }
+    
+    .error {
+      color: #ef4444;
+      background: #fee2e2;
+    }
+    
+    .loading {
+      color: #667eea;
+      background: #e0e7ff;
+    }
+    
+    input {
+      width: 100%;
+      padding: 12px;
+      margin: 15px 0;
+      border: 2px solid #e5e7eb;
+      border-radius: 8px;
+      font-size: 16px;
+      transition: border-color 0.3s;
+    }
+    
+    input:focus {
+      outline: none;
+      border-color: #667eea;
+    }
+    
+    button {
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      color: white;
+      border: none;
+      padding: 14px 32px;
+      border-radius: 8px;
+      font-size: 16px;
+      font-weight: 600;
+      cursor: pointer;
+      margin-top: 10px;
+      transition: transform 0.2s, opacity 0.2s;
+      width: 100%;
+    }
+    
+    button:hover {
+      opacity: 0.9;
+      transform: translateY(-2px);
+    }
+    
+    button:active {
+      transform: translateY(0);
+    }
+    
+    button:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+    }
+    
+    .spinner {
+      border: 3px solid #f3f3f3;
+      border-top: 3px solid #667eea;
+      border-radius: 50%;
+      width: 40px;
+      height: 40px;
+      animation: spin 1s linear infinite;
+      margin: 20px auto;
+    }
+    
+    @keyframes spin {
+      0% { transform: rotate(0deg); }
+      100% { transform: rotate(360deg); }
+    }
+    
+    .info {
+      font-size: 14px;
+      color: #6b7280;
+      margin-top: 20px;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="logo">🎓</div>
+    <h1>UPSC Mock Test Platform</h1>
+    <div id="message" class="loading">
+      <div class="spinner"></div>
+      Processing your request...
+    </div>
+    <div id="actions"></div>
+    <div id="info" class="info"></div>
+  </div>
+
+  <script type="module">
+    // Firebase configuration will be loaded from environment
+    // This needs to match your Firebase project settings
+    const firebaseConfig = {
+      apiKey: "AIzaSyCbHzoUbpWPt0XOz4bclcVghuASrE5GOus",
+      authDomain: "upsc-mock-test-18b34.firebaseapp.com",
+      projectId: "upsc-mock-test-18b34"
+    };
+
+    // Import Firebase modules
+    import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js';
+    import { 
+      getAuth, 
+      applyActionCode, 
+      verifyPasswordResetCode, 
+      confirmPasswordReset,
+      checkActionCode
+    } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js';
+
+    // Initialize Firebase
+    const app = initializeApp(firebaseConfig);
+    const auth = getAuth(app);
+
+    // Get URL parameters
+    const urlParams = new URLSearchParams(window.location.search);
+    const mode = urlParams.get('mode');
+    const actionCode = urlParams.get('oobCode');
+    const continueUrl = urlParams.get('continueUrl');
+    const lang = urlParams.get('lang') || 'en';
+
+    const messageEl = document.getElementById('message');
+    const actionsEl = document.getElementById('actions');
+    const infoEl = document.getElementById('info');
+
+    // Handle different action modes
+    async function handleAction() {
+      if (!actionCode) {
+        showError('Invalid or missing action code.');
+        return;
+      }
+
+      try {
+        switch (mode) {
+          case 'verifyEmail':
+            await handleVerifyEmail();
+            break;
+          case 'resetPassword':
+            await handleResetPassword();
+            break;
+          case 'recoverEmail':
+            await handleRecoverEmail();
+            break;
+          default:
+            showError('Invalid action mode.');
+        }
+      } catch (error) {
+        console.error('Error:', error);
+        showError(getErrorMessage(error));
+      }
+    }
+
+    // Handle email verification
+    async function handleVerifyEmail() {
+      try {
+        await applyActionCode(auth, actionCode);
+        showSuccess('✅ Email verified successfully!', 
+          'Your email has been verified. You can now access all features.');
+        actionsEl.innerHTML = `
+          <button onclick="window.location.href='${continueUrl || '/'}'">
+            Go to Dashboard
+          </button>
+        `;
+      } catch (error) {
+        if (error.code === 'auth/invalid-action-code') {
+          showError('This verification link has expired or has already been used.');
+        } else {
+          throw error;
+        }
+      }
+    }
+
+    // Handle password reset
+    async function handleResetPassword() {
+      try {
+        // Verify the code is valid first
+        const email = await verifyPasswordResetCode(auth, actionCode);
+        
+        showSuccess('Reset Your Password', 
+          `Enter a new password for ${email}`);
+        
+        actionsEl.innerHTML = `
+          <input 
+            type="password" 
+            id="newPassword" 
+            placeholder="New password (min 6 characters)"
+            minlength="6"
+            required
+          >
+          <input 
+            type="password" 
+            id="confirmPassword" 
+            placeholder="Confirm new password"
+            minlength="6"
+            required
+          >
+          <button id="resetBtn" onclick="window.resetPassword()">
+            Reset Password
+          </button>
+        `;
+      } catch (error) {
+        if (error.code === 'auth/invalid-action-code') {
+          showError('This password reset link has expired or has already been used.');
+          actionsEl.innerHTML = `
+            <button onclick="window.location.href='/forgot-password'">
+              Request New Reset Link
+            </button>
+          `;
+        } else {
+          throw error;
+        }
+      }
+    }
+
+    // Handle email recovery
+    async function handleRecoverEmail() {
+      try {
+        const info = await checkActionCode(auth, actionCode);
+        await applyActionCode(auth, actionCode);
+        
+        showSuccess('✅ Email recovered successfully!', 
+          `Your email ${info.data.email} has been restored.`);
+        
+        actionsEl.innerHTML = `
+          <button onclick="window.location.href='${continueUrl || '/'}'">
+            Go to Dashboard
+          </button>
+        `;
+      } catch (error) {
+        throw error;
+      }
+    }
+
+    // Reset password function
+    window.resetPassword = async function() {
+      const newPassword = document.getElementById('newPassword').value;
+      const confirmPassword = document.getElementById('confirmPassword').value;
+      const resetBtn = document.getElementById('resetBtn');
+
+      // Validation
+      if (!newPassword || !confirmPassword) {
+        showError('Please fill in both password fields.');
+        return;
+      }
+
+      if (newPassword.length < 6) {
+        showError('Password must be at least 6 characters long.');
+        return;
+      }
+
+      if (newPassword !== confirmPassword) {
+        showError('Passwords do not match.');
+        return;
+      }
+
+      // Disable button during processing
+      resetBtn.disabled = true;
+      resetBtn.textContent = 'Resetting...';
+
+      try {
+        await confirmPasswordReset(auth, actionCode, newPassword);
+        
+        showSuccess('✅ Password reset successfully!', 
+          'Your password has been updated. You can now log in with your new password.');
+        
+        actionsEl.innerHTML = `
+          <button onclick="window.location.href='/login'">
+            Go to Login
+          </button>
+        `;
+      } catch (error) {
+        resetBtn.disabled = false;
+        resetBtn.textContent = 'Reset Password';
+        showError(getErrorMessage(error));
+      }
+    };
+
+    // Helper functions
+    function showSuccess(title, description) {
+      messageEl.className = 'success';
+      messageEl.innerHTML = `<strong>${title}</strong>`;
+      if (description) {
+        infoEl.textContent = description;
+      }
+    }
+
+    function showError(message) {
+      messageEl.className = 'error';
+      messageEl.innerHTML = `<strong>❌ Error</strong><br>${message}`;
+      infoEl.innerHTML = `
+        Need help? <a href="mailto:support@yourdomain.com" style="color: #667eea;">Contact Support</a>
+      `;
+    }
+
+    function getErrorMessage(error) {
+      const errorMessages = {
+        'auth/expired-action-code': 'This link has expired. Please request a new one.',
+        'auth/invalid-action-code': 'This link is invalid or has already been used.',
+        'auth/user-disabled': 'This account has been disabled.',
+        'auth/user-not-found': 'No account found with this email.',
+        'auth/weak-password': 'Password is too weak. Please use a stronger password.',
+        'auth/network-request-failed': 'Network error. Please check your connection and try again.'
+      };
+
+      return errorMessages[error.code] || error.message || 'An unexpected error occurred. Please try again.';
+    }
+
+    // Start handling the action
+    handleAction();
+  </script>
+</body>
+</html>

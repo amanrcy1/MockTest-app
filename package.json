@@ -1,0 +1,79 @@
+{
+  "name": "upsc-mock-test",
+  "version": "0.1.1",
+  "private": true,
+  "dependencies": {
+    "@testing-library/dom": "^10.4.1",
+    "@testing-library/jest-dom": "^6.9.1",
+    "@testing-library/react": "^16.3.1",
+    "date-fns": "^4.1.0",
+    "firebase": "^12.7.0",
+    "firebase-admin": "^13.6.1",
+    "framer-motion": "^12.26.2",
+    "papaparse": "^5.5.3",
+    "react": "^19.2.3",
+    "react-dom": "^19.2.3",
+    "react-easy-crop": "^5.5.6",
+    "react-markdown": "^10.1.0",
+    "react-router-dom": "^7.12.0",
+    "react-scripts": "5.0.1",
+    "react-toastify": "^11.0.5",
+    "web-vitals": "^2.1.4"
+  },
+  "scripts": {
+    "start": "react-scripts start",
+    "build": "react-scripts --max_old_space_size=4096 build",
+    "test": "react-scripts test",
+    "test:coverage": "react-scripts test --coverage --watchAll=false",
+    "test:ci": "react-scripts test --coverage --watchAll=false --passWithNoTests",
+    "test:watch": "react-scripts test --coverage --watchAll",
+    "test:unit": "react-scripts test --testPathPattern=__tests__ --watchAll=false",
+    "test:integration": "react-scripts test --testPathPattern=integration --watchAll=false",
+    "test:security": "npm audit --audit-level=moderate",
+    "eject": "react-scripts eject",
+    "lint": "eslint src --ext .js,.jsx",
+    "lint:fix": "eslint src --ext .js,.jsx --fix",
+    "format": "prettier --write \"src/**/*.{js,jsx,json,css,md}\"",
+    "format:check": "prettier --check \"src/**/*.{js,jsx,json,css,md}\"",
+    "prepare": "node -e \"try { require('husky').install() } catch (e) {}\"",
+    "deploy": "vercel --prod",
+    "deploy:preview": "vercel"
+  },
+  "eslintConfig": {
+    "extends": [
+      "react-app",
+      "react-app/jest"
+    ]
+  },
+  "jest": {
+    "moduleNameMapper": {
+      "^react-router-dom$": "<rootDir>/__mocks__/react-router-dom.js",
+      "^react-router$": "<rootDir>/__mocks__/react-router-dom.js"
+    },
+    "transformIgnorePatterns": [
+      "node_modules/(?!(firebase|@firebase)/)"
+    ]
+  },
+  "browserslist": {
+    "production": [
+      ">0.2%",
+      "not dead",
+      "not op_mini all"
+    ],
+    "development": [
+      "last 1 chrome version",
+      "last 1 firefox version",
+      "last 1 safari version"
+    ]
+  },
+  "devDependencies": {
+    "@testing-library/user-event": "^14.6.1",
+    "autoprefixer": "^10.4.23",
+    "eslint": "^8.57.1",
+    "eslint-config-react-app": "^7.0.1",
+    "husky": "^8.0.3",
+    "postcss": "^8.5.6",
+    "prettier": "^3.8.0",
+    "tailwindcss": "^3.4.1"
+  }
+}

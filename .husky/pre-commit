@@ -1,0 +1,29 @@
+#!/usr/bin/env sh
+. "$(dirname -- "$0")/_/husky.sh"
+
+# Check for .env file in staged files
+if git diff --cached --name-only | grep -q "^\.env$"; then
+  echo "❌ Error: Attempting to commit .env file!"
+  echo "This file contains sensitive information and should never be committed."
+  echo "Please unstage it with: git reset HEAD .env"
+  exit 1
+fi
+
+# Check for potential secrets in staged files (excluding safe files and code patterns)
+# This checks for actual secret values, not variable names or function parameters
+# Excludes Firebase client API keys (public by design) and common safe patterns
+SECRETS_FOUND=$(git diff --cached -- . ':(exclude)*.md' ':(exclude).env.example' ':(exclude)public/*' | grep -iE "(api[_-]?key|secret|password|token)\s*[:=]\s*['\"][a-zA-Z0-9]{20,}" || true)
+if [ -n "$SECRETS_FOUND" ]; then
+  echo "⚠️  Warning: Potential hardcoded secrets detected!"
+  echo "$SECRETS_FOUND"
+  echo "Please review your changes carefully before committing."
+  exit 1
+fi
+
+# Run linter
+npm run lint --quiet
+
+# Skip tests in pre-commit (they run in CI)
+# Tests take too long for pre-commit hook
+
+echo "✅ Pre-commit checks passed!"
