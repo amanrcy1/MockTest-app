@@ -4,6 +4,7 @@ import { motion } from "framer-motion";
 import { useAuth } from "../../context/AuthContext";
 import { toast } from "react-toastify";
 import { ThemeToggle } from "../../components";
+import { useInstallPrompt } from "../../hooks/useInstallPrompt";
 
 const Login = () => {
   const [usernameOrEmail, setUsernameOrEmail] = useState("");
@@ -18,6 +19,7 @@ const Login = () => {
 
   const { login, sendVerificationEmail } = useAuth();
   const navigate = useNavigate();
+  const { isInstallable, promptInstall } = useInstallPrompt();
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -282,6 +284,26 @@ const Login = () => {
               </Link>
             </p>
           </motion.div>
+
+          {/* PWA Install Button */}
+          {isInstallable && (
+            <motion.div
+              className="mt-5 pt-5 border-t border-gray-200 dark:border-gray-700"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              transition={{ delay: 0.7 }}
+            >
+              <button
+                onClick={promptInstall}
+                className="w-full flex items-center justify-center gap-2 py-3 bg-gray-50 dark:bg-gray-700/50 hover:bg-gray-100 dark:hover:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-xl transition-colors"
+              >
+                <svg className="w-5 h-5 text-blue-600 dark:text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 18h.01M8 21h8a2 2 0 002-2V5a2 2 0 00-2-2H8a2 2 0 00-2 2v14a2 2 0 002 2z" />
+                </svg>
+                <span className="text-sm font-medium text-gray-700 dark:text-gray-300">Install App</span>
+              </button>
+            </motion.div>
+          )}
         </div>
       </motion.div>
     </div>
