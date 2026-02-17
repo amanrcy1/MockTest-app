@@ -7,6 +7,8 @@ import {
   onAuthStateChanged,
   sendPasswordResetEmail,
   sendEmailVerification,
+  GoogleAuthProvider,
+  linkWithPopup,
 } from "firebase/auth";
 import {
   doc,
@@ -155,12 +157,19 @@ export const AuthProvider = ({ children }) => {
     const createdDocs = [];
 
     try {
-      // --- Atomic uniqueness check via Firestore transaction ---
+      // --- Step 1: Create Firebase Auth user FIRST ---
+      // This must happen before any Firestore writes because our security
+      // rules require `request.auth != null` (isSignedIn) for all writes.
+      userCredential = await createUserWithEmailAndPassword(auth, actualEmail, password);
+      const user = userCredential.user;
+
+      // --- Step 2: Atomic username reservation via Firestore transaction ---
+      // Now that we're authenticated, Firestore rules will allow the write.
       const usernameDocRef = doc(db, "usernames", usernameKey);
 
-      const usernameExists = await runTransaction(db, async (transaction) => {
+      const conflict = await runTransaction(db, async (transaction) => {
         const usernameSnap = await transaction.get(usernameDocRef);
-        if (usernameSnap.exists()) return true;
+        if (usernameSnap.exists()) return "username_taken";
 
         // If real email provided, check email uniqueness too
         if (hasRealEmail) {
@@ -169,9 +178,9 @@ export const AuthProvider = ({ children }) => {
           if (emailSnap.exists()) return "email_taken";
         }
 
-        // Reserve the username inside the transaction to prevent races
+        // Reserve the username with the real userId
         transaction.set(usernameDocRef, {
-          userId: "__pending__",
+          userId: user.uid,
           username: username,
           email: actualEmail,
           hasRealEmail,
@@ -181,30 +190,20 @@ export const AuthProvider = ({ children }) => {
         return false;
       });
 
-      if (usernameExists === true) {
+      if (conflict === "username_taken") {
+        // Rollback: delete the auth user we just created
+        await user.delete();
         return { success: false, error: "Username already exists." };
       }
-      if (usernameExists === "email_taken") {
+      if (conflict === "email_taken") {
+        await user.delete();
         return { success: false, error: "This email is already registered. Please login instead." };
       }
 
-      // Username is now reserved. Track for rollback.
+      // Username reserved successfully. Track for rollback.
       createdDocs.push({ ref: usernameDocRef, type: "username" });
 
-      // --- Create Firebase Auth account ---
-      userCredential = await createUserWithEmailAndPassword(auth, actualEmail, password);
-      const user = userCredential.user;
-
-      // --- Finalize Firestore documents ---
-      // Update username doc with real userId
-      await setDoc(usernameDocRef, {
-        userId: user.uid,
-        username: username,
-        email: actualEmail,
-        hasRealEmail,
-        createdAt: new Date().toISOString(),
-      });
-
+      // --- Step 3: Create remaining Firestore documents ---
       // Email mapping (only for real emails)
       if (hasRealEmail) {
         const emailKey = sanitizeFirestoreKey(email.toLowerCase());
@@ -536,6 +535,95 @@ export const AuthProvider = ({ children }) => {
   }, [userDetails]);
 
   // ------------------------------------------
+  // LINK GOOGLE ACCOUNT (for adding email via Google Sign-In)
+  // ------------------------------------------
+  const linkGoogleEmail = useCallback(async () => {
+    try {
+      if (!auth.currentUser) {
+        return { success: false, error: "No authenticated user." };
+      }
+
+      const provider = new GoogleAuthProvider();
+      provider.setCustomParameters({ prompt: "select_account" });
+
+      const result = await linkWithPopup(auth.currentUser, provider);
+      const googleEmail = result.user.email;
+
+      if (!googleEmail) {
+        return { success: false, error: "Could not retrieve email from Google account." };
+      }
+
+      // Check if this email is already used by another account
+      const emailKey = sanitizeFirestoreKey(googleEmail.toLowerCase());
+      const emailDocRef = doc(db, "emails", emailKey);
+      const emailSnapshot = await getDoc(emailDocRef);
+
+      if (emailSnapshot.exists() && emailSnapshot.data().userId !== auth.currentUser.uid) {
+        return { success: false, error: "This email is already linked to another account." };
+      }
+
+      // Clean up old local email mapping if it existed
+      if (userDetails?.email && userDetails.email.endsWith(LOCAL_EMAIL_DOMAIN)) {
+        // No email doc to clean up for local emails
+      } else if (userDetails?.email && userDetails.email !== googleEmail) {
+        const oldEmailKey = sanitizeFirestoreKey(userDetails.email.toLowerCase());
+        try {
+          await deleteDoc(doc(db, "emails", oldEmailKey));
+        } catch (delErr) {
+          logger.error("Failed to clean up old email mapping:", delErr);
+        }
+      }
+
+      // Create/update email mapping
+      await setDoc(emailDocRef, {
+        userId: auth.currentUser.uid,
+        email: googleEmail,
+        updatedAt: new Date().toISOString(),
+      });
+
+      // Update user profile
+      const userRef = doc(db, "users", auth.currentUser.uid);
+      await setDoc(userRef, {
+        email: googleEmail,
+        hasRealEmail: true,
+        emailVerified: true,
+        updatedAt: new Date().toISOString(),
+      }, { merge: true });
+
+      // Update username mapping
+      if (userDetails?.username) {
+        const usernameKey = normalizeUsername(userDetails.username);
+        const usernameDocRef = doc(db, "usernames", usernameKey);
+        await setDoc(usernameDocRef, {
+          email: googleEmail,
+          hasRealEmail: true,
+          updatedAt: new Date().toISOString(),
+        }, { merge: true });
+      }
+
+      // Refresh user details to reflect changes
+      await fetchUserDetails(auth.currentUser.uid);
+
+      logger.info("Google account linked successfully:", { email: googleEmail });
+      return { success: true, email: googleEmail };
+    } catch (error) {
+      logger.error("Google link error:", error);
+
+      if (error.code === "auth/credential-already-in-use") {
+        return { success: false, error: "This Google account is already linked to a different account." };
+      }
+      if (error.code === "auth/popup-closed-by-user" || error.code === "auth/cancelled-popup-request") {
+        return { success: false, error: "Sign-in cancelled." };
+      }
+      if (error.code === "auth/popup-blocked") {
+        return { success: false, error: "Popup was blocked. Please allow popups and try again." };
+      }
+
+      return { success: false, error: getErrorMessage(error) };
+    }
+  }, [userDetails, fetchUserDetails]);
+
+  // ------------------------------------------
   // REFRESH USER DETAILS
   // ------------------------------------------
   const refreshUserDetails = useCallback(async () => {
@@ -588,8 +676,9 @@ export const AuthProvider = ({ children }) => {
     requestPasswordReset,
     sendVerificationEmail,
     updateUserEmail,
+    linkGoogleEmail,
     refreshUserDetails,
-  }), [currentUser, userDetails, loading, register, login, logout, requestPasswordReset, sendVerificationEmail, updateUserEmail, refreshUserDetails]);
+  }), [currentUser, userDetails, loading, register, login, logout, requestPasswordReset, sendVerificationEmail, updateUserEmail, linkGoogleEmail, refreshUserDetails]);
 
   return (
     <AuthContext.Provider value={value}>

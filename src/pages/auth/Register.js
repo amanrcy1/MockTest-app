@@ -5,46 +5,26 @@ import { useAuth } from "../../context/AuthContext";
 import { toast } from "react-toastify";
 import { doc, getDoc } from "firebase/firestore";
 import { db } from "../../config/firebase";
-import { ThemeToggle } from "../../components";
+import { ThemeToggle, AuthAuroraCanvas } from "../../components";
 import logger from "../../utils/logger";
 
 const Register = () => {
   const [formData, setFormData] = useState({
     username: "",
-    name: "",
-    email: "", // Optional now
     password: "",
-    confirmPassword: "",
-    targetExam: "CDS",
   });
   const [showPassword, setShowPassword] = useState(false);
-  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const [usernameStatus, setUsernameStatus] = useState("idle");
 
   const { register } = useAuth();
   const navigate = useNavigate();
 
-  const examOptions = [
-    { value: "CDS", label: "CDS - Combined Defence Services" },
-    { value: "CSAT", label: "CSAT - Civil Services Aptitude Test" },
-    { value: "IAS-GS", label: "IAS Prelims - General Studies" },
-    { value: "IAS-CSAT", label: "IAS Prelims - CSAT" },
-  ];
-
   const handleChange = (e) => {
     const { name, value } = e.target;
-    const nextValue =
-      name === "password" ||
-      name === "confirmPassword" ||
-      name === "email" ||
-      name === "username"
-        ? value.replace(/\s/g, "")
-        : value;
-
     setFormData({
       ...formData,
-      [name]: nextValue,
+      [name]: value.replace(/\s/g, ""),
     });
   };
 
@@ -105,12 +85,7 @@ const Register = () => {
     e.preventDefault();
 
     // Validation
-    if (
-      !formData.username ||
-      !formData.name ||
-      !formData.password ||
-      !formData.confirmPassword
-    ) {
+    if (!formData.username || !formData.password) {
       toast.error("Please fill all required fields");
       return;
     }
@@ -135,50 +110,28 @@ const Register = () => {
       return;
     }
 
-    if (formData.password !== formData.confirmPassword) {
-      toast.error("Passwords do not match");
-      return;
-    }
-
-    // Email validation only if provided
-    if (formData.email && !/^\S+@\S+\.\S+$/.test(formData.email)) {
-      toast.error("Please enter a valid email");
-      return;
-    }
-
     setLoading(true);
     const result = await register(
       formData.username,
-      formData.name,
-      formData.email || null, // Pass null if no email
+      formData.username, // Use username as initial name (will be set in onboarding)
+      null,
       formData.password,
-      formData.targetExam,
+      "CDS", // Default exam (will be set in onboarding)
     );
     setLoading(false);
 
     if (result.success) {
-      toast.success("Registration successful! Welcome to UPSC Mock Test!");
-      navigate("/dashboard");
+      toast.success("Account created!");
+      navigate("/onboarding");
     } else {
       toast.error(result.error);
     }
   };
 
   return (
-    <div className="min-h-screen mesh-gradient flex items-center justify-center p-4 relative overflow-hidden">
-      {/* Animated background elements */}
-      <div className="absolute inset-0 overflow-hidden pointer-events-none">
-        <motion.div
-          className="absolute top-20 left-10 w-72 h-72 bg-purple-400/20 rounded-full blur-3xl"
-          animate={{ x: [0, 30, 0], y: [0, -20, 0] }}
-          transition={{ duration: 8, repeat: Infinity, ease: "easeInOut" }}
-        />
-        <motion.div
-          className="absolute bottom-20 right-10 w-96 h-96 bg-blue-400/20 rounded-full blur-3xl"
-          animate={{ x: [0, -40, 0], y: [0, 30, 0] }}
-          transition={{ duration: 10, repeat: Infinity, ease: "easeInOut" }}
-        />
-      </div>
+    <div className="min-h-screen flex items-center justify-center p-4 relative overflow-hidden">
+      {/* Aurora canvas background */}
+      <AuthAuroraCanvas />
 
       {/* Theme Toggle */}
       <div className="absolute top-4 right-4 z-10">
@@ -189,7 +142,7 @@ const Register = () => {
         initial={{ opacity: 0, y: 30, scale: 0.95 }}
         animate={{ opacity: 1, y: 0, scale: 1 }}
         transition={{ duration: 0.5, type: "spring" }}
-        className="relative w-full max-w-md"
+        className="relative z-10 w-full max-w-md"
       >
         {/* Card glow effect */}
         <div className="absolute -inset-1 bg-gradient-to-r from-purple-500 via-blue-500 to-pink-500 rounded-3xl blur-lg opacity-30" />
@@ -261,60 +214,6 @@ const Register = () => {
 
           <div>
             <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
-              Full Name <span className="text-red-500">*</span>
-            </label>
-            <input
-              type="text"
-              name="name"
-              value={formData.name}
-              onChange={handleChange}
-              className="w-full px-4 py-3 bg-gray-50 dark:bg-gray-700/50 border border-gray-200 dark:border-gray-600 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition-all text-gray-900 dark:text-white"
-              placeholder="Enter your full name"
-              autoComplete="name"
-              disabled={loading}
-            />
-          </div>
-
-          <div>
-            <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
-              Email <span className="text-gray-400 text-xs">(Optional - for account recovery)</span>
-            </label>
-            <input
-              type="email"
-              name="email"
-              value={formData.email}
-              onChange={handleChange}
-              className="w-full px-4 py-3 bg-gray-50 dark:bg-gray-700/50 border border-gray-200 dark:border-gray-600 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition-all text-gray-900 dark:text-white"
-              placeholder="Enter your email (optional)"
-              autoComplete="email"
-              disabled={loading}
-            />
-            <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
-              Add email now or later for password recovery and updates
-            </p>
-          </div>
-
-          <div>
-            <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
-              Target Exam <span className="text-red-500">*</span>
-            </label>
-            <select
-              name="targetExam"
-              value={formData.targetExam}
-              onChange={handleChange}
-              className="w-full px-4 py-3 bg-gray-50 dark:bg-gray-700/50 border border-gray-200 dark:border-gray-600 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition-all text-gray-900 dark:text-white"
-              disabled={loading}
-            >
-              {examOptions.map((exam) => (
-                <option key={exam.value} value={exam.value}>
-                  {exam.label}
-                </option>
-              ))}
-            </select>
-          </div>
-
-          <div>
-            <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
               Password <span className="text-red-500">*</span>
             </label>
             <div className="relative">
@@ -368,42 +267,6 @@ const Register = () => {
                 </ul>
               </div>
             )}
-          </div>
-
-          <div>
-            <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
-              Confirm Password <span className="text-red-500">*</span>
-            </label>
-            <div className="relative">
-              <input
-                type={showConfirmPassword ? "text" : "password"}
-                name="confirmPassword"
-                value={formData.confirmPassword}
-                onChange={handleChange}
-                className="w-full px-4 py-3 pr-12 bg-gray-50 dark:bg-gray-700/50 border border-gray-200 dark:border-gray-600 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition-all text-gray-900 dark:text-white"
-                placeholder="Re-enter your password"
-                autoComplete="new-password"
-                disabled={loading}
-              />
-              <button
-                type="button"
-                onClick={() => setShowConfirmPassword((prev) => !prev)}
-                className="absolute inset-y-0 right-0 flex items-center px-3 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300"
-                aria-label={showConfirmPassword ? "Hide password" : "Show password"}
-                disabled={loading}
-              >
-                {showConfirmPassword ? (
-                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.88 9.88l-3.29-3.29m7.532 7.532l3.29 3.29M3 3l3.59 3.59m0 0A9.953 9.953 0 0112 5c4.478 0 8.268 2.943 9.543 7a10.025 10.025 0 01-4.132 5.411m0 0L21 21" />
-                  </svg>
-                ) : (
-                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
-                  </svg>
-                )}
-              </button>
-            </div>
           </div>
 
           <motion.button

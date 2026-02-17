@@ -3,7 +3,7 @@ import { useNavigate, Link } from "react-router-dom";
 import { motion } from "framer-motion";
 import { useAuth } from "../../context/AuthContext";
 import { toast } from "react-toastify";
-import { ThemeToggle } from "../../components";
+import { ThemeToggle, AuthAuroraCanvas } from "../../components";
 
 const Login = () => {
   const [usernameOrEmail, setUsernameOrEmail] = useState("");
@@ -76,25 +76,9 @@ const Login = () => {
 
 
   return (
-    <div className="min-h-screen mesh-gradient flex items-center justify-center p-4 relative overflow-hidden">
-      {/* Animated background elements */}
-      <div className="absolute inset-0 overflow-hidden pointer-events-none">
-        <motion.div
-          className="absolute top-20 left-10 w-72 h-72 bg-blue-400/20 rounded-full blur-3xl"
-          animate={{ x: [0, 30, 0], y: [0, -20, 0] }}
-          transition={{ duration: 8, repeat: Infinity, ease: "easeInOut" }}
-        />
-        <motion.div
-          className="absolute bottom-20 right-10 w-96 h-96 bg-purple-400/20 rounded-full blur-3xl"
-          animate={{ x: [0, -40, 0], y: [0, 30, 0] }}
-          transition={{ duration: 10, repeat: Infinity, ease: "easeInOut" }}
-        />
-        <motion.div
-          className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] bg-gradient-to-r from-blue-400/10 to-purple-400/10 rounded-full blur-3xl"
-          animate={{ scale: [1, 1.1, 1], rotate: [0, 180, 360] }}
-          transition={{ duration: 20, repeat: Infinity, ease: "linear" }}
-        />
-      </div>
+    <div className="min-h-screen flex items-center justify-center p-4 relative overflow-hidden">
+      {/* Aurora canvas background */}
+      <AuthAuroraCanvas />
 
       {/* Theme Toggle */}
       <div className="absolute top-4 right-4 z-10">
@@ -106,7 +90,7 @@ const Login = () => {
         initial={{ opacity: 0, y: 30, scale: 0.95 }}
         animate={{ opacity: 1, y: 0, scale: 1 }}
         transition={{ duration: 0.5, type: "spring" }}
-        className="relative w-full max-w-md"
+        className="relative z-10 w-full max-w-md"
       >
         {/* Card glow effect */}
         <div className="absolute -inset-1 bg-gradient-to-r from-blue-500 via-purple-500 to-pink-500 rounded-3xl blur-lg opacity-30 group-hover:opacity-40 transition-opacity" />

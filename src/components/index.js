@@ -19,6 +19,9 @@ export { default as ViolationModal } from './test/ViolationModal';
 // 3D Components
 export * from './3d';
 
+// Auth
+export { default as AuthAuroraCanvas } from './AuthAuroraCanvas';
+
 // Other
 export { default as ErrorBoundary } from './ErrorBoundary';
 export * from './propTypes';

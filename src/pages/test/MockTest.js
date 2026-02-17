@@ -43,6 +43,7 @@ const MockTest = () => {
   const [showResumePrompt, setShowResumePrompt] = useState(false);
   const [resumeData, setResumeData] = useState(null);
   const [showShortcutsHelp, setShowShortcutsHelp] = useState(false);
+  const [showMobilePalette, setShowMobilePalette] = useState(false);
 
   const timerRef = useRef(null);
   const questionStartRef = useRef(null);
@@ -760,6 +761,10 @@ const MockTest = () => {
   const currentSection = sections[currentSectionIndex];
   const isBookmarked = Boolean(bookmarkMap[currentQuestion?.id]);
 
+  const progressPercent = responses.length > 0
+    ? Math.round((responses.filter(r => r.selectedAnswer).length / responses.length) * 100)
+    : 0;
+
   return (
     <div className="min-h-screen bg-gray-100 dark:bg-gray-950">
       {/* Violation Modal */}
@@ -780,7 +785,7 @@ const MockTest = () => {
                 {examPattern.name}
               </h1>
               <p className="text-sm text-gray-600 dark:text-gray-400">
-                Section: {currentSection?.name}
+                Section: {currentSection?.name} &middot; Q{currentQuestionIndex + 1}/{questions.length}
               </p>
             </div>
             <div className="flex items-center gap-6">
@@ -797,7 +802,7 @@ const MockTest = () => {
                 <p className="text-sm text-gray-600 dark:text-gray-400">Section Time</p>
                 <p
                   className={`text-2xl font-bold ${
-                    sectionTimeRemaining < 60 ? "text-red-600" : "text-blue-600"
+                    sectionTimeRemaining < 60 ? "text-red-600 animate-pulse" : sectionTimeRemaining < 300 ? "text-orange-500" : "text-blue-600"
                   }`}
                 >
                   {formatTime(sectionTimeRemaining)}
@@ -807,7 +812,7 @@ const MockTest = () => {
                 <p className="text-sm text-gray-600 dark:text-gray-400">Overall Time</p>
                 <p
                   className={`text-2xl font-bold ${
-                    timeRemaining < 300 ? "text-red-600" : "text-blue-600"
+                    timeRemaining < 60 ? "text-red-600 animate-pulse" : timeRemaining < 300 ? "text-orange-500" : "text-blue-600"
                   }`}
                 >
                   {formatTime(timeRemaining)}
@@ -830,32 +835,47 @@ const MockTest = () => {
                   {examPattern.name}
                 </h1>
                 <p className="text-xs text-gray-600 dark:text-gray-400">
-                  {currentSection?.name}
+                  {currentSection?.name} &middot; Q{currentQuestionIndex + 1}/{questions.length}
                 </p>
               </div>
-              <button
-                onClick={() => setShowSubmitModal(true)}
-                className="bg-green-600 text-white px-4 py-2 rounded-lg text-sm font-semibold"
-              >
-                Submit
-              </button>
+              <div className="flex items-center gap-2">
+                <button
+                  onClick={() => setShowMobilePalette(true)}
+                  className="bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 px-3 py-2 rounded-lg text-xs font-semibold"
+                >
+                  {statusCounts.answered}/{questions.length}
+                </button>
+                <button
+                  onClick={() => setShowSubmitModal(true)}
+                  className="bg-green-600 text-white px-4 py-2 rounded-lg text-sm font-semibold"
+                >
+                  Submit
+                </button>
+              </div>
             </div>
             <div className="flex justify-between items-center bg-gray-50 dark:bg-gray-700 rounded-lg p-2">
               <div className="text-center flex-1">
                 <p className="text-xs text-gray-500 dark:text-gray-400">Section</p>
-                <p className={`text-lg font-bold ${sectionTimeRemaining < 60 ? "text-red-600" : "text-blue-600"}`}>
+                <p className={`text-lg font-bold ${sectionTimeRemaining < 60 ? "text-red-600 animate-pulse" : sectionTimeRemaining < 300 ? "text-orange-500" : "text-blue-600"}`}>
                   {formatTime(sectionTimeRemaining)}
                 </p>
               </div>
               <div className="w-px h-8 bg-gray-300 dark:bg-gray-600"></div>
               <div className="text-center flex-1">
                 <p className="text-xs text-gray-500 dark:text-gray-400">Total</p>
-                <p className={`text-lg font-bold ${timeRemaining < 300 ? "text-red-600" : "text-blue-600"}`}>
+                <p className={`text-lg font-bold ${timeRemaining < 60 ? "text-red-600 animate-pulse" : timeRemaining < 300 ? "text-orange-500" : "text-blue-600"}`}>
                   {formatTime(timeRemaining)}
                 </p>
               </div>
             </div>
           </div>
+        </div>
+        {/* Progress Bar */}
+        <div className="h-1 bg-gray-200 dark:bg-gray-700">
+          <div
+            className="h-full bg-gradient-to-r from-blue-500 to-indigo-500 transition-all duration-500 ease-out"
+            style={{ width: `${progressPercent}%` }}
+          />
         </div>
       </div>
 
@@ -1148,14 +1168,14 @@ const MockTest = () => {
 
       {showShortcutsHelp && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-20">
-          <div className="bg-white rounded-lg shadow-xl p-6 max-w-md w-full">
+          <div className="bg-white dark:bg-gray-800 rounded-lg shadow-xl p-6 max-w-md w-full">
             <div className="flex justify-between items-center mb-4">
-              <h2 className="text-xl font-bold text-gray-800">
+              <h2 className="text-xl font-bold text-gray-800 dark:text-white">
                 Keyboard Shortcuts
               </h2>
               <button
                 onClick={() => setShowShortcutsHelp(false)}
-                className="text-gray-500 hover:text-gray-700"
+                className="text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200"
               >
                 <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
@@ -1164,37 +1184,37 @@ const MockTest = () => {
             </div>
             <div className="space-y-3 text-sm">
               <div className="grid grid-cols-2 gap-2">
-                <div className="bg-gray-50 p-2 rounded">
-                  <kbd className="bg-gray-200 px-2 py-1 rounded text-xs font-mono">1-4</kbd>
-                  <span className="ml-2">Select option A-D</span>
+                <div className="bg-gray-50 dark:bg-gray-700 p-2 rounded">
+                  <kbd className="bg-gray-200 dark:bg-gray-600 px-2 py-1 rounded text-xs font-mono">1-4</kbd>
+                  <span className="ml-2 text-gray-700 dark:text-gray-300">Select option A-D</span>
                 </div>
-                <div className="bg-gray-50 p-2 rounded">
-                  <kbd className="bg-gray-200 px-2 py-1 rounded text-xs font-mono">A-D</kbd>
-                  <span className="ml-2">Select option</span>
+                <div className="bg-gray-50 dark:bg-gray-700 p-2 rounded">
+                  <kbd className="bg-gray-200 dark:bg-gray-600 px-2 py-1 rounded text-xs font-mono">A-D</kbd>
+                  <span className="ml-2 text-gray-700 dark:text-gray-300">Select option</span>
                 </div>
-                <div className="bg-gray-50 p-2 rounded">
-                  <kbd className="bg-gray-200 px-2 py-1 rounded text-xs font-mono">N</kbd>
-                  <span className="ml-2">Next question</span>
+                <div className="bg-gray-50 dark:bg-gray-700 p-2 rounded">
+                  <kbd className="bg-gray-200 dark:bg-gray-600 px-2 py-1 rounded text-xs font-mono">N</kbd>
+                  <span className="ml-2 text-gray-700 dark:text-gray-300">Next question</span>
                 </div>
-                <div className="bg-gray-50 p-2 rounded">
-                  <kbd className="bg-gray-200 px-2 py-1 rounded text-xs font-mono">P</kbd>
-                  <span className="ml-2">Previous question</span>
+                <div className="bg-gray-50 dark:bg-gray-700 p-2 rounded">
+                  <kbd className="bg-gray-200 dark:bg-gray-600 px-2 py-1 rounded text-xs font-mono">P</kbd>
+                  <span className="ml-2 text-gray-700 dark:text-gray-300">Previous question</span>
                 </div>
-                <div className="bg-gray-50 p-2 rounded">
-                  <kbd className="bg-gray-200 px-2 py-1 rounded text-xs font-mono">←/→</kbd>
-                  <span className="ml-2">Navigate</span>
+                <div className="bg-gray-50 dark:bg-gray-700 p-2 rounded">
+                  <kbd className="bg-gray-200 dark:bg-gray-600 px-2 py-1 rounded text-xs font-mono">S</kbd>
+                  <span className="ml-2 text-gray-700 dark:text-gray-300">Skip question</span>
                 </div>
-                <div className="bg-gray-50 p-2 rounded">
-                  <kbd className="bg-gray-200 px-2 py-1 rounded text-xs font-mono">M</kbd>
-                  <span className="ml-2">Mark for review</span>
+                <div className="bg-gray-50 dark:bg-gray-700 p-2 rounded">
+                  <kbd className="bg-gray-200 dark:bg-gray-600 px-2 py-1 rounded text-xs font-mono">M</kbd>
+                  <span className="ml-2 text-gray-700 dark:text-gray-300">Mark for review</span>
                 </div>
-                <div className="bg-gray-50 p-2 rounded">
-                  <kbd className="bg-gray-200 px-2 py-1 rounded text-xs font-mono">R</kbd>
-                  <span className="ml-2">Clear response</span>
+                <div className="bg-gray-50 dark:bg-gray-700 p-2 rounded">
+                  <kbd className="bg-gray-200 dark:bg-gray-600 px-2 py-1 rounded text-xs font-mono">R</kbd>
+                  <span className="ml-2 text-gray-700 dark:text-gray-300">Clear response</span>
                 </div>
-                <div className="bg-gray-50 p-2 rounded">
-                  <kbd className="bg-gray-200 px-2 py-1 rounded text-xs font-mono">?</kbd>
-                  <span className="ml-2">Show this help</span>
+                <div className="bg-gray-50 dark:bg-gray-700 p-2 rounded">
+                  <kbd className="bg-gray-200 dark:bg-gray-600 px-2 py-1 rounded text-xs font-mono">?</kbd>
+                  <span className="ml-2 text-gray-700 dark:text-gray-300">Show this help</span>
                 </div>
               </div>
             </div>
@@ -1204,6 +1224,61 @@ const MockTest = () => {
             >
               Got it
             </button>
+          </div>
+        </div>
+      )}
+
+      {/* Mobile Question Palette Drawer */}
+      {showMobilePalette && (
+        <div className="fixed inset-0 bg-black/50 z-30 md:hidden" onClick={() => setShowMobilePalette(false)}>
+          <div
+            className="absolute bottom-0 left-0 right-0 bg-white dark:bg-gray-800 rounded-t-2xl p-5 max-h-[70vh] overflow-y-auto"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="flex justify-between items-center mb-4">
+              <h3 className="font-bold text-gray-800 dark:text-white">Question Palette</h3>
+              <button onClick={() => setShowMobilePalette(false)} className="text-gray-500 dark:text-gray-400 p-1">
+                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
+            </div>
+            <div className="grid grid-cols-2 gap-2 text-sm mb-4">
+              <div className="flex justify-between bg-green-50 dark:bg-green-900/20 px-3 py-2 rounded">
+                <span className="text-gray-700 dark:text-gray-300">Answered</span>
+                <span className="font-semibold text-gray-900 dark:text-white">{statusCounts.answered}</span>
+              </div>
+              <div className="flex justify-between bg-red-50 dark:bg-red-900/20 px-3 py-2 rounded">
+                <span className="text-gray-700 dark:text-gray-300">Not Answered</span>
+                <span className="font-semibold text-gray-900 dark:text-white">{statusCounts.notAnswered}</span>
+              </div>
+              <div className="flex justify-between bg-purple-50 dark:bg-purple-900/20 px-3 py-2 rounded">
+                <span className="text-gray-700 dark:text-gray-300">Marked</span>
+                <span className="font-semibold text-gray-900 dark:text-white">{statusCounts.marked}</span>
+              </div>
+              <div className="flex justify-between bg-gray-50 dark:bg-gray-700 px-3 py-2 rounded">
+                <span className="text-gray-700 dark:text-gray-300">Not Visited</span>
+                <span className="font-semibold text-gray-900 dark:text-white">{statusCounts.notVisited}</span>
+              </div>
+            </div>
+            <div className="grid grid-cols-8 gap-2">
+              {questions.map((_, index) => {
+                const status = getQuestionStatus(responses[index]);
+                const baseStyle = getStatusColor(status);
+                const isActive = index === currentQuestionIndex;
+                const isInSection = index >= currentSection.startIndex && index <= currentSection.endIndex;
+                return (
+                  <button
+                    key={index}
+                    onClick={() => { goToQuestion(index); setShowMobilePalette(false); }}
+                    disabled={!isInSection}
+                    className={`h-9 w-9 rounded text-sm font-semibold ${baseStyle} ${isActive ? "ring-2 ring-blue-600" : ""} ${!isInSection ? "opacity-40 cursor-not-allowed" : ""}`}
+                  >
+                    {index + 1}
+                  </button>
+                );
+              })}
+            </div>
           </div>
         </div>
       )}

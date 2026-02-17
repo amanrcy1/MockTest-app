@@ -13,8 +13,7 @@ import "react-toastify/dist/ReactToastify.css";
 import { ErrorBoundary } from "./components";
 
 // Eager load critical pages
-import Login from "./pages/auth/Login";
-import Register from "./pages/auth/Register";
+import Auth from "./pages/auth/Auth";
 import Dashboard from "./pages/user/Dashboard";
 
 // Lazy load other pages for better performance
@@ -36,7 +35,9 @@ const Bookmarks = lazy(() => import("./pages/user/Bookmarks"));
 const AdminErrorReports = lazy(() => import("./pages/admin/ErrorReports"));
 const AdminBookmarks = lazy(() => import("./pages/admin/Bookmarks"));
 const Profile = lazy(() => import("./pages/user/Profile"));
+const Onboarding = lazy(() => import("./pages/Onboarding"));
 const NotFound = lazy(() => import("./pages/NotFound"));
+const Landing = lazy(() => import("./pages/Landing"));
 
 // Loading fallback component
 const PageLoader = () => (
@@ -133,7 +134,7 @@ function App() {
                     path="/login"
                     element={
                       <PublicRoute>
-                        <Login />
+                        <Auth />
                       </PublicRoute>
                     }
                   />
@@ -141,7 +142,7 @@ function App() {
                     path="/register"
                     element={
                       <PublicRoute>
-                        <Register />
+                        <Auth />
                       </PublicRoute>
                     }
                   />
@@ -155,6 +156,14 @@ function App() {
                   />
 
                   {/* Protected Routes */}
+                  <Route
+                    path="/onboarding"
+                    element={
+                      <ProtectedRoute>
+                        <Onboarding />
+                      </ProtectedRoute>
+                    }
+                  />
                   <Route
                     path="/dashboard"
                     element={
@@ -303,7 +312,11 @@ function App() {
                   />
 
                   {/* Default redirect */}
-                  <Route path="/" element={<Navigate to="/dashboard" />} />
+                  <Route path="/" element={
+                    <PublicRoute>
+                      <Landing />
+                    </PublicRoute>
+                  } />
                   <Route path="*" element={<NotFound />} />
                 </Routes>
               </Suspense>

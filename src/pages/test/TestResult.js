@@ -15,6 +15,7 @@ const TestResult = () => {
 
   const { questions, responses, examType, testMode } = location.state || {};
   const [showSolutions, setShowSolutions] = useState(false);
+  const [solutionFilter, setSolutionFilter] = useState("all"); // all, correct, incorrect, skipped
   const [percentile, setPercentile] = useState(null);
   const [loading, setLoading] = useState(true);
   const [showCelebration, setShowCelebration] = useState(true);
@@ -181,41 +182,60 @@ const TestResult = () => {
       </nav>
 
       <div className="max-w-7xl mx-auto px-4 py-8">
-        {/* Score Card */}
-        <div className="bg-gradient-to-r from-blue-500 to-purple-600 rounded-lg shadow-xl p-8 text-white mb-8">
-          <div className="text-center mb-6">
-            <h2 className="text-3xl font-bold mb-2">Your Score</h2>
-            <div className="text-6xl font-bold mb-4">
-              {scoreData.totalMarks.toFixed(2)}
-            </div>
-            <p className="text-xl opacity-90">
-              out of {questions.length * responses[0].marksPerQuestion} marks
-            </p>
-          </div>
-
-          <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
-            <div className="text-center">
-              <div className="text-3xl font-bold">{scoreData.correct}</div>
-              <div className="text-sm opacity-90">Correct</div>
-            </div>
-            <div className="text-center">
-              <div className="text-3xl font-bold">{scoreData.incorrect}</div>
-              <div className="text-sm opacity-90">Incorrect</div>
-            </div>
-            <div className="text-center">
-              <div className="text-3xl font-bold">{scoreData.skipped}</div>
-              <div className="text-sm opacity-90">Skipped</div>
-            </div>
-            <div className="text-center">
-              <div className="text-3xl font-bold">{scoreData.accuracy}%</div>
-              <div className="text-sm opacity-90">Accuracy</div>
-            </div>
-            <div className="text-center">
-              <div className="text-3xl font-bold">
-                {loading ? "..." : percentile}
-                {!loading && "%"}
+        {/* Score Card with Ring */}
+        <div className="bg-gradient-to-r from-blue-500 to-purple-600 rounded-2xl shadow-xl p-8 text-white mb-8">
+          <div className="flex flex-col md:flex-row items-center gap-8">
+            {/* Score Ring */}
+            <div className="relative w-40 h-40 flex-shrink-0">
+              <svg className="w-full h-full -rotate-90" viewBox="0 0 120 120">
+                <circle cx="60" cy="60" r="52" fill="none" stroke="rgba(255,255,255,0.2)" strokeWidth="8" />
+                <circle
+                  cx="60" cy="60" r="52" fill="none" stroke="white" strokeWidth="8"
+                  strokeLinecap="round"
+                  strokeDasharray={`${2 * Math.PI * 52}`}
+                  strokeDashoffset={`${2 * Math.PI * 52 * (1 - accuracy / 100)}`}
+                  style={{ transition: "stroke-dashoffset 1.5s ease-out" }}
+                />
+              </svg>
+              <div className="absolute inset-0 flex flex-col items-center justify-center">
+                <span className="text-3xl font-bold">{accuracy}%</span>
+                <span className="text-xs opacity-80">Accuracy</span>
               </div>
-              <div className="text-sm opacity-90">Percentile</div>
+            </div>
+
+            {/* Score Details */}
+            <div className="flex-1 text-center md:text-left">
+              <h2 className="text-2xl font-bold mb-1">Your Score</h2>
+              <div className="text-5xl font-bold mb-2">
+                {scoreData.totalMarks.toFixed(2)}
+                <span className="text-xl opacity-70 ml-2">/ {questions.length * responses[0].marksPerQuestion}</span>
+              </div>
+
+              <div className="grid grid-cols-2 md:grid-cols-5 gap-4 mt-6">
+                <div className="bg-white/10 rounded-xl p-3 text-center">
+                  <div className="text-2xl font-bold">{scoreData.correct}</div>
+                  <div className="text-xs opacity-80">Correct</div>
+                </div>
+                <div className="bg-white/10 rounded-xl p-3 text-center">
+                  <div className="text-2xl font-bold">{scoreData.incorrect}</div>
+                  <div className="text-xs opacity-80">Incorrect</div>
+                </div>
+                <div className="bg-white/10 rounded-xl p-3 text-center">
+                  <div className="text-2xl font-bold">{scoreData.skipped}</div>
+                  <div className="text-xs opacity-80">Skipped</div>
+                </div>
+                <div className="bg-white/10 rounded-xl p-3 text-center">
+                  <div className="text-2xl font-bold">{scoreData.attemptedAccuracy}%</div>
+                  <div className="text-xs opacity-80">Attempted Acc.</div>
+                </div>
+                <div className="bg-white/10 rounded-xl p-3 text-center">
+                  <div className="text-2xl font-bold">
+                    {loading ? "..." : percentile}
+                    {!loading && "%"}
+                  </div>
+                  <div className="text-xs opacity-80">Percentile</div>
+                </div>
+              </div>
             </div>
           </div>
         </div>
@@ -455,15 +475,42 @@ const TestResult = () => {
         {/* Solutions Section */}
         {showSolutions && (
           <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-6">
-            <h3 className="text-xl font-bold text-gray-800 dark:text-white mb-6">
-              Detailed Solutions
-            </h3>
+            <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
+              <h3 className="text-xl font-bold text-gray-800 dark:text-white">
+                Detailed Solutions
+              </h3>
+              <div className="flex gap-2 flex-wrap">
+                {[
+                  { key: "all", label: "All", count: questions.length },
+                  { key: "correct", label: "Correct", count: scoreData.correct },
+                  { key: "incorrect", label: "Incorrect", count: scoreData.incorrect },
+                  { key: "skipped", label: "Skipped", count: scoreData.skipped },
+                ].map(({ key, label, count }) => (
+                  <button
+                    key={key}
+                    onClick={() => setSolutionFilter(key)}
+                    className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-colors ${
+                      solutionFilter === key
+                        ? "bg-blue-600 text-white"
+                        : "bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600"
+                    }`}
+                  >
+                    {label} ({count})
+                  </button>
+                ))}
+              </div>
+            </div>
             <div className="space-y-6">
               {questions.map((question, index) => {
                 const response = responses[index];
                 const isCorrect =
                   response.selectedAnswer === question.correctAnswer;
                 const isSkipped = !response.selectedAnswer;
+
+                // Apply filter
+                if (solutionFilter === "correct" && !isCorrect) return null;
+                if (solutionFilter === "incorrect" && (isCorrect || isSkipped)) return null;
+                if (solutionFilter === "skipped" && !isSkipped) return null;
 
                 return (
                   <div
@@ -625,7 +672,7 @@ const TestResult = () => {
         )}
 
         {/* Action Buttons */}
-        <div className="flex justify-center gap-4 mt-8">
+        <div className="flex flex-col sm:flex-row justify-center gap-3 mt-8">
           <button
             onClick={() =>
               navigate("/test-selection", {
@@ -635,19 +682,19 @@ const TestResult = () => {
                 },
               })
             }
-            className="bg-green-600 text-white px-8 py-3 rounded-lg font-semibold hover:bg-green-700 transition-colors"
+            className="bg-green-600 text-white px-8 py-3 rounded-xl font-semibold hover:bg-green-700 transition-colors shadow-lg shadow-green-600/20"
           >
             Retake Same Exam
           </button>
           <button
             onClick={() => navigate("/test-selection")}
-            className="bg-blue-600 text-white px-8 py-3 rounded-lg font-semibold hover:bg-blue-700 transition-colors"
+            className="bg-blue-600 text-white px-8 py-3 rounded-xl font-semibold hover:bg-blue-700 transition-colors shadow-lg shadow-blue-600/20"
           >
             Take Another Test
           </button>
           <button
             onClick={() => navigate("/dashboard")}
-            className="bg-gray-600 text-white px-8 py-3 rounded-lg font-semibold hover:bg-gray-700 transition-colors"
+            className="bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-200 px-8 py-3 rounded-xl font-semibold hover:bg-gray-300 dark:hover:bg-gray-600 transition-colors"
           >
             Back to Dashboard
           </button>
