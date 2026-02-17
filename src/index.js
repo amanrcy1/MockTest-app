@@ -15,12 +15,3 @@ root.render(
     <App />
   </React.StrictMode>,
 );
-
-// Register service worker for PWA support
-if ('serviceWorker' in navigator && process.env.NODE_ENV === 'production') {
-  window.addEventListener('load', () => {
-    navigator.serviceWorker.register('/service-worker.js').catch(() => {
-      // Silent fail — SW registration is optional
-    });
-  });
-}
