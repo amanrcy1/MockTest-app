@@ -73,7 +73,7 @@ LeaderboardPodium.propTypes = {
   topThree: PropTypes.arrayOf(
     PropTypes.shape({
       userId: PropTypes.string,
-      username: PropTypes.string,
+      name: PropTypes.string,
       score: PropTypes.number,
     })
   ),

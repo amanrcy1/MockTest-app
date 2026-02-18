@@ -19,16 +19,6 @@ export const getUserById = async (userId) => {
 };
 
 /**
- * Check if username exists
- */
-export const checkUsernameExists = async (username) => {
-  const usernameKey = username.toLowerCase().trim();
-  const docRef = doc(db, COLLECTIONS.USERNAMES, usernameKey);
-  const docSnap = await getDoc(docRef);
-  return docSnap.exists();
-};
-
-/**
  * Create user profile
  */
 export const createUserProfile = async (userId, userData) => {
@@ -38,19 +28,6 @@ export const createUserProfile = async (userId, userData) => {
     createdAt: new Date().toISOString(),
     lastLoginAt: null,
     loginCount: 0,
-  });
-};
-
-/**
- * Reserve username
- */
-export const reserveUsername = async (username, userId, email) => {
-  const usernameKey = username.toLowerCase().trim();
-  await setDoc(doc(db, COLLECTIONS.USERNAMES, usernameKey), {
-    userId,
-    username,
-    email,
-    createdAt: new Date().toISOString(),
   });
 };
 

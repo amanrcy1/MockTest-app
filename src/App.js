@@ -17,7 +17,6 @@ import Auth from "./pages/auth/Auth";
 import Dashboard from "./pages/user/Dashboard";
 
 // Lazy load other pages for better performance
-const ForgotPassword = lazy(() => import("./pages/auth/ForgotPassword"));
 const AdminDashboard = lazy(() => import("./pages/admin/Dashboard"));
 const AddQuestion = lazy(() => import("./pages/admin/AddQuestion"));
 const ManageQuestions = lazy(() => import("./pages/admin/ManageQuestions"));
@@ -50,18 +49,26 @@ const PageLoader = () => (
 );
 
 // Protected Route Component
-const ProtectedRoute = ({ children }) => {
-  const { currentUser, loading } = useAuth();
+const ProtectedRoute = ({ children, skipOnboardingCheck = false }) => {
+  const { currentUser, userDetails, loading } = useAuth();
   
   if (loading) {
     return <PageLoader />;
   }
   
-  return currentUser ? children : <Navigate to="/login" />;
+  if (!currentUser) return <Navigate to="/login" />;
+
+  // Redirect to onboarding if not completed (skip for the onboarding page itself)
+  if (!skipOnboardingCheck && userDetails && !userDetails.onboardingComplete) {
+    return <Navigate to="/onboarding" />;
+  }
+
+  return children;
 };
 
 ProtectedRoute.propTypes = {
   children: PropTypes.node.isRequired,
+  skipOnboardingCheck: PropTypes.bool,
 };
 
 // Admin Route Component
@@ -89,13 +96,19 @@ AdminRoute.propTypes = {
 
 // Public Route Component (redirect if already logged in)
 const PublicRoute = ({ children }) => {
-  const { currentUser, loading } = useAuth();
+  const { currentUser, userDetails, loading } = useAuth();
   
   if (loading) {
     return <PageLoader />;
   }
   
-  return !currentUser ? children : <Navigate to="/dashboard" />;
+  // Not logged in - show the public page
+  if (!currentUser) {
+    return children;
+  }
+
+  // Logged in - redirect to appropriate page
+  return <Navigate to={userDetails?.onboardingComplete ? "/dashboard" : "/onboarding"} />;
 };
 
 PublicRoute.propTypes = {
@@ -138,28 +151,14 @@ function App() {
                       </PublicRoute>
                     }
                   />
-                  <Route
-                    path="/register"
-                    element={
-                      <PublicRoute>
-                        <Auth />
-                      </PublicRoute>
-                    }
-                  />
-                  <Route
-                    path="/forgot-password"
-                    element={
-                      <PublicRoute>
-                        <ForgotPassword />
-                      </PublicRoute>
-                    }
-                  />
+                  <Route path="/register" element={<Navigate to="/login" replace />} />
+                  <Route path="/forgot-password" element={<Navigate to="/login" replace />} />
 
                   {/* Protected Routes */}
                   <Route
                     path="/onboarding"
                     element={
-                      <ProtectedRoute>
+                      <ProtectedRoute skipOnboardingCheck>
                         <Onboarding />
                       </ProtectedRoute>
                     }

@@ -15,6 +15,7 @@ import { db } from "../../config/firebase";
 import { useAuth } from "../../context/AuthContext";
 import { ThemeToggle } from "../../components";
 import { BottomNav } from "../../components";
+import { TopNav } from "../../components";
 import logger from "../../utils/logger";
 
 const TestHistory = () => {
@@ -85,8 +86,9 @@ const TestHistory = () => {
 
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-950 pb-20 md:pb-0">
+      <TopNav />
       {/* Header */}
-      <header className="bg-white dark:bg-gray-900 sticky top-0 z-40 border-b border-gray-100 dark:border-gray-800">
+      <header className="bg-white dark:bg-gray-900 sticky top-0 z-40 border-b border-gray-100 dark:border-gray-800 md:hidden">
         <div className="px-4 py-3 max-w-5xl mx-auto">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
@@ -106,12 +108,6 @@ const TestHistory = () => {
             </div>
             <div className="flex items-center gap-2">
               <ThemeToggle />
-              <button
-                onClick={() => navigate("/dashboard")}
-                className="hidden md:block px-4 py-2 bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-200 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-600 text-sm font-medium"
-              >
-                Dashboard
-              </button>
             </div>
           </div>
         </div>

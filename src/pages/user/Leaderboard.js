@@ -20,7 +20,7 @@ import {
 import { motion } from "framer-motion";
 import { db } from "../../config/firebase";
 import { EXAM_PATTERNS } from "../../utils/examPatterns";
-import { ThemeToggle } from "../../components";
+import { ThemeToggle, TopNav } from "../../components";
 
 // Cache for leaderboard data (keyed by examType_weekOffset)
 const leaderboardCache = new Map();
@@ -153,8 +153,7 @@ const Leaderboard = () => {
           const userData = userDoc.exists() ? userDoc.data() : {};
           return {
             ...entry,
-            name: userData.name || userDoc.exists() ? "User" : "[Deleted User]",
-            username: userData.username || "",
+            name: userData.name || (userDoc.exists() ? "User" : "[Deleted User]"),
             photoURL: userData.photoURL || null,
             rank: index + 1,
             isDeleted: !userDoc.exists(),
@@ -175,29 +174,33 @@ const Leaderboard = () => {
           setMyRank(index >= 0 ? index + 1 : null);
         }
 
-        // Store leaderboard snapshot
-        const weekDocSnap = await getDoc(weekDocRef);
-        const updatedAtValue = weekDocSnap.data()?.updatedAt;
-        const updateInterval = 6 * 60 * 60 * 1000;
-        const shouldUpdate =
-          !weekDocSnap.exists() ||
-          !updatedAtValue ||
-          now - new Date(updatedAtValue).getTime() > updateInterval;
+        // Store leaderboard snapshot (best-effort, requires admin write permission)
+        try {
+          const weekDocSnap = await getDoc(weekDocRef);
+          const updatedAtValue = weekDocSnap.data()?.updatedAt;
+          const updateInterval = 6 * 60 * 60 * 1000;
+          const shouldUpdate =
+            !weekDocSnap.exists() ||
+            !updatedAtValue ||
+            now - new Date(updatedAtValue).getTime() > updateInterval;
 
-        if (shouldUpdate) {
-          await setDoc(
-            weekDocRef,
-            {
-              examType,
-              week: weekNumber,
-              year: yearNumber,
-              rangeStart: weekRange.start.toISOString(),
-              rangeEnd: weekRange.end.toISOString(),
-              entries: enriched,
-              updatedAt: new Date().toISOString(),
-            },
-            { merge: true },
-          );
+          if (shouldUpdate) {
+            await setDoc(
+              weekDocRef,
+              {
+                examType,
+                week: weekNumber,
+                year: yearNumber,
+                rangeStart: weekRange.start.toISOString(),
+                rangeEnd: weekRange.end.toISOString(),
+                entries: enriched,
+                updatedAt: new Date().toISOString(),
+              },
+              { merge: true },
+            );
+          }
+        } catch {
+          // Non-admin users can't write snapshots — leaderboard still works via live query
         }
       } finally {
         setLoading(false);
@@ -210,7 +213,8 @@ const Leaderboard = () => {
 
   return (
     <div className="min-h-screen mesh-gradient">
-      <nav className="glass-card sticky top-0 z-40">
+      <TopNav />
+      <nav className="glass-card sticky top-0 md:top-14 z-40">
         <div className="max-w-7xl mx-auto px-4 py-3 sm:py-4">
           {/* Desktop Header */}
           <div className="hidden md:flex justify-between items-center">
@@ -246,12 +250,6 @@ const Leaderboard = () => {
                   </option>
                 ))}
               </select>
-              <button
-                onClick={handleBack}
-                className="bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-200 px-4 py-2.5 rounded-xl hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors font-medium"
-              >
-                Back to Dashboard
-              </button>
             </div>
           </div>
 

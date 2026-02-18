@@ -243,10 +243,7 @@ const AdminBookmarks = () => {
                         {item.question?.topic || "Topic"}
                       </p>
                       <p className="text-sm text-gray-500 dark:text-gray-400">
-                        Saved by{" "}
-                        {item.user?.name
-                          ? `${item.user.name} (@${item.user.username})`
-                          : item.userId}
+                        Saved by {item.user?.name || item.userId}
                       </p>
                     </div>
                     <span

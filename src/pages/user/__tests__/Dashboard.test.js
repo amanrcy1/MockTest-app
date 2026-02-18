@@ -5,19 +5,24 @@ import { getDocs, getDoc } from 'firebase/firestore';
 
 jest.mock('../../../context/AuthContext');
 
+// Mock components that use framer-motion or other complex dependencies
+jest.mock('../../../components', () => ({
+  ThemeToggle: () => <div data-testid="theme-toggle">ThemeToggle</div>,
+  BottomNav: () => <nav data-testid="bottom-nav">BottomNav</nav>,
+  TopNav: () => <nav data-testid="top-nav">TopNav</nav>,
+}));
+
 const { __mockNavigate: mockNavigate } = require('react-router-dom');
 
 describe('Dashboard Page', () => {
   const mockLogout = jest.fn();
-  const mockSendVerificationEmail = jest.fn();
 
   beforeEach(() => {
     jest.clearAllMocks();
     useAuth.mockReturnValue({
       currentUser: { uid: 'user123', email: 'test@example.com', emailVerified: true },
-      userDetails: { name: 'Test User', targetExam: 'CDS', isAdmin: false, hasRealEmail: true },
+      userDetails: { name: 'Test User', targetExam: 'CDS', isAdmin: false },
       logout: mockLogout,
-      sendVerificationEmail: mockSendVerificationEmail,
     });
     getDocs.mockResolvedValue({ docs: [] });
     getDoc.mockResolvedValue({ exists: () => false });
@@ -72,9 +77,8 @@ describe('Dashboard Page', () => {
   it('should show admin panel for admins', async () => {
     useAuth.mockReturnValue({
       currentUser: { uid: 'u1', emailVerified: true },
-      userDetails: { name: 'Admin', targetExam: 'CDS', isAdmin: true, hasRealEmail: true },
+      userDetails: { name: 'Admin', targetExam: 'CDS', isAdmin: true },
       logout: mockLogout,
-      sendVerificationEmail: mockSendVerificationEmail,
     });
     render(<Dashboard />);
     expect(await screen.findByText('Admin Panel')).toBeInTheDocument();
@@ -84,17 +88,6 @@ describe('Dashboard Page', () => {
     render(<Dashboard />);
     await screen.findByText('Test User');
     expect(screen.queryByText('Admin Panel')).not.toBeInTheDocument();
-  });
-
-  it('should show verification banner when email not verified', async () => {
-    useAuth.mockReturnValue({
-      currentUser: { uid: 'u1', emailVerified: false },
-      userDetails: { name: 'Test', targetExam: 'CDS', isAdmin: false, hasRealEmail: true },
-      logout: mockLogout,
-      sendVerificationEmail: mockSendVerificationEmail,
-    });
-    render(<Dashboard />);
-    expect(await screen.findByText(/verify your email/i)).toBeInTheDocument();
   });
 
   it('should navigate to leaderboard', async () => {
@@ -119,9 +112,8 @@ describe('Dashboard Page', () => {
   it('should load test stats', async () => {
     useAuth.mockReturnValue({
       currentUser: { uid: 'stats-user-999', email: 'stats@example.com', emailVerified: true },
-      userDetails: { name: 'Stats User', targetExam: 'NDA', isAdmin: false, hasRealEmail: true },
+      userDetails: { name: 'Stats User', targetExam: 'NDA', isAdmin: false },
       logout: mockLogout,
-      sendVerificationEmail: mockSendVerificationEmail,
     });
     getDocs.mockResolvedValue({
       docs: [

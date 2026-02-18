@@ -48,7 +48,8 @@
   "jest": {
     "moduleNameMapper": {
       "^react-router-dom$": "<rootDir>/__mocks__/react-router-dom.js",
-      "^react-router$": "<rootDir>/__mocks__/react-router-dom.js"
+      "^react-router$": "<rootDir>/__mocks__/react-router-dom.js",
+      "^framer-motion$": "<rootDir>/__mocks__/framer-motion.js"
     },
     "transformIgnorePatterns": [
       "node_modules/(?!(firebase|@firebase)/)"

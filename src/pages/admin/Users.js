@@ -58,11 +58,9 @@ const AdminUsers = () => {
     if (queryText) {
       result = users.filter((user) => {
         const name = user.name?.toLowerCase() || "";
-        const username = user.username?.toLowerCase() || "";
         const email = user.email?.toLowerCase() || "";
         return (
           name.includes(queryText) ||
-          username.includes(queryText) ||
           email.includes(queryText)
         );
       });
@@ -184,17 +182,6 @@ const AdminUsers = () => {
         await Promise.all(deletePromises);
       }
 
-      // Delete username mapping
-      if (user.username) {
-        const usernameKey = user.username.toLowerCase().trim();
-        try {
-          await deleteDoc(doc(db, "usernames", usernameKey));
-          logger.info("Deleted username mapping:", usernameKey);
-        } catch (error) {
-          logger.error("Error deleting username mapping:", error);
-        }
-      }
-
       // Delete email mapping
       if (user.email) {
         const emailKey = user.email.toLowerCase().replace(/[.#$[\]]/g, "_");
@@ -215,7 +202,7 @@ const AdminUsers = () => {
 
       // Update local state
       setUsers((prev) => prev.filter((item) => item.id !== user.id));
-      logAdminAction({ adminId: userDetails?.userId, action: "deleteUser", targetId: user.id, details: { username: user.username, email: user.email } });
+      logAdminAction({ adminId: userDetails?.userId, action: "deleteUser", targetId: user.id, details: { email: user.email } });
       toast.success("User deleted from Firestore. Don't forget to also delete from Firebase Authentication console!");
     } catch (error) {
       logger.error("Error deleting user:", error);
@@ -254,7 +241,7 @@ const AdminUsers = () => {
             type="text"
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            placeholder="Search by name, username, or email"
+            placeholder="Search by name or email"
             className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none"
           />
         </div>
@@ -266,9 +253,8 @@ const AdminUsers = () => {
         ) : (
           <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md overflow-hidden">
             {/* Desktop Table Header */}
-            <div className="hidden md:grid grid-cols-5 gap-4 bg-gray-50 dark:bg-gray-700 px-6 py-3 text-sm font-semibold text-gray-600 dark:text-gray-300">
+            <div className="hidden md:grid grid-cols-4 gap-4 bg-gray-50 dark:bg-gray-700 px-6 py-3 text-sm font-semibold text-gray-600 dark:text-gray-300">
               <span>Name</span>
-              <span>Username</span>
               <span>Email</span>
               <span>Role</span>
               <span>Actions</span>
@@ -280,9 +266,8 @@ const AdminUsers = () => {
                 className="border-t dark:border-gray-700"
               >
                 {/* Desktop Row */}
-                <div className="hidden md:grid grid-cols-5 gap-4 px-6 py-3 text-sm text-gray-700 dark:text-gray-300 items-center">
+                <div className="hidden md:grid grid-cols-4 gap-4 px-6 py-3 text-sm text-gray-700 dark:text-gray-300 items-center">
                   <span>{user.name || "User"}</span>
-                  <span>@{user.username}</span>
                   <span className="truncate">{user.email || "-"}</span>
                   {isSuperAdmin ? (
                     <button
@@ -353,10 +338,7 @@ const AdminUsers = () => {
                 {/* Mobile Card */}
                 <div className="md:hidden p-4">
                   <div className="flex items-center justify-between mb-2">
-                    <div>
-                      <p className="font-semibold text-gray-800 dark:text-gray-200">{user.name || "User"}</p>
-                      <p className="text-sm text-gray-500 dark:text-gray-400">@{user.username}</p>
-                    </div>
+                    <p className="font-semibold text-gray-800 dark:text-gray-200">{user.name || "User"}</p>
                     <div className="flex items-center gap-2">
                       {isSuperAdmin ? (
                         <button
@@ -430,10 +412,10 @@ const AdminUsers = () => {
         }
         message={
           confirmModal.action === "delete"
-            ? `Are you sure you want to permanently delete ${confirmModal.user?.name || confirmModal.user?.username}? This will delete all their data including tests, bookmarks, and error reports. This action cannot be undone.`
+            ? `Are you sure you want to permanently delete ${confirmModal.user?.name}? This will delete all their data including tests, bookmarks, and error reports. This action cannot be undone.`
             : confirmModal.action === "demote"
-              ? `Are you sure you want to remove admin access from ${confirmModal.user?.name || confirmModal.user?.username}? They will lose all admin privileges.`
-              : `Are you sure you want to promote ${confirmModal.user?.name || confirmModal.user?.username} to admin? They will have full admin access.`
+              ? `Are you sure you want to remove admin access from ${confirmModal.user?.name}? They will lose all admin privileges.`
+              : `Are you sure you want to promote ${confirmModal.user?.name} to admin? They will have full admin access.`
         }
         confirmText={
           confirmModal.action === "delete"

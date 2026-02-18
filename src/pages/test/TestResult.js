@@ -517,10 +517,10 @@ const TestResult = () => {
                     key={index}
                     className={`border-2 rounded-lg p-6 ${
                       isCorrect
-                        ? "border-green-200 bg-green-50"
+                        ? "border-green-200 dark:border-green-800 bg-green-50 dark:bg-green-900/20"
                         : isSkipped
-                          ? "border-gray-200 bg-gray-50"
-                          : "border-red-200 bg-red-50"
+                          ? "border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800"
+                          : "border-red-200 dark:border-red-800 bg-red-50 dark:bg-red-900/20"
                     }`}
                   >
                     {/* Question Header */}
@@ -566,7 +566,7 @@ const TestResult = () => {
                           </span>
                         )}
                         {isSkipped && (
-                          <span className="text-gray-600 font-semibold">0</span>
+                          <span className="text-gray-600 dark:text-gray-400 font-semibold">0</span>
                         )}
                       </div>
                     </div>

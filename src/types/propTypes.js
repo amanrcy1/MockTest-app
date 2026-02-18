@@ -49,7 +49,6 @@ import PropTypes from 'prop-types';
 /**
  * @typedef {Object} User
  * @property {string} userId - User ID
- * @property {string} username - Username
  * @property {string} name - Full name
  * @property {string} email - Email address
  * @property {string} targetExam - Target exam type
@@ -119,7 +118,6 @@ export const SectionPropType = PropTypes.shape({
 
 export const UserPropType = PropTypes.shape({
   userId: PropTypes.string.isRequired,
-  username: PropTypes.string.isRequired,
   name: PropTypes.string.isRequired,
   email: PropTypes.string.isRequired,
   targetExam: PropTypes.string,

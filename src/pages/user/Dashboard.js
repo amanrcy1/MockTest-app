@@ -9,6 +9,7 @@ import { startOfWeek, endOfWeek, getISOWeek, getISOWeekYear } from "date-fns";
 import { db } from "../../config/firebase";
 import { ThemeToggle } from "../../components";
 import { BottomNav } from "../../components";
+import { TopNav } from "../../components";
 import logger from "../../utils/logger";
 
 // Cache for dashboard stats (5 minute TTL)
@@ -189,10 +190,8 @@ QuickLinkItem.propTypes = {
 
 
 const Dashboard = () => {
-  const { userDetails, logout, currentUser, sendVerificationEmail } = useAuth();
+  const { userDetails, logout, currentUser } = useAuth();
   const navigate = useNavigate();
-  const [verifyLoading, setVerifyLoading] = useState(false);
-  const [verifySent, setVerifySent] = useState(false);
   const [stats, setStats] = useState({
     attempted: 0,
     averageAccuracy: 0,
@@ -200,41 +199,16 @@ const Dashboard = () => {
   });
   const [activeSession, setActiveSession] = useState(null);
   const fetchingRef = useRef(false);
-  const [emailBannerDismissed, setEmailBannerDismissed] = useState(() => {
-    return localStorage.getItem('emailBannerDismissed') === 'true';
-  });
-
-  // eslint-disable-next-line no-unused-vars
-  const handleDismissBanner = () => {
-    setEmailBannerDismissed(true);
-    localStorage.setItem('emailBannerDismissed', 'true');
-  };
-
-  // Show banner only if not dismissed AND no real email
-  // eslint-disable-next-line no-unused-vars
-  const showEmailBanner = userDetails && !userDetails.hasRealEmail && !emailBannerDismissed;
 
   const handleLogout = useCallback(async () => {
     const result = await logout();
     if (result?.success) {
       toast.success("Logged out successfully");
-      navigate("/login");
+      navigate("/", { replace: true });
     } else {
       toast.error(result?.error || "Failed to logout");
     }
   }, [logout, navigate]);
-
-  const handleSendVerification = useCallback(async () => {
-    setVerifyLoading(true);
-    const result = await sendVerificationEmail();
-    setVerifyLoading(false);
-    if (result?.success) {
-      setVerifySent(true);
-      toast.success("Verification email sent");
-    } else {
-      toast.error(result?.error || "Failed to send verification email");
-    }
-  }, [sendVerificationEmail]);
 
   useEffect(() => {
     const fetchStats = async () => {
@@ -358,9 +332,10 @@ const Dashboard = () => {
 
   return (
     <div className="min-h-screen mesh-gradient pb-20 md:pb-0">
+      <TopNav />
 
       {/* Header */}
-      <header className="glass-card sticky top-0 z-40">
+      <header className="glass-card sticky top-0 z-40 md:hidden">
         <div className="px-4 py-3 md:py-4 max-w-7xl mx-auto">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
@@ -377,20 +352,6 @@ const Dashboard = () => {
                     userDetails?.name?.charAt(0)?.toUpperCase() || "U"
                   )}
                 </motion.div>
-                {/* Email Missing Badge */}
-                {userDetails && !userDetails.hasRealEmail && (
-                  <motion.div
-                    initial={{ scale: 0 }}
-                    animate={{ scale: 1 }}
-                    className="absolute -top-1 -right-1 w-5 h-5 bg-amber-500 rounded-full flex items-center justify-center border-2 border-white dark:border-gray-800 cursor-pointer"
-                    onClick={() => navigate("/profile")}
-                    title="Add email for account recovery"
-                  >
-                    <svg className="w-3 h-3 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
-                    </svg>
-                  </motion.div>
-                )}
               </div>
               <div>
                 <p className="text-xs text-gray-500 dark:text-gray-400">Welcome back,</p>
@@ -399,62 +360,12 @@ const Dashboard = () => {
             </div>
             <div className="flex items-center gap-2">
               <ThemeToggle />
-              {userDetails?.isAdmin && (
-                <motion.button
-                  whileHover={{ scale: 1.05 }}
-                  whileTap={{ scale: 0.95 }}
-                  onClick={() => navigate("/admin/dashboard")}
-                  className="hidden md:flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-purple-500 to-purple-600 text-white rounded-xl text-sm font-medium shadow-lg shadow-purple-500/25"
-                >
-                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-                  </svg>
-                  Admin
-                </motion.button>
-              )}
-              <motion.button
-                whileHover={{ scale: 1.05 }}
-                whileTap={{ scale: 0.95 }}
-                onClick={handleLogout}
-                className="hidden md:block px-4 py-2 text-red-600 dark:text-red-400 text-sm font-medium hover:bg-red-50 dark:hover:bg-red-900/20 rounded-xl transition-colors"
-              >
-                Logout
-              </motion.button>
             </div>
           </div>
         </div>
       </header>
 
       <main className="px-4 py-5 max-w-7xl mx-auto space-y-5">
-        {/* Email Verification Banner - Compact, only if has email but not verified */}
-        <AnimatePresence>
-          {userDetails?.hasRealEmail && !currentUser?.emailVerified && (
-            <motion.div
-              initial={{ opacity: 0, y: -10 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: -10 }}
-              className="bg-amber-50 dark:bg-amber-900/20 border-l-4 border-amber-500 rounded-lg p-3 flex items-center justify-between gap-3"
-            >
-              <div className="flex items-center gap-2 flex-1 min-w-0">
-                <svg className="w-5 h-5 text-amber-600 dark:text-amber-400 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
-                </svg>
-                <p className="text-sm text-amber-800 dark:text-amber-200 truncate">Verify your email to secure your account</p>
-              </div>
-              <motion.button
-                whileHover={{ scale: 1.05 }}
-                whileTap={{ scale: 0.95 }}
-                onClick={handleSendVerification}
-                disabled={verifyLoading}
-                className="px-3 py-1.5 bg-amber-600 text-white text-sm font-medium rounded-lg hover:bg-amber-700 disabled:opacity-50 whitespace-nowrap"
-              >
-                {verifyLoading ? "..." : verifySent ? "Sent!" : "Verify"}
-              </motion.button>
-            </motion.div>
-          )}
-        </AnimatePresence>
-
         {/* Resume Session Card - Compact */}
         <AnimatePresence>
           {activeSession && (

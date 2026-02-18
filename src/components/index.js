@@ -9,6 +9,7 @@ export { default as ReportModal } from './ui/ReportModal';
 
 // Layout Components
 export { default as BottomNav } from './layout/BottomNav';
+export { default as TopNav } from './layout/TopNav';
 
 // Test Components
 export { default as QuestionCard } from './test/QuestionCard';
@@ -20,8 +21,8 @@ export { default as ViolationModal } from './test/ViolationModal';
 export * from './3d';
 
 // Auth
-export { default as AuthAuroraCanvas } from './AuthAuroraCanvas';
+export { default as AuthAuroraCanvas } from './ui/AuthAuroraCanvas';
 
 // Other
 export { default as ErrorBoundary } from './ErrorBoundary';
-export * from './propTypes';
+export * from '../types/propTypes';

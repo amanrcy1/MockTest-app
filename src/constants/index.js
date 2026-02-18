@@ -3,7 +3,6 @@
  */
 export const COLLECTIONS = {
   USERS: "users",
-  USERNAMES: "usernames",
   QUESTIONS: "questions",
   TESTS: "tests",
   BOOKMARKS: "bookmarks",

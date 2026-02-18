@@ -210,22 +210,6 @@ const TiltCard = ({ children, className = "" }) => {
 
 
 // ============================================
-// FLOATING ORB
-// ============================================
-const FloatingOrb = ({ size, x, y, color, delay = 0, blur = "blur-3xl" }) => (
-  <motion.div
-    className={`absolute rounded-full ${color} ${blur} pointer-events-none`}
-    style={{ width: size, height: size, left: `${x}%`, top: `${y}%` }}
-    animate={{
-      y: [0, -40, 0],
-      x: [0, 20, 0],
-      scale: [1, 1.15, 1],
-    }}
-    transition={{ duration: 6 + delay * 2, repeat: Infinity, ease: "easeInOut", delay }}
-  />
-);
-
-// ============================================
 // 3D FEATURE CARD
 // ============================================
 const FeatureCard = ({ icon, title, description, gradient, delay }) => (
@@ -239,16 +223,16 @@ const FeatureCard = ({ icon, title, description, gradient, delay }) => (
     <TiltCard className="relative group cursor-default h-full">
       {/* Glow behind card */}
       <div
-        className={`absolute -inset-1 bg-gradient-to-r ${gradient} rounded-2xl opacity-0 group-hover:opacity-40 blur-xl transition-opacity duration-500`}
+        className={`absolute -inset-1 bg-gradient-to-r ${gradient} rounded-2xl opacity-0 group-hover:opacity-30 transition-opacity duration-500`}
       />
-      <div className="relative bg-white/90 dark:bg-gray-800/90 backdrop-blur-xl rounded-2xl p-6 shadow-xl border border-white/50 dark:border-gray-700/50 h-full overflow-hidden">
+      <div className="relative bg-white dark:bg-gray-800 rounded-2xl p-6 shadow-lg border border-gray-200 dark:border-gray-700 h-full overflow-hidden">
         {/* Shimmer overlay */}
         <div className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-700">
-          <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-1000" />
+          <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/10 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-1000" />
         </div>
         {/* Icon with 3D pop */}
         <motion.div
-          className="w-14 h-14 rounded-2xl bg-white/50 dark:bg-gray-700/50 backdrop-blur-sm flex items-center justify-center mb-5 shadow-lg border border-gray-100 dark:border-gray-600 relative"
+          className="w-14 h-14 rounded-2xl bg-gray-100 dark:bg-gray-700 flex items-center justify-center mb-5 shadow-md border border-gray-200 dark:border-gray-600 relative"
           style={{ transform: "translateZ(40px)" }}
           whileHover={{ scale: 1.15, rotate: 5 }}
         >
@@ -363,19 +347,17 @@ const DemoQuiz = () => {
         transition={{ delay: 0.8, duration: 0.8, type: "spring" }}
         className="relative"
       >
-        {/* Glow */}
-        <div className="absolute -inset-4 bg-gradient-to-r from-blue-500/30 via-purple-500/30 to-pink-500/30 rounded-3xl blur-2xl" />
         {/* Browser frame */}
-        <div className="relative bg-white/95 dark:bg-gray-800/95 backdrop-blur-xl rounded-2xl shadow-2xl border border-gray-200/50 dark:border-gray-700/50 overflow-hidden">
+        <div className="relative bg-white dark:bg-gray-800 rounded-2xl shadow-2xl border border-gray-200 dark:border-gray-700 overflow-hidden">
           {/* Title bar */}
-          <div className="flex items-center gap-2 px-4 py-3 bg-gray-100/80 dark:bg-gray-900/80 border-b border-gray-200/50 dark:border-gray-700/50">
+          <div className="flex items-center gap-2 px-4 py-3 bg-gray-100 dark:bg-gray-900 border-b border-gray-200 dark:border-gray-700">
             <div className="flex gap-1.5">
               <div className="w-3 h-3 rounded-full bg-red-400" />
               <div className="w-3 h-3 rounded-full bg-yellow-400" />
               <div className="w-3 h-3 rounded-full bg-green-400" />
             </div>
             <div className="flex-1 mx-4">
-              <div className="bg-gray-200/80 dark:bg-gray-700/80 rounded-lg px-3 py-1 text-xs text-gray-500 dark:text-gray-400 text-center">
+              <div className="bg-gray-200 dark:bg-gray-700 rounded-lg px-3 py-1 text-xs text-gray-500 dark:text-gray-400 text-center">
                 Try it out — no sign up needed
               </div>
             </div>
@@ -540,7 +522,7 @@ const StepCard = ({ step, title, desc, icon, gradient, delay }) => (
     className="relative"
   >
     <TiltCard className="text-center">
-      <div className="relative bg-white/80 dark:bg-gray-800/80 backdrop-blur-xl rounded-2xl p-8 shadow-xl border border-gray-100 dark:border-gray-700 overflow-hidden">
+      <div className="relative bg-white dark:bg-gray-800 rounded-2xl p-8 shadow-lg border border-gray-200 dark:border-gray-700 overflow-hidden">
         {/* Step number watermark */}
         <div className="absolute -top-4 -right-2 text-8xl font-black text-gray-100 dark:text-gray-800/50 select-none pointer-events-none">
           {step}
@@ -550,7 +532,6 @@ const StepCard = ({ step, title, desc, icon, gradient, delay }) => (
           whileHover={{ scale: 1.1, rotate: -5 }}
         >
           <span className="text-2xl">{icon}</span>
-          <div className={`absolute inset-0 rounded-2xl bg-gradient-to-br ${gradient} opacity-30 blur-lg -z-10`} />
         </motion.div>
         <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-2">{title}</h3>
         <p className="text-sm text-gray-600 dark:text-gray-400 leading-relaxed">{desc}</p>
@@ -570,7 +551,7 @@ const TestimonialCard = ({ quote, name, exam, avatar, delay }) => (
     transition={{ duration: 0.6, delay }}
   >
     <TiltCard className="h-full">
-      <div className="relative bg-white/90 dark:bg-gray-800/90 backdrop-blur-xl rounded-2xl p-6 shadow-xl border border-gray-100 dark:border-gray-700 h-full">
+      <div className="relative bg-white dark:bg-gray-800 rounded-2xl p-6 shadow-lg border border-gray-200 dark:border-gray-700 h-full">
         {/* Quote mark */}
         <div className="absolute top-4 right-4 text-4xl text-blue-100 dark:text-blue-900/50 font-serif select-none">&ldquo;</div>
         <div className="flex gap-1 mb-4">
@@ -606,8 +587,8 @@ const StatCard = ({ value, suffix, label, icon, gradient, delay }) => (
     transition={{ delay, type: "spring", stiffness: 100 }}
   >
     <TiltCard>
-      <div className="relative bg-white/80 dark:bg-gray-800/80 backdrop-blur-xl rounded-2xl p-5 shadow-xl border border-gray-100 dark:border-gray-700 text-center overflow-hidden">
-        <div className={`absolute -top-6 -right-6 w-20 h-20 bg-gradient-to-br ${gradient} opacity-10 rounded-full blur-xl`} />
+      <div className="relative bg-white dark:bg-gray-800 rounded-2xl p-5 shadow-lg border border-gray-200 dark:border-gray-700 text-center overflow-hidden">
+        <div className={`absolute -top-6 -right-6 w-20 h-20 bg-gradient-to-br ${gradient} opacity-10 rounded-full`} />
         <div className="text-2xl mb-2">{icon}</div>
         <p className="text-3xl md:text-4xl font-extrabold gradient-text mb-1">
           <AnimatedCounter target={value} suffix={suffix || ""} />
@@ -847,7 +828,7 @@ const Landing = () => {
                 viewport={{ once: true }}
                 transition={{ delay: i * 0.04, type: "spring" }}
                 whileHover={{ scale: 1.1, y: -2 }}
-                className="px-4 py-2 bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm rounded-full text-sm font-medium text-gray-700 dark:text-gray-300 border border-gray-200 dark:border-gray-600 shadow-sm cursor-default hover:shadow-md hover:border-blue-300 dark:hover:border-blue-600 transition-all"
+                className="px-4 py-2 bg-white dark:bg-gray-800 rounded-full text-sm font-medium text-gray-700 dark:text-gray-300 border border-gray-200 dark:border-gray-600 shadow-sm cursor-default hover:shadow-md hover:border-blue-300 dark:hover:border-blue-600 transition-all"
               >
                 {exam}
               </motion.span>
@@ -858,10 +839,6 @@ const Landing = () => {
 
       {/* ========== FEATURES ========== */}
       <section className="py-16 md:py-24 px-4 relative">
-        <div className="absolute inset-0 overflow-hidden pointer-events-none">
-          <FloatingOrb size={300} x={-10} y={30} color="bg-purple-400/10" delay={0} blur="blur-3xl" />
-          <FloatingOrb size={250} x={90} y={60} color="bg-blue-400/10" delay={1} blur="blur-3xl" />
-        </div>
         <div className="max-w-6xl mx-auto relative">
           <motion.div
             initial={{ opacity: 0, y: 20 }}
@@ -911,7 +888,7 @@ const Landing = () => {
           </motion.div>
 
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-            <StepCard step="01" title="Create Account" desc="Sign up with just a username and password. No email required to start." icon="🔑" gradient="from-blue-500 to-indigo-600" delay={0} />
+            <StepCard step="01" title="Sign In" desc="Continue with Google — one click and you're in." icon="🔑" gradient="from-blue-500 to-indigo-600" delay={0} />
             <StepCard step="02" title="Choose Your Exam" desc="Select your target exam — CDS, CSAT, IAS GS, or IAS CSAT." icon="📋" gradient="from-purple-500 to-pink-600" delay={0.15} />
             <StepCard step="03" title="Start Practicing" desc="Take mock tests, practice by topic, or build custom tests." icon="🚀" gradient="from-emerald-500 to-teal-600" delay={0.3} />
           </div>
@@ -975,8 +952,6 @@ const Landing = () => {
         >
           <TiltCard>
             <div className="relative overflow-hidden rounded-3xl">
-              {/* Animated gradient border */}
-              <div className="absolute -inset-1 bg-gradient-to-r from-blue-500 via-purple-500 to-pink-500 rounded-3xl opacity-50 blur-lg" />
               <div className="relative bg-gradient-to-br from-blue-600 via-indigo-600 to-purple-700 rounded-3xl p-8 md:p-16 text-center overflow-hidden">
                 {/* Decorative elements */}
                 <div className="absolute top-0 right-0 w-80 h-80 bg-white/5 rounded-full -translate-y-1/2 translate-x-1/3" />
@@ -992,7 +967,7 @@ const Landing = () => {
                     initial={{ scale: 0 }}
                     whileInView={{ scale: 1 }}
                     viewport={{ once: true }}
-                    className="inline-flex items-center gap-2 px-4 py-1.5 bg-white/10 backdrop-blur-sm rounded-full mb-6 border border-white/20"
+                    className="inline-flex items-center gap-2 px-4 py-1.5 bg-white/10 rounded-full mb-6 border border-white/20"
                   >
                     <span className="text-sm font-medium text-white/90">🎓 Join the community</span>
                   </motion.div>

@@ -1,22 +1,37 @@
-const React = require('react');
+/**
+ * Mock for react-router-dom in Jest tests
+ */
 
 const mockNavigate = jest.fn();
-const mockLocation = { pathname: '/', search: '', hash: '', state: null };
+const mockLocation = {
+  pathname: '/',
+  search: '',
+  hash: '',
+  state: null,
+  key: 'default',
+};
 
 module.exports = {
+  ...jest.requireActual('react-router-dom'),
   useNavigate: () => mockNavigate,
   useLocation: () => mockLocation,
   useParams: () => ({}),
   useSearchParams: () => [new URLSearchParams(), jest.fn()],
-  Link: ({ children, to, ...rest }) => React.createElement('a', { href: to, ...rest }, children),
-  NavLink: ({ children, to, ...rest }) => React.createElement('a', { href: to, ...rest }, children),
-  Navigate: ({ to }) => React.createElement('div', { 'data-testid': 'navigate', 'data-to': to }),
-  Outlet: () => React.createElement('div', { 'data-testid': 'outlet' }),
-  MemoryRouter: ({ children }) => React.createElement('div', null, children),
-  BrowserRouter: ({ children }) => React.createElement('div', null, children),
-  Routes: ({ children }) => React.createElement('div', null, children),
+  Link: ({ children, to, ...props }) => {
+    const React = require('react');
+    return React.createElement('a', { href: to, ...props }, children);
+  },
+  NavLink: ({ children, to, ...props }) => {
+    const React = require('react');
+    return React.createElement('a', { href: to, ...props }, children);
+  },
+  BrowserRouter: ({ children }) => children,
+  MemoryRouter: ({ children }) => children,
+  Routes: ({ children }) => children,
   Route: () => null,
-  // Expose for test overrides
+  Navigate: () => null,
+  Outlet: () => null,
+  // Export mocks for test assertions
   __mockNavigate: mockNavigate,
   __mockLocation: mockLocation,
 };

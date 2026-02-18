@@ -7,7 +7,7 @@ import Cropper from "react-easy-crop";
 import { db } from "../../config/firebase";
 import { useAuth } from "../../context/AuthContext";
 import { EXAM_PATTERNS } from "../../utils/examPatterns";
-import { ThemeToggle, AuthAuroraCanvas, BottomNav } from "../../components";
+import { ThemeToggle, AuthAuroraCanvas, BottomNav, TopNav } from "../../components";
 import logger from "../../utils/logger";
 
 const createCroppedImage = async (imageSrc, pixelCrop, maxSize = 200, quality = 0.8) => {
@@ -38,15 +38,13 @@ const fadeUp = { hidden: { opacity: 0, y: 20 }, visible: { opacity: 1, y: 0, tra
 
 const Profile = () => {
   const navigate = useNavigate();
-  const { currentUser, userDetails, refreshUserDetails, linkGoogleEmail } = useAuth();
+  const { currentUser, userDetails, refreshUserDetails } = useAuth();
   const fileInputRef = useRef(null);
   const [formData, setFormData] = useState({ name: "", targetExam: "CDS" });
   const [saving, setSaving] = useState(false);
   const [uploadingPhoto, setUploadingPhoto] = useState(false);
   const [previewUrl, setPreviewUrl] = useState(null);
   const [showPhotoOptions, setShowPhotoOptions] = useState(false);
-  const [sendingVerification, setSendingVerification] = useState(false);
-  const [linkingGoogle, setLinkingGoogle] = useState(false);
   const [showCropper, setShowCropper] = useState(false);
   const [imageToCrop, setImageToCrop] = useState(null);
   const [crop, setCrop] = useState({ x: 0, y: 0 });
@@ -101,7 +99,6 @@ const Profile = () => {
 
   const handleSave = async () => {
     if (!currentUser) { toast.error("Please log in again."); return; }
-    if (!userDetails?.hasRealEmail) { toast.error("Link your Google account first."); return; }
     try {
       setSaving(true);
       await updateDoc(doc(db, "users", currentUser.uid), { name: formData.name.trim(), targetExam: formData.targetExam, updatedAt: new Date().toISOString() });
@@ -110,35 +107,13 @@ const Profile = () => {
     finally { setSaving(false); }
   };
 
-  const handleSendVerification = async () => {
-    if (!currentUser || !userDetails?.hasRealEmail) return;
-    try {
-      setSendingVerification(true);
-      const { sendEmailVerification } = await import("firebase/auth");
-      await sendEmailVerification(currentUser);
-      toast.success("Verification email sent!");
-    } catch (err) {
-      logger.error("Verification error:", err);
-      toast.error(err.code === "auth/too-many-requests" ? "Please wait before retrying" : "Failed to send");
-    } finally { setSendingVerification(false); }
-  };
-
-  const handleLinkGoogle = async () => {
-    setLinkingGoogle(true);
-    try {
-      const result = await linkGoogleEmail();
-      if (result.success) toast.success(`Email linked: ${result.email}`);
-      else if (result.error !== "Sign-in cancelled.") toast.error(result.error);
-    } catch { /* popup closed */ }
-    finally { setLinkingGoogle(false); }
-  };
-
   const initial = userDetails?.name?.charAt(0)?.toUpperCase() || "U";
   const memberSince = userDetails?.createdAt ? new Date(userDetails.createdAt).toLocaleDateString("en-IN", { month: "short", year: "numeric" }) : null;
 
   return (
     <div className="min-h-screen relative overflow-hidden pb-20 md:pb-0">
       <AuthAuroraCanvas />
+      <TopNav />
       <input type="file" ref={fileInputRef} onChange={handleFileSelect} accept="image/*" className="hidden" />
 
       {/* Cropper Modal */}
@@ -197,10 +172,10 @@ const Profile = () => {
       </AnimatePresence>
 
       {/* Header */}
-      <header className="sticky top-0 z-40 backdrop-blur-xl bg-white/60 dark:bg-gray-900/60 border-b border-white/20 dark:border-gray-700/30">
+      <header className="sticky top-0 md:top-14 z-40 backdrop-blur-xl bg-white/60 dark:bg-gray-900/60 border-b border-white/20 dark:border-gray-700/30">
         <div className="px-4 py-3 max-w-2xl mx-auto flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <motion.button whileHover={{ scale: 1.1 }} whileTap={{ scale: 0.9 }} onClick={() => navigate("/dashboard")} className="p-2 -ml-2 rounded-xl hover:bg-white/40 dark:hover:bg-gray-700/40 transition-colors" aria-label="Back">
+            <motion.button whileHover={{ scale: 1.1 }} whileTap={{ scale: 0.9 }} onClick={() => navigate("/dashboard")} className="p-2 -ml-2 rounded-xl hover:bg-white/40 dark:hover:bg-gray-700/40 transition-colors md:hidden" aria-label="Back">
               <svg className="w-5 h-5 text-gray-700 dark:text-gray-200" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" /></svg>
             </motion.button>
             <h1 className="text-lg font-bold text-gray-900 dark:text-white">Profile</h1>
@@ -214,19 +189,15 @@ const Profile = () => {
 
           {/* Hero Card — Avatar + Info */}
           <motion.div variants={fadeUp} className="relative bg-white/70 dark:bg-gray-900/70 backdrop-blur-2xl rounded-3xl border border-white/30 dark:border-gray-700/40 shadow-2xl shadow-purple-500/5 overflow-hidden">
-            {/* Decorative gradient strip */}
             <div className="h-24 bg-gradient-to-r from-blue-500 via-purple-500 to-pink-500 relative">
               <div className="absolute inset-0 bg-[radial-gradient(circle_at_30%_50%,rgba(255,255,255,0.2),transparent_70%)]" />
             </div>
 
             <div className="px-6 pb-6 -mt-14 flex flex-col items-center">
-              {/* Avatar */}
               <motion.div className="relative cursor-pointer group" whileHover={{ scale: 1.05 }} onClick={() => setShowPhotoOptions(true)}>
                 <div className="absolute -inset-1 bg-gradient-to-br from-blue-400 to-purple-500 rounded-full blur-md opacity-60 group-hover:opacity-80 transition-opacity" />
                 <div className="relative w-28 h-28 rounded-full bg-gradient-to-br from-blue-500 via-purple-500 to-pink-500 flex items-center justify-center text-white text-4xl font-bold shadow-xl ring-4 ring-white dark:ring-gray-900 overflow-hidden">
-                  {previewUrl ? (
-                    <img src={previewUrl} alt="Profile" className="w-full h-full object-cover" />
-                  ) : initial}
+                  {previewUrl ? <img src={previewUrl} alt="Profile" className="w-full h-full object-cover" /> : initial}
                   <div className="absolute inset-0 bg-black/0 group-hover:bg-black/40 flex items-center justify-center transition-all">
                     <svg className="w-7 h-7 text-white opacity-0 group-hover:opacity-100 transition-opacity" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z" /><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 13a3 3 0 11-6 0 3 3 0 016 0z" /></svg>
                   </div>
@@ -236,11 +207,8 @@ const Profile = () => {
                 </motion.div>
               </motion.div>
 
-              {/* Name + Username */}
               <h2 className="text-2xl font-bold text-gray-900 dark:text-white mt-4">{userDetails?.name}</h2>
-              <p className="text-sm text-gray-500 dark:text-gray-400">@{userDetails?.username}</p>
 
-              {/* Stats row */}
               <div className="flex items-center gap-6 mt-4">
                 {userDetails?.targetExam && (
                   <div className="flex items-center gap-1.5 text-xs font-medium text-purple-600 dark:text-purple-400 bg-purple-50 dark:bg-purple-900/20 px-3 py-1.5 rounded-full">
@@ -258,59 +226,30 @@ const Profile = () => {
             </div>
           </motion.div>
 
-          {/* Email / Google Link Card */}
+          {/* Email Card (read-only, shows Google email) */}
           <motion.div variants={fadeUp} className="bg-white/70 dark:bg-gray-900/70 backdrop-blur-2xl rounded-3xl border border-white/30 dark:border-gray-700/40 shadow-xl overflow-hidden">
             <div className="p-5">
               <div className="flex items-center gap-2 mb-3">
                 <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center">
                   <svg className="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" /></svg>
                 </div>
-                <span className="text-xs font-bold text-gray-400 dark:text-gray-500 uppercase tracking-wider">Email</span>
-                {!userDetails?.hasRealEmail && (
-                  <span className="ml-auto text-[10px] font-bold text-amber-600 dark:text-amber-400 bg-amber-50 dark:bg-amber-900/20 px-2 py-0.5 rounded-full">Required</span>
-                )}
+                <span className="text-xs font-bold text-gray-400 dark:text-gray-500 uppercase tracking-wider">Google Account</span>
               </div>
-
-              {userDetails?.hasRealEmail ? (
-                <div className="flex items-center gap-3 p-3 bg-gray-50/80 dark:bg-gray-800/50 rounded-xl">
-                  <div className="flex-1 min-w-0">
-                    <p className="text-sm font-medium text-gray-900 dark:text-white truncate">{userDetails.email}</p>
-                    {currentUser?.emailVerified ? (
-                      <span className="inline-flex items-center gap-1 text-[11px] font-semibold text-green-600 dark:text-green-400 mt-0.5">
-                        <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 20 20"><path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" /></svg>
-                        Verified via Google
-                      </span>
-                    ) : (
-                      <button onClick={handleSendVerification} disabled={sendingVerification} className="inline-flex items-center gap-1 text-[11px] font-semibold text-amber-600 dark:text-amber-400 mt-0.5 hover:underline disabled:opacity-50">
-                        <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01" /></svg>
-                        {sendingVerification ? "Sending..." : "Verify Email"}
-                      </button>
-                    )}
-                  </div>
-                  <div className="w-10 h-10 rounded-full bg-gradient-to-br from-green-400 to-emerald-500 flex items-center justify-center flex-shrink-0">
-                    <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" /></svg>
-                  </div>
+              <div className="flex items-center gap-3 p-3 bg-gray-50/80 dark:bg-gray-800/50 rounded-xl">
+                <div className="flex-1 min-w-0">
+                  <p className="text-sm font-medium text-gray-900 dark:text-white truncate">{userDetails?.email}</p>
+                  <span className="inline-flex items-center gap-1 text-[11px] font-semibold text-green-600 dark:text-green-400 mt-0.5">
+                    <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 20 20"><path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" /></svg>
+                    Verified
+                  </span>
                 </div>
-              ) : (
-                <div>
-                  <motion.button whileHover={{ scale: 1.01, y: -1 }} whileTap={{ scale: 0.99 }} type="button" disabled={linkingGoogle} onClick={handleLinkGoogle}
-                    className="w-full flex items-center justify-center gap-3 px-5 py-4 bg-white dark:bg-gray-800 border-2 border-dashed border-gray-200 dark:border-gray-600 rounded-2xl hover:border-blue-400 dark:hover:border-blue-500 hover:bg-blue-50/30 dark:hover:bg-blue-900/10 transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed group"
-                  >
-                    {linkingGoogle ? (
-                      <svg className="animate-spin h-5 w-5 text-blue-500" viewBox="0 0 24 24"><circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none" /><path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" /></svg>
-                    ) : (
-                      <svg className="w-5 h-5 group-hover:scale-110 transition-transform" viewBox="0 0 24 24">
-                        <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92a5.06 5.06 0 01-2.2 3.32v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.1z" fill="#4285F4" />
-                        <path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853" />
-                        <path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z" fill="#FBBC05" />
-                        <path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335" />
-                      </svg>
-                    )}
-                    <span className="font-semibold text-gray-700 dark:text-gray-200">{linkingGoogle ? "Linking..." : "Link Google Account"}</span>
-                  </motion.button>
-                  <p className="mt-2 text-[11px] text-gray-400 dark:text-gray-500 text-center">One tap to add your email for account recovery</p>
-                </div>
-              )}
+                <svg className="w-5 h-5 flex-shrink-0" viewBox="0 0 24 24">
+                  <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92a5.06 5.06 0 01-2.2 3.32v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.1z" fill="#4285F4" />
+                  <path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853" />
+                  <path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z" fill="#FBBC05" />
+                  <path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335" />
+                </svg>
+              </div>
             </div>
           </motion.div>
 
@@ -322,7 +261,7 @@ const Profile = () => {
                 <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-emerald-500 to-teal-600 flex items-center justify-center">
                   <svg className="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" /></svg>
                 </div>
-                <span className="text-xs font-bold text-gray-400 dark:text-gray-500 uppercase tracking-wider">Full Name</span>
+                <span className="text-xs font-bold text-gray-400 dark:text-gray-500 uppercase tracking-wider">Display Name</span>
               </div>
               <input type="text" name="name" value={formData.name} onChange={handleChange}
                 className="w-full px-4 py-3 bg-gray-50/80 dark:bg-gray-800/50 border border-gray-200/60 dark:border-gray-600/40 rounded-xl focus:ring-2 focus:ring-blue-500/50 focus:border-blue-400 outline-none text-gray-900 dark:text-white transition-all placeholder:text-gray-400"
@@ -350,19 +289,7 @@ const Profile = () => {
               </div>
             </div>
 
-            {/* Username (read-only) */}
-            <div className="p-5">
-              <div className="flex items-center gap-2 mb-3">
-                <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-gray-400 to-gray-500 flex items-center justify-center">
-                  <svg className="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 20l4-16m2 16l4-16M6 9h14M4 15h14" /></svg>
-                </div>
-                <span className="text-xs font-bold text-gray-400 dark:text-gray-500 uppercase tracking-wider">Username</span>
-                <span className="ml-auto text-[10px] font-medium text-gray-400 dark:text-gray-500 bg-gray-100 dark:bg-gray-800 px-2 py-0.5 rounded-full">Read only</span>
-              </div>
-              <div className="px-4 py-3 bg-gray-50/80 dark:bg-gray-800/50 border border-gray-200/60 dark:border-gray-600/40 rounded-xl text-gray-500 dark:text-gray-400 font-medium">
-                @{userDetails?.username || "-"}
-              </div>
-            </div>
+
           </motion.div>
 
           {/* Action Buttons */}

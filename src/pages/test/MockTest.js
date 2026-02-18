@@ -492,11 +492,12 @@ const MockTest = () => {
     // Lock the current answer if one was selected
     setResponses(prev => {
       const newResponses = [...prev];
-      if (newResponses[currentQuestionIndex]?.selectedAnswer) {
+      if (newResponses[currentQuestionIndex]?.selectedAnswer && !newResponses[currentQuestionIndex]?.locked) {
         newResponses[currentQuestionIndex] = {
           ...newResponses[currentQuestionIndex],
           locked: true,
         };
+        toast.info(`Answer locked for Q${currentQuestionIndex + 1}`, { autoClose: 1500, hideProgressBar: true });
       }
       return newResponses;
     });
@@ -536,11 +537,12 @@ const MockTest = () => {
     // Lock the current answer if one was selected before going back
     setResponses(prev => {
       const newResponses = [...prev];
-      if (newResponses[currentQuestionIndex]?.selectedAnswer) {
+      if (newResponses[currentQuestionIndex]?.selectedAnswer && !newResponses[currentQuestionIndex]?.locked) {
         newResponses[currentQuestionIndex] = {
           ...newResponses[currentQuestionIndex],
           locked: true,
         };
+        toast.info(`Answer locked for Q${currentQuestionIndex + 1}`, { autoClose: 1500, hideProgressBar: true });
       }
       return newResponses;
     });
@@ -672,6 +674,19 @@ const MockTest = () => {
               </svg>
               <div className="text-sm text-red-800 dark:text-red-200">
                 <p className="font-semibold">Fullscreen required • Auto-submit on time up</p>
+              </div>
+            </div>
+          </div>
+
+          {/* Answer Lock Notice */}
+          <div className="bg-amber-50 dark:bg-amber-900/20 border-l-4 border-amber-500 rounded-lg p-3 mb-4">
+            <div className="flex items-start gap-2">
+              <svg className="w-5 h-5 text-amber-600 dark:text-amber-400 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+              </svg>
+              <div className="text-sm text-amber-800 dark:text-amber-200">
+                <p className="font-semibold">Answers lock when you navigate away</p>
+                <p className="text-xs text-amber-700 dark:text-amber-300 mt-0.5">Once you move to another question, your selected answer cannot be changed. Skipped questions can still be answered later.</p>
               </div>
             </div>
           </div>
@@ -1104,36 +1119,36 @@ const MockTest = () => {
 
       {showSubmitModal && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-20">
-          <div className="bg-white rounded-lg shadow-xl p-6 max-w-md w-full">
-            <h2 className="text-xl font-bold text-gray-800 mb-4">
+          <div className="bg-white dark:bg-gray-800 rounded-lg shadow-xl p-6 max-w-md w-full">
+            <h2 className="text-xl font-bold text-gray-800 dark:text-white mb-4">
               Submit Test?
             </h2>
-            <p className="text-sm text-gray-600 mb-4">
+            <p className="text-sm text-gray-600 dark:text-gray-400 mb-4">
               Review your status before submitting.
             </p>
 
             <div className="grid grid-cols-2 gap-3 text-sm mb-6">
-              <div className="flex justify-between bg-green-50 px-3 py-2 rounded">
+              <div className="flex justify-between bg-green-50 dark:bg-green-900/20 text-gray-700 dark:text-gray-300 px-3 py-2 rounded">
                 <span>Answered</span>
                 <span className="font-semibold">{statusCounts.answered}</span>
               </div>
-              <div className="flex justify-between bg-red-50 px-3 py-2 rounded">
+              <div className="flex justify-between bg-red-50 dark:bg-red-900/20 text-gray-700 dark:text-gray-300 px-3 py-2 rounded">
                 <span>Not Answered</span>
                 <span className="font-semibold">
                   {statusCounts.notAnswered}
                 </span>
               </div>
-              <div className="flex justify-between bg-purple-50 px-3 py-2 rounded">
+              <div className="flex justify-between bg-purple-50 dark:bg-purple-900/20 text-gray-700 dark:text-gray-300 px-3 py-2 rounded">
                 <span>Marked</span>
                 <span className="font-semibold">{statusCounts.marked}</span>
               </div>
-              <div className="flex justify-between bg-orange-50 px-3 py-2 rounded">
+              <div className="flex justify-between bg-orange-50 dark:bg-orange-900/20 text-gray-700 dark:text-gray-300 px-3 py-2 rounded">
                 <span>Ans + Mark</span>
                 <span className="font-semibold">
                   {statusCounts.answeredMarked}
                 </span>
               </div>
-              <div className="flex justify-between bg-gray-50 px-3 py-2 rounded">
+              <div className="flex justify-between bg-gray-50 dark:bg-gray-700 text-gray-700 dark:text-gray-300 px-3 py-2 rounded">
                 <span>Not Visited</span>
                 <span className="font-semibold">{statusCounts.notVisited}</span>
               </div>
@@ -1142,7 +1157,7 @@ const MockTest = () => {
             <div className="flex gap-3">
               <button
                 onClick={() => setShowSubmitModal(false)}
-                className="flex-1 bg-gray-200 text-gray-700 py-2 rounded-lg font-semibold hover:bg-gray-300 transition-colors"
+                className="flex-1 bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-200 py-2 rounded-lg font-semibold hover:bg-gray-300 dark:hover:bg-gray-600 transition-colors"
               >
                 Cancel
               </button>

@@ -6,8 +6,7 @@ import { db } from "../../config/firebase";
 import { useAuth } from "../../context/AuthContext";
 import { EXAM_PATTERNS } from "../../utils/examPatterns";
 import { toast } from "react-toastify";
-import { ThemeToggle } from "../../components";
-import { BottomNav } from "../../components";
+import { ThemeToggle, BottomNav, TopNav } from "../../components";
 import logger from "../../utils/logger";
 
 // Mode Card Component with 3D effect
@@ -263,8 +262,9 @@ const TestSelection = () => {
 
   return (
     <div className="min-h-screen mesh-gradient pb-20 md:pb-0">
+      <TopNav />
       {/* Header */}
-      <header className="glass-card sticky top-0 z-40">
+      <header className="glass-card sticky top-0 md:top-14 z-40">
         <div className="max-w-7xl mx-auto px-4 py-3 md:py-4">
           <div className="flex justify-between items-center">
             <div>
@@ -299,13 +299,12 @@ const TestSelection = () => {
                 whileHover={{ scale: 1.05 }}
                 whileTap={{ scale: 0.95 }}
                 onClick={() => navigate("/dashboard")}
-                className="p-2 md:px-4 md:py-2 bg-gray-200 dark:bg-gray-700 rounded-xl"
+                className="p-2 bg-gray-200 dark:bg-gray-700 rounded-xl md:hidden"
                 aria-label="Back"
               >
-                <svg className="w-5 h-5 md:hidden text-gray-700 dark:text-gray-200" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <svg className="w-5 h-5 text-gray-700 dark:text-gray-200" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 19l-7-7m0 0l7-7m-7 7h18" />
                 </svg>
-                <span className="hidden md:inline text-gray-700 dark:text-gray-200 text-sm font-medium">Back</span>
               </motion.button>
             </div>
           </div>

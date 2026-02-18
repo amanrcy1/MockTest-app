@@ -15,6 +15,7 @@ import { db } from "../../config/firebase";
 import { useAuth } from "../../context/AuthContext";
 import { ThemeToggle } from "../../components";
 import { BottomNav } from "../../components";
+import { TopNav } from "../../components";
 import logger from "../../utils/logger";
 
 // Expandable Question Card Component
@@ -283,8 +284,10 @@ const Bookmarks = () => {
 
   return (
     <div className="min-h-screen mesh-gradient pb-20 md:pb-0">
+      <TopNav />
+
       {/* Header */}
-      <header className="glass-card sticky top-0 z-40">
+      <header className="glass-card sticky top-0 md:top-14 z-40">
         <div className="px-4 py-3 max-w-5xl mx-auto">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
@@ -317,14 +320,6 @@ const Bookmarks = () => {
                 ))}
               </select>
               <ThemeToggle />
-              <motion.button
-                whileHover={{ scale: 1.05 }}
-                whileTap={{ scale: 0.95 }}
-                onClick={() => navigate("/dashboard")}
-                className="hidden md:block px-4 py-2 bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-200 rounded-xl hover:bg-gray-200 dark:hover:bg-gray-600 text-sm font-medium"
-              >
-                Dashboard
-              </motion.button>
             </div>
           </div>
         </div>

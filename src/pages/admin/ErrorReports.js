@@ -251,9 +251,7 @@ const AdminErrorReports = () => {
                       </p>
                       <p className="text-sm text-gray-500 dark:text-gray-400">
                         Reported by{" "}
-                        {report.user?.name
-                          ? `${report.user.name} (@${report.user.username})`
-                          : report.userId}
+                        {report.user?.name || report.userId}
                       </p>
                     </div>
                     <span

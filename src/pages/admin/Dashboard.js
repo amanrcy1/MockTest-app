@@ -17,7 +17,7 @@ const AdminDashboard = () => {
 
   const handleLogout = async () => {
     await logout();
-    navigate("/login");
+    navigate("/", { replace: true });
   };
 
   useEffect(() => {
