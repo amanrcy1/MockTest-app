@@ -20,7 +20,7 @@ import {
 import { motion } from "framer-motion";
 import { db } from "../../config/firebase";
 import { EXAM_PATTERNS } from "../../utils/examPatterns";
-import { ThemeToggle, TopNav } from "../../components";
+import { TopNav, BottomNav } from "../../components";
 
 // Cache for leaderboard data (keyed by examType_weekOffset)
 const leaderboardCache = new Map();
@@ -212,7 +212,7 @@ const Leaderboard = () => {
   }, [currentUser, examType, weekOffset, weekRange.end, weekRange.start]);
 
   return (
-    <div className="min-h-screen mesh-gradient">
+    <div className="min-h-screen mesh-gradient pb-20 md:pb-0">
       <TopNav />
       <nav className="glass-card sticky top-0 md:top-14 z-40">
         <div className="max-w-7xl mx-auto px-4 py-3 sm:py-4">
@@ -227,7 +227,6 @@ const Leaderboard = () => {
               </p>
             </div>
             <div className="flex items-center gap-3">
-              <ThemeToggle />
               <select
                 value={weekOffset}
                 onChange={handleWeekChange}
@@ -263,7 +262,6 @@ const Leaderboard = () => {
                 </p>
               </div>
               <div className="flex items-center gap-2">
-                <ThemeToggle />
                 <button
                   onClick={handleBack}
                   className="p-2 bg-gray-100 dark:bg-gray-700 rounded-xl"
@@ -483,6 +481,8 @@ const Leaderboard = () => {
           </>
         )}
       </div>
+
+      <BottomNav />
     </div>
   );
 };

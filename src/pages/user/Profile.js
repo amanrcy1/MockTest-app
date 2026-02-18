@@ -180,7 +180,7 @@ const Profile = () => {
             </motion.button>
             <h1 className="text-lg font-bold text-gray-900 dark:text-white">Profile</h1>
           </div>
-          <ThemeToggle />
+          <ThemeToggle className="md:hidden" />
         </div>
       </header>
 

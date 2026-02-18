@@ -152,19 +152,19 @@ const AddQuestion = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gray-100">
+    <div className="min-h-screen bg-gray-100 dark:bg-gray-950">
       {/* Header */}
-      <nav className="bg-white shadow-md">
+      <nav className="bg-white dark:bg-gray-900 shadow-md">
         <div className="max-w-7xl mx-auto px-4 py-4 flex justify-between items-center">
           <div>
             <h1 className="text-2xl font-bold text-blue-600">
               Add New Question
             </h1>
-            <p className="text-sm text-gray-600">UPSC Mock Test Platform</p>
+            <p className="text-sm text-gray-600 dark:text-gray-400">UPSC Mock Test Platform</p>
           </div>
           <button
             onClick={() => navigate("/admin/dashboard")}
-            className="bg-gray-200 text-gray-700 px-4 py-2 rounded-lg hover:bg-gray-300 transition-colors"
+            className="bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-200 px-4 py-2 rounded-lg hover:bg-gray-300 dark:hover:bg-gray-600 transition-colors"
           >
             Back to Admin
           </button>
@@ -173,19 +173,19 @@ const AddQuestion = () => {
 
       {/* Form */}
       <div className="max-w-4xl mx-auto px-4 py-8">
-        <div className="bg-white rounded-lg shadow-md p-8">
+        <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-8">
           <form onSubmit={handleSubmit} className="space-y-6">
             {/* Exam Type and Subject Selection */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                   Exam Type <span className="text-red-500">*</span>
                 </label>
                 <select
                   name="examType"
                   value={formData.examType}
                   onChange={handleChange}
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none"
+                  className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
                   disabled={loading}
                 >
                   {Object.keys(EXAM_PATTERNS).map((key) => (
@@ -197,14 +197,14 @@ const AddQuestion = () => {
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                   Subject <span className="text-red-500">*</span>
                 </label>
                 <select
                   name="subject"
                   value={formData.subject}
                   onChange={handleChange}
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none"
+                  className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
                   disabled={loading}
                 >
                   {availableSubjects.map((subject) => (
@@ -219,14 +219,14 @@ const AddQuestion = () => {
             {/* Topic and Difficulty */}
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                   Topic <span className="text-red-500">*</span>
                 </label>
                 <select
                   name="topic"
                   value={formData.topic}
                   onChange={handleChange}
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none"
+                  className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
                   disabled={loading}
                 >
                   {availableTopics.map((topic, index) => (
@@ -238,7 +238,7 @@ const AddQuestion = () => {
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                   Subtopic (Optional)
                 </label>
                 <input
@@ -246,21 +246,21 @@ const AddQuestion = () => {
                   name="subtopic"
                   value={formData.subtopic}
                   onChange={handleChange}
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none"
+                  className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
                   placeholder="e.g., Fundamental Rights"
                   disabled={loading}
                 />
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                   Difficulty <span className="text-red-500">*</span>
                 </label>
                 <select
                   name="difficulty"
                   value={formData.difficulty}
                   onChange={handleChange}
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none"
+                  className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
                   disabled={loading}
                 >
                   {DIFFICULTY_LEVELS.map((level) => (
@@ -274,7 +274,7 @@ const AddQuestion = () => {
 
             {/* Question Text */}
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                 Question Text <span className="text-red-500">*</span>
               </label>
               <textarea
@@ -282,7 +282,7 @@ const AddQuestion = () => {
                 value={formData.questionText}
                 onChange={handleChange}
                 rows="4"
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none resize-none"
+                className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none resize-none bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
                 placeholder="Enter the question here..."
                 disabled={loading}
               />
@@ -290,11 +290,11 @@ const AddQuestion = () => {
 
             {/* Options */}
             <div className="space-y-4">
-              <h3 className="text-lg font-semibold text-gray-800">Options</h3>
+              <h3 className="text-lg font-semibold text-gray-800 dark:text-gray-200">Options</h3>
 
               {["A", "B", "C", "D"].map((option) => (
                 <div key={option}>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                     Option {option} <span className="text-red-500">*</span>
                   </label>
                   <input
@@ -302,7 +302,7 @@ const AddQuestion = () => {
                     name={`option${option}`}
                     value={formData[`option${option}`]}
                     onChange={handleChange}
-                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none"
+                    className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
                     placeholder={`Enter option ${option}`}
                     disabled={loading}
                   />
@@ -312,14 +312,14 @@ const AddQuestion = () => {
 
             {/* Correct Answer */}
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                 Correct Answer <span className="text-red-500">*</span>
               </label>
               <select
                 name="correctAnswer"
                 value={formData.correctAnswer}
                 onChange={handleChange}
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none"
+                className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
                 disabled={loading}
               >
                 <option value="A">Option A</option>
@@ -331,7 +331,7 @@ const AddQuestion = () => {
 
             {/* Solution */}
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                 Solution/Explanation <span className="text-red-500">*</span>
               </label>
               <textarea
@@ -339,7 +339,7 @@ const AddQuestion = () => {
                 value={formData.solution}
                 onChange={handleChange}
                 rows="4"
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none resize-none"
+                className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none resize-none bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
                 placeholder="Explain why the correct answer is correct..."
                 disabled={loading}
               />
@@ -347,7 +347,7 @@ const AddQuestion = () => {
 
             {/* Tags */}
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                 Tags (Optional)
               </label>
               <input
@@ -355,11 +355,11 @@ const AddQuestion = () => {
                 name="tags"
                 value={formData.tags}
                 onChange={handleChange}
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none"
+                className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
                 placeholder="Enter tags separated by commas (e.g., important, previous-year, tricky)"
                 disabled={loading}
               />
-              <p className="text-xs text-gray-500 mt-1">
+              <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
                 Tags help in organizing and filtering questions
               </p>
             </div>

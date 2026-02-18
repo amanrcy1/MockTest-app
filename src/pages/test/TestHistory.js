@@ -13,7 +13,6 @@ import { toast } from "react-toastify";
 import { motion } from "framer-motion";
 import { db } from "../../config/firebase";
 import { useAuth } from "../../context/AuthContext";
-import { ThemeToggle } from "../../components";
 import { BottomNav } from "../../components";
 import { TopNav } from "../../components";
 import logger from "../../utils/logger";
@@ -87,14 +86,14 @@ const TestHistory = () => {
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-950 pb-20 md:pb-0">
       <TopNav />
-      {/* Header */}
+      {/* Header - Mobile */}
       <header className="bg-white dark:bg-gray-900 sticky top-0 z-40 border-b border-gray-100 dark:border-gray-800 md:hidden">
         <div className="px-4 py-3 max-w-5xl mx-auto">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
               <button
                 onClick={() => navigate("/dashboard")}
-                className="p-2 -ml-2 rounded-full hover:bg-gray-100 dark:hover:bg-gray-700 md:hidden"
+                className="p-2 -ml-2 rounded-full hover:bg-gray-100 dark:hover:bg-gray-700"
                 aria-label="Back"
               >
                 <svg className="w-5 h-5 text-gray-600 dark:text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -106,12 +105,15 @@ const TestHistory = () => {
                 <p className="text-xs text-gray-500 dark:text-gray-400 hidden sm:block">Your past attempts</p>
               </div>
             </div>
-            <div className="flex items-center gap-2">
-              <ThemeToggle />
-            </div>
           </div>
         </div>
       </header>
+
+      {/* Header - Desktop */}
+      <div className="hidden md:block px-4 pt-6 pb-2 max-w-5xl mx-auto">
+        <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Test History</h1>
+        <p className="text-sm text-gray-500 dark:text-gray-400">Your past attempts</p>
+      </div>
 
       <main className="px-4 py-4 max-w-5xl mx-auto">
         {loading ? (

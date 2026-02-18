@@ -213,22 +213,22 @@ const AdminDashboard = () => {
       {/* Main Content */}
       <div className="max-w-7xl mx-auto px-4 py-8">
         {/* Welcome Card */}
-        <div className="bg-white rounded-lg shadow-md p-6 mb-8">
-          <h2 className="text-2xl font-bold text-gray-800 mb-2">
+        <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-6 mb-8">
+          <h2 className="text-2xl font-bold text-gray-800 dark:text-white mb-2">
             Welcome, {userDetails?.name}!
           </h2>
-          <p className="text-gray-600">
+          <p className="text-gray-600 dark:text-gray-400">
             Admin Dashboard - Manage your question bank and platform
           </p>
         </div>
 
         {/* Admin Action Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
           {adminCards.map((card, index) => (
             <div
               key={index}
               onClick={() => navigate(card.route)}
-              className="bg-white rounded-lg shadow-md hover:shadow-xl transition-shadow cursor-pointer overflow-hidden"
+              className="bg-white dark:bg-gray-800 rounded-lg shadow-md hover:shadow-xl transition-shadow cursor-pointer overflow-hidden"
             >
               <div
                 className={`bg-gradient-to-r ${card.color} p-6 text-white text-center`}
@@ -239,7 +239,7 @@ const AdminDashboard = () => {
                 <h3 className="text-xl font-bold">{card.title}</h3>
               </div>
               <div className="p-4">
-                <p className="text-gray-600 text-sm text-center">
+                <p className="text-gray-600 dark:text-gray-400 text-sm text-center">
                   {card.description}
                 </p>
               </div>
@@ -249,15 +249,15 @@ const AdminDashboard = () => {
 
         {/* Quick Stats */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-          <div className="bg-white rounded-lg shadow-md p-6">
+          <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-6">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-gray-600 text-sm">Total Questions</p>
+                <p className="text-gray-600 dark:text-gray-400 text-sm">Total Questions</p>
                 <p className="text-3xl font-bold text-blue-600">
                   {stats.totalQuestions}
                 </p>
               </div>
-              <div className="bg-blue-100 p-3 rounded-full">
+              <div className="bg-blue-100 dark:bg-blue-900/30 p-3 rounded-full">
                 <svg
                   className="w-8 h-8 text-blue-600"
                   fill="none"
@@ -275,15 +275,15 @@ const AdminDashboard = () => {
             </div>
           </div>
 
-          <div className="bg-white rounded-lg shadow-md p-6">
+          <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-6">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-gray-600 text-sm">Total Users</p>
+                <p className="text-gray-600 dark:text-gray-400 text-sm">Total Users</p>
                 <p className="text-3xl font-bold text-green-600">
                   {stats.totalUsers}
                 </p>
               </div>
-              <div className="bg-green-100 p-3 rounded-full">
+              <div className="bg-green-100 dark:bg-green-900/30 p-3 rounded-full">
                 <svg
                   className="w-8 h-8 text-green-600"
                   fill="none"
@@ -301,15 +301,15 @@ const AdminDashboard = () => {
             </div>
           </div>
 
-          <div className="bg-white rounded-lg shadow-md p-6">
+          <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-6">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-gray-600 text-sm">Tests Taken</p>
+                <p className="text-gray-600 dark:text-gray-400 text-sm">Tests Taken</p>
                 <p className="text-3xl font-bold text-purple-600">
                   {stats.testsTaken}
                 </p>
               </div>
-              <div className="bg-purple-100 p-3 rounded-full">
+              <div className="bg-purple-100 dark:bg-purple-900/30 p-3 rounded-full">
                 <svg
                   className="w-8 h-8 text-purple-600"
                   fill="none"

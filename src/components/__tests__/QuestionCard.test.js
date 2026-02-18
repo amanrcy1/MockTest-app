@@ -108,6 +108,6 @@ describe('QuestionCard', () => {
 
   it('should display marks information', () => {
     render(<QuestionCard {...defaultProps} />);
-    expect(screen.getByTitle(/Marks: \+1 for correct, -0.33 for wrong/)).toBeInTheDocument();
+    expect(screen.getByTitle(/Marks: \+1\.00 for correct, -0\.33 for wrong/)).toBeInTheDocument();
   });
 });

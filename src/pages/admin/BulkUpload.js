@@ -214,21 +214,21 @@ const BulkUpload = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gray-100">
+    <div className="min-h-screen bg-gray-100 dark:bg-gray-950">
       {/* Header */}
-      <nav className="bg-white shadow-md">
+      <nav className="bg-white dark:bg-gray-900 shadow-md">
         <div className="max-w-7xl mx-auto px-4 py-4 flex justify-between items-center">
           <div>
             <h1 className="text-2xl font-bold text-blue-600">
               Bulk Upload Questions
             </h1>
-            <p className="text-sm text-gray-600">
+            <p className="text-sm text-gray-600 dark:text-gray-400">
               Upload multiple questions via CSV
             </p>
           </div>
           <button
             onClick={() => navigate("/admin/dashboard")}
-            className="bg-gray-200 text-gray-700 px-4 py-2 rounded-lg hover:bg-gray-300 transition-colors"
+            className="bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-200 px-4 py-2 rounded-lg hover:bg-gray-300 dark:hover:bg-gray-600 transition-colors"
           >
             Back to Admin
           </button>
@@ -238,9 +238,9 @@ const BulkUpload = () => {
       {/* Main Content */}
       <div className="max-w-5xl mx-auto px-4 py-8">
         {/* Instructions */}
-        <div className="bg-white rounded-lg shadow-md p-6 mb-6">
-          <h2 className="text-xl font-bold text-gray-800 mb-4">Instructions</h2>
-          <div className="space-y-3 text-gray-600">
+        <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-6 mb-6">
+          <h2 className="text-xl font-bold text-gray-800 dark:text-white mb-4">Instructions</h2>
+          <div className="space-y-3 text-gray-600 dark:text-gray-400">
             <p>1. Download the template file by clicking the button below</p>
             <p>2. Fill in the questions following the template format</p>
             <p>

@@ -491,13 +491,13 @@ const PracticeMode = () => {
                 <svg className="w-4 h-4 text-green-600 dark:text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
                 </svg>
-                <span className="text-gray-700 dark:text-gray-300"><strong>+{examPattern.sections[0].marksPerQuestion}</strong> per correct</span>
+                <span className="text-gray-700 dark:text-gray-300"><strong>+{Number(examPattern.sections[0].marksPerQuestion).toFixed(2)}</strong> per correct</span>
               </div>
               <div className="flex items-center gap-2">
                 <svg className="w-4 h-4 text-red-600 dark:text-red-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20 12H4" />
                 </svg>
-                <span className="text-gray-700 dark:text-gray-300"><strong>{examPattern.sections[0].negativeMarking}</strong> per wrong</span>
+                <span className="text-gray-700 dark:text-gray-300"><strong>{Number(examPattern.sections[0].negativeMarking).toFixed(2)}</strong> per wrong</span>
               </div>
             </div>
           </div>
@@ -702,8 +702,8 @@ const PracticeMode = () => {
                 </div>
                 <div className="flex flex-col items-end gap-2 text-sm text-gray-600">
                   <div>
-                    Marks: +{currentResponse.marksPerQuestion} |{" "}
-                    {currentResponse.negativeMarking}
+                    Marks: +{Number(currentResponse.marksPerQuestion).toFixed(2)} |{" "}
+                    {Number(currentResponse.negativeMarking).toFixed(2)}
                   </div>
                   <div className="flex gap-2">
                     <button

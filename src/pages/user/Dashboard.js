@@ -569,16 +569,29 @@ const Dashboard = () => {
           </div>
         </motion.div>
 
-        {/* Logout for mobile */}
-        <motion.button
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          transition={{ delay: 0.7 }}
-          onClick={handleLogout}
-          className="md:hidden w-full py-3 text-red-600 dark:text-red-400 text-sm font-medium hover:bg-red-50 dark:hover:bg-red-900/20 rounded-xl transition-colors"
-        >
-          Sign Out
-        </motion.button>
+        {/* Admin & Logout for mobile */}
+        <div className="md:hidden flex gap-3">
+          {userDetails?.isAdmin && (
+            <motion.button
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              transition={{ delay: 0.7 }}
+              onClick={() => navigate("/admin/dashboard")}
+              className="flex-1 py-3 text-purple-600 dark:text-purple-400 text-sm font-medium hover:bg-purple-50 dark:hover:bg-purple-900/20 rounded-xl transition-colors"
+            >
+              Admin Panel
+            </motion.button>
+          )}
+          <motion.button
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ delay: 0.7 }}
+            onClick={handleLogout}
+            className={`${userDetails?.isAdmin ? 'flex-1' : 'w-full'} py-3 text-red-600 dark:text-red-400 text-sm font-medium hover:bg-red-50 dark:hover:bg-red-900/20 rounded-xl transition-colors`}
+          >
+            Sign Out
+          </motion.button>
+        </div>
       </main>
 
       {/* Bottom Navigation - Mobile Only */}

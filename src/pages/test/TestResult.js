@@ -208,7 +208,7 @@ const TestResult = () => {
               <h2 className="text-2xl font-bold mb-1">Your Score</h2>
               <div className="text-5xl font-bold mb-2">
                 {scoreData.totalMarks.toFixed(2)}
-                <span className="text-xl opacity-70 ml-2">/ {questions.length * responses[0].marksPerQuestion}</span>
+                <span className="text-xl opacity-70 ml-2">/ {(questions.length * responses[0].marksPerQuestion).toFixed(2)}</span>
               </div>
 
               <div className="grid grid-cols-2 md:grid-cols-5 gap-4 mt-6">
@@ -557,12 +557,12 @@ const TestResult = () => {
                       <div className="text-right">
                         {isCorrect && (
                           <span className="text-green-600 font-semibold">
-                            +{response.marksPerQuestion}
+                            +{Number(response.marksPerQuestion).toFixed(2)}
                           </span>
                         )}
                         {!isCorrect && !isSkipped && (
                           <span className="text-red-600 font-semibold">
-                            {response.negativeMarking}
+                            {Number(response.negativeMarking).toFixed(2)}
                           </span>
                         )}
                         {isSkipped && (

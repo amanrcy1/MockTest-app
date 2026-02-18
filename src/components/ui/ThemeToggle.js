@@ -8,10 +8,10 @@ const ThemeToggle = memo(({ className = "" }) => {
   return (
     <button
       onClick={toggleTheme}
-      className={`p-2 rounded-lg transition-colors ${
+      className={`p-2.5 rounded-xl flex items-center justify-center transition-colors ${
         isDark 
           ? "bg-gray-700 text-yellow-400 hover:bg-gray-600" 
-          : "bg-gray-200 text-gray-700 hover:bg-gray-300"
+          : "bg-gray-100 text-gray-600 hover:bg-gray-200"
       } ${className}`}
       aria-label={isDark ? "Switch to light mode" : "Switch to dark mode"}
       title={isDark ? "Switch to light mode" : "Switch to dark mode"}

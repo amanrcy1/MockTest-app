@@ -187,14 +187,14 @@ const AdminErrorReports = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gray-100">
-      <nav className="bg-white shadow-md">
+    <div className="min-h-screen bg-gray-100 dark:bg-gray-950">
+      <nav className="bg-white dark:bg-gray-900 shadow-md">
         <div className="max-w-7xl mx-auto px-4 py-4 flex justify-between items-center">
           <div>
             <h1 className="text-2xl font-bold text-blue-600">
               Error Reports
             </h1>
-            <p className="text-sm text-gray-600">
+            <p className="text-sm text-gray-600 dark:text-gray-400">
               Review reported questions and mark them resolved
             </p>
           </div>
@@ -202,7 +202,7 @@ const AdminErrorReports = () => {
             <select
               value={statusFilter}
               onChange={(e) => setStatusFilter(e.target.value)}
-              className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none"
+              className="px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
             >
               <option value="all">All</option>
               <option value="pending">Pending</option>
@@ -210,13 +210,13 @@ const AdminErrorReports = () => {
             </select>
             <button
               onClick={fetchReports}
-              className="bg-gray-100 text-gray-700 px-4 py-2 rounded-lg hover:bg-gray-200 transition-colors"
+              className="bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-200 px-4 py-2 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors"
             >
               Refresh
             </button>
             <button
               onClick={() => navigate("/admin/dashboard")}
-              className="bg-gray-200 text-gray-700 px-4 py-2 rounded-lg hover:bg-gray-300 transition-colors"
+              className="bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-200 px-4 py-2 rounded-lg hover:bg-gray-300 dark:hover:bg-gray-600 transition-colors"
             >
               Back to Admin
             </button>

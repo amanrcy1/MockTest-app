@@ -2,6 +2,7 @@ import { memo, useCallback } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { useAuth } from "../../context/AuthContext";
 import { toast } from "react-toastify";
+import { ThemeToggle } from "../../components";
 
 const NAV_ITEMS = [
   { path: "/dashboard", label: "Home" },
@@ -14,7 +15,7 @@ const NAV_ITEMS = [
 const TopNav = memo(() => {
   const navigate = useNavigate();
   const location = useLocation();
-  const { logout } = useAuth();
+  const { logout, userDetails } = useAuth();
 
   const handleLogout = useCallback(async () => {
     const result = await logout();
@@ -48,12 +49,23 @@ const TopNav = memo(() => {
               );
             })}
           </div>
-          <button
-            onClick={handleLogout}
-            className="px-4 py-2 text-sm font-medium text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition-colors"
-          >
-            Logout
-          </button>
+          <div className="flex items-center gap-2">
+            {userDetails?.isAdmin && (
+              <button
+                onClick={() => navigate("/admin/dashboard")}
+                className="px-4 py-2 text-sm font-medium text-purple-600 dark:text-purple-400 hover:bg-purple-50 dark:hover:bg-purple-900/20 rounded-lg transition-colors"
+              >
+                Admin
+              </button>
+            )}
+            <button
+              onClick={handleLogout}
+              className="px-4 py-2 text-sm font-medium text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition-colors"
+            >
+              Logout
+            </button>
+            <ThemeToggle />
+          </div>
         </div>
       </div>
     </nav>

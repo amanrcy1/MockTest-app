@@ -41,9 +41,9 @@ const QuestionCard = memo(({
           {marksPerQuestion !== undefined && (
             <span 
               className="text-xs bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 px-2 py-1 rounded font-medium"
-              title={`Marks: +${marksPerQuestion} for correct, ${negativeMarking || 0} for wrong`}
+              title={`Marks: +${Number(marksPerQuestion).toFixed(2)} for correct, ${Number(negativeMarking || 0).toFixed(2)} for wrong`}
             >
-              +{marksPerQuestion}/{negativeMarking || 0}
+              +{Number(marksPerQuestion).toFixed(2)}/{Number(negativeMarking || 0).toFixed(2)}
             </span>
           )}
           {onBookmark && (

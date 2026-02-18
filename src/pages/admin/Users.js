@@ -213,14 +213,14 @@ const AdminUsers = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gray-100">
-      <nav className="bg-white shadow-md">
+    <div className="min-h-screen bg-gray-100 dark:bg-gray-950">
+      <nav className="bg-white dark:bg-gray-900 shadow-md">
         <div className="max-w-7xl mx-auto px-4 py-4 flex justify-between items-center">
           <div>
             <h1 className="text-2xl font-bold text-blue-600">
               User Management
             </h1>
-            <p className="text-sm text-gray-600">
+            <p className="text-sm text-gray-600 dark:text-gray-400">
               {isSuperAdmin 
                 ? "Manage user roles. You can promote or demote users."
                 : "View users. Only super admin can change roles."}
@@ -228,7 +228,7 @@ const AdminUsers = () => {
           </div>
           <button
             onClick={() => navigate("/admin/dashboard")}
-            className="bg-gray-200 text-gray-700 px-4 py-2 rounded-lg hover:bg-gray-300 transition-colors"
+            className="bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-200 px-4 py-2 rounded-lg hover:bg-gray-300 dark:hover:bg-gray-600 transition-colors"
           >
             Back to Admin
           </button>
@@ -236,13 +236,13 @@ const AdminUsers = () => {
       </nav>
 
       <div className="max-w-5xl mx-auto px-4 py-8">
-        <div className="bg-white rounded-lg shadow-md p-4 mb-6">
+        <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-4 mb-6">
           <input
             type="text"
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             placeholder="Search by name or email"
-            className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none"
+            className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none bg-white dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400"
           />
         </div>
         {loading ? (

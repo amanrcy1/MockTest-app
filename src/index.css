@@ -593,6 +593,18 @@ kbd {
   }
 }
 
+/* Optimize animations on mobile for better performance */
+@media (max-width: 640px) {
+  .animate-float,
+  .animate-float-delayed {
+    animation: none;
+  }
+  
+  .animate-pulse-glow {
+    animation: none;
+  }
+}
+
 /* ============================================
    SPECIAL EFFECTS
    ============================================ */

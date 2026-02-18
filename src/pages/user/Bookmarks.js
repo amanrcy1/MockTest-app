@@ -13,7 +13,6 @@ import { toast } from "react-toastify";
 import { motion, AnimatePresence } from "framer-motion";
 import { db } from "../../config/firebase";
 import { useAuth } from "../../context/AuthContext";
-import { ThemeToggle } from "../../components";
 import { BottomNav } from "../../components";
 import { TopNav } from "../../components";
 import logger from "../../utils/logger";
@@ -319,7 +318,6 @@ const Bookmarks = () => {
                   </option>
                 ))}
               </select>
-              <ThemeToggle />
             </div>
           </div>
         </div>

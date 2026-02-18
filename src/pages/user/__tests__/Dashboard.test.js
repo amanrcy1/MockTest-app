@@ -81,7 +81,8 @@ describe('Dashboard Page', () => {
       logout: mockLogout,
     });
     render(<Dashboard />);
-    expect(await screen.findByText('Admin Panel')).toBeInTheDocument();
+    const adminElements = await screen.findAllByText('Admin Panel');
+    expect(adminElements.length).toBeGreaterThan(0);
   });
 
   it('should hide admin panel for regular users', async () => {

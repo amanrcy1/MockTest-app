@@ -146,21 +146,21 @@ const ManageQuestions = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gray-100">
+    <div className="min-h-screen bg-gray-100 dark:bg-gray-950">
       {/* Header */}
-      <nav className="bg-white shadow-md">
+      <nav className="bg-white dark:bg-gray-900 shadow-md">
         <div className="max-w-7xl mx-auto px-4 py-4 flex justify-between items-center">
           <div>
             <h1 className="text-2xl font-bold text-blue-600">
               Manage Questions
             </h1>
-            <p className="text-sm text-gray-600">
+            <p className="text-sm text-gray-600 dark:text-gray-400">
               View, Edit, and Delete Questions
             </p>
           </div>
           <button
             onClick={() => navigate("/admin/dashboard")}
-            className="bg-gray-200 text-gray-700 px-4 py-2 rounded-lg hover:bg-gray-300 transition-colors"
+            className="bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-200 px-4 py-2 rounded-lg hover:bg-gray-300 dark:hover:bg-gray-600 transition-colors"
           >
             Back to Admin
           </button>
@@ -170,19 +170,19 @@ const ManageQuestions = () => {
       {/* Main Content */}
       <div className="max-w-7xl mx-auto px-4 py-8">
         {/* Filters */}
-        <div className="bg-white rounded-lg shadow-md p-6 mb-6">
-          <h2 className="text-lg font-semibold text-gray-800 mb-4">Filters</h2>
+        <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-6 mb-6">
+          <h2 className="text-lg font-semibold text-gray-800 dark:text-white mb-4">Filters</h2>
           <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
             {/* Exam Type Filter */}
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                 Exam Type
               </label>
               <select
                 name="examType"
                 value={filters.examType}
                 onChange={handleFilterChange}
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none"
+                className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
               >
                 <option value="all">All Exams</option>
                 {Object.keys(EXAM_PATTERNS).map((key) => (
@@ -195,14 +195,14 @@ const ManageQuestions = () => {
 
             {/* Subject Filter */}
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                 Subject
               </label>
               <select
                 name="subject"
                 value={filters.subject}
                 onChange={handleFilterChange}
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none"
+                className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
               >
                 <option value="all">All Subjects</option>
                 {filters.examType !== "all" &&
@@ -216,14 +216,14 @@ const ManageQuestions = () => {
 
             {/* Difficulty Filter */}
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                 Difficulty
               </label>
               <select
                 name="difficulty"
                 value={filters.difficulty}
                 onChange={handleFilterChange}
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none"
+                className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
               >
                 <option value="all">All Levels</option>
                 {DIFFICULTY_LEVELS.map((level) => (
@@ -236,7 +236,7 @@ const ManageQuestions = () => {
 
             {/* Search */}
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                 Search
               </label>
               <input
@@ -245,13 +245,13 @@ const ManageQuestions = () => {
                 value={filters.searchText}
                 onChange={handleFilterChange}
                 placeholder="Search questions..."
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none"
+                className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
               />
             </div>
           </div>
 
           {/* Results Count */}
-          <div className="mt-4 text-sm text-gray-600">
+          <div className="mt-4 text-sm text-gray-600 dark:text-gray-400">
             Showing {filteredQuestions.length} of {questions.length} questions
           </div>
         </div>
@@ -456,17 +456,17 @@ const ManageQuestions = () => {
 
       {/* Delete Confirmation Modal */}
       {showDeleteModal && selectedQuestion && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-white rounded-lg p-8 max-w-md w-full mx-4">
-            <h2 className="text-2xl font-bold text-gray-800 mb-4">
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white dark:bg-gray-800 rounded-lg p-8 max-w-md w-full">
+            <h2 className="text-2xl font-bold text-gray-800 dark:text-white mb-4">
               Delete Question
             </h2>
-            <p className="text-gray-600 mb-6">
+            <p className="text-gray-600 dark:text-gray-400 mb-6">
               Are you sure you want to delete this question? This action cannot
               be undone.
             </p>
-            <div className="bg-gray-50 p-4 rounded-lg mb-6">
-              <p className="text-sm text-gray-800 font-medium">
+            <div className="bg-gray-50 dark:bg-gray-700 p-4 rounded-lg mb-6">
+              <p className="text-sm text-gray-800 dark:text-gray-200 font-medium">
                 {selectedQuestion.questionText.substring(0, 100)}...
               </p>
             </div>
@@ -476,7 +476,7 @@ const ManageQuestions = () => {
                   setShowDeleteModal(false);
                   setSelectedQuestion(null);
                 }}
-                className="flex-1 bg-gray-200 text-gray-700 py-2 rounded-lg hover:bg-gray-300 transition-colors"
+                className="flex-1 bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-200 py-2 rounded-lg hover:bg-gray-300 dark:hover:bg-gray-600 transition-colors"
               >
                 Cancel
               </button>
@@ -546,13 +546,13 @@ const EditQuestionModal = ({ question, userDetails, onClose, onSave }) => {
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4 overflow-y-auto">
-      <div className="bg-white rounded-lg p-8 max-w-3xl w-full my-8">
-        <h2 className="text-2xl font-bold text-gray-800 mb-6">Edit Question</h2>
+      <div className="bg-white dark:bg-gray-800 rounded-lg p-8 max-w-3xl w-full my-8">
+        <h2 className="text-2xl font-bold text-gray-800 dark:text-white mb-6">Edit Question</h2>
 
         <div className="space-y-4 max-h-[60vh] overflow-y-auto pr-2">
           {/* Question Text */}
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
               Question Text
             </label>
             <textarea
@@ -560,14 +560,14 @@ const EditQuestionModal = ({ question, userDetails, onClose, onSave }) => {
               value={formData.questionText}
               onChange={handleChange}
               rows="3"
-              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none resize-none"
+              className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none resize-none bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
             />
           </div>
 
           {/* Options */}
           {["A", "B", "C", "D"].map((option) => (
             <div key={option}>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                 Option {option}
               </label>
               <input
@@ -575,21 +575,21 @@ const EditQuestionModal = ({ question, userDetails, onClose, onSave }) => {
                 name={`option${option}`}
                 value={formData[`option${option}`]}
                 onChange={handleChange}
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none"
+                className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
               />
             </div>
           ))}
 
           {/* Correct Answer */}
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
               Correct Answer
             </label>
             <select
               name="correctAnswer"
               value={formData.correctAnswer}
               onChange={handleChange}
-              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none"
+              className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
             >
               <option value="A">Option A</option>
               <option value="B">Option B</option>
@@ -600,14 +600,14 @@ const EditQuestionModal = ({ question, userDetails, onClose, onSave }) => {
 
           {/* Difficulty */}
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
               Difficulty
             </label>
             <select
               name="difficulty"
               value={formData.difficulty}
               onChange={handleChange}
-              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none"
+              className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
             >
               {DIFFICULTY_LEVELS.map((level) => (
                 <option key={level} value={level}>
@@ -619,7 +619,7 @@ const EditQuestionModal = ({ question, userDetails, onClose, onSave }) => {
 
           {/* Solution */}
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
               Solution
             </label>
             <textarea
@@ -627,7 +627,7 @@ const EditQuestionModal = ({ question, userDetails, onClose, onSave }) => {
               value={formData.solution}
               onChange={handleChange}
               rows="3"
-              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none resize-none"
+              className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none resize-none bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
             />
           </div>
         </div>
@@ -637,7 +637,7 @@ const EditQuestionModal = ({ question, userDetails, onClose, onSave }) => {
           <button
             onClick={onClose}
             disabled={saving}
-            className="flex-1 bg-gray-200 text-gray-700 py-3 rounded-lg hover:bg-gray-300 transition-colors disabled:opacity-50"
+            className="flex-1 bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-200 py-3 rounded-lg hover:bg-gray-300 dark:hover:bg-gray-600 transition-colors disabled:opacity-50"
           >
             Cancel
           </button>

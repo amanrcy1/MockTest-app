@@ -1,12 +1,12 @@
 import React, { useState, useEffect } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { collection, getDocs, query, where } from "firebase/firestore";
-import { motion, AnimatePresence } from "framer-motion";
+import { motion } from "framer-motion";
 import { db } from "../../config/firebase";
 import { useAuth } from "../../context/AuthContext";
 import { EXAM_PATTERNS } from "../../utils/examPatterns";
 import { toast } from "react-toastify";
-import { ThemeToggle, BottomNav, TopNav } from "../../components";
+import { BottomNav, TopNav } from "../../components";
 import logger from "../../utils/logger";
 
 // Mode Card Component with 3D effect
@@ -168,7 +168,6 @@ const TestSelection = () => {
   const [availableQuestions, setAvailableQuestions] = useState({});
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState("");
-  const [showHelp, setShowHelp] = useState(false);
   const [initialStateApplied, setInitialStateApplied] = useState(false);
 
   const selectedExamPattern = EXAM_PATTERNS[selectedExam] || EXAM_PATTERNS.CDS;
@@ -272,29 +271,6 @@ const TestSelection = () => {
               <p className="text-xs md:text-sm text-gray-500 dark:text-gray-400">Choose your test type and exam</p>
             </div>
             <div className="flex items-center gap-2 md:gap-3">
-              <ThemeToggle />
-              <motion.button
-                whileHover={{ scale: 1.05 }}
-                whileTap={{ scale: 0.95 }}
-                onClick={() => setShowHelp(true)}
-                className="hidden md:flex items-center gap-2 px-4 py-2 bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-200 rounded-xl text-sm font-medium hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors"
-              >
-                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8.228 9c.549-1.165 2.03-2 3.772-2 2.21 0 4 1.343 4 3 0 1.4-1.278 2.575-3.006 2.907-.542.104-.994.54-.994 1.093m0 3h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                </svg>
-                How it Works
-              </motion.button>
-              <motion.button
-                whileHover={{ scale: 1.05 }}
-                whileTap={{ scale: 0.95 }}
-                onClick={() => setShowHelp(true)}
-                className="md:hidden p-2 bg-gray-100 dark:bg-gray-700 rounded-xl"
-                aria-label="Help"
-              >
-                <svg className="w-5 h-5 text-gray-700 dark:text-gray-200" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8.228 9c.549-1.165 2.03-2 3.772-2 2.21 0 4 1.343 4 3 0 1.4-1.278 2.575-3.006 2.907-.542.104-.994.54-.994 1.093m0 3h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                </svg>
-              </motion.button>
               <motion.button
                 whileHover={{ scale: 1.05 }}
                 whileTap={{ scale: 0.95 }}
@@ -423,55 +399,6 @@ const TestSelection = () => {
           </div>
         </motion.section>
       </main>
-
-      {/* Help Modal */}
-      <AnimatePresence>
-        {showHelp && (
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4 z-50"
-            onClick={() => setShowHelp(false)}
-          >
-            <motion.div
-              initial={{ scale: 0.9, opacity: 0 }}
-              animate={{ scale: 1, opacity: 1 }}
-              exit={{ scale: 0.9, opacity: 0 }}
-              onClick={(e) => e.stopPropagation()}
-              className="bg-white dark:bg-gray-800 rounded-2xl shadow-2xl p-6 max-w-lg w-full border border-gray-100 dark:border-gray-700"
-            >
-              <h2 className="text-xl font-bold text-gray-900 dark:text-white mb-4">How Test Selection Works</h2>
-              <div className="space-y-4 text-sm text-gray-600 dark:text-gray-300">
-                <p>Choose a test mode first. Mock uses full exam timing and negative marking. Practice gives instant feedback. Custom lets you pick subjects and settings.</p>
-                <div className="bg-gray-50 dark:bg-gray-700/50 rounded-xl p-4">
-                  <p className="font-semibold text-gray-900 dark:text-white mb-2">{selectedExamPattern.name} Pattern</p>
-                  {selectedExamPattern.sections.map((section) => (
-                    <div key={section.name} className="flex justify-between text-gray-600 dark:text-gray-400">
-                      <span>{section.name}</span>
-                      <span>{section.totalQuestions}Q - {section.duration}min</span>
-                    </div>
-                  ))}
-                  <p className="text-xs text-gray-500 mt-2">
-                    Negative marking: {selectedExamPattern.sections[0].negativeMarking ?? 0}
-                  </p>
-                </div>
-                <p>You need enough questions for mock tests. Practice and custom can run with fewer questions.</p>
-              </div>
-              <div className="mt-6 flex justify-end">
-                <motion.button
-                  whileHover={{ scale: 1.02 }}
-                  whileTap={{ scale: 0.98 }}
-                  onClick={() => setShowHelp(false)}
-                  className="bg-blue-600 text-white px-6 py-2.5 rounded-xl font-semibold hover:bg-blue-700 transition-colors"
-                >
-                  Got it
-                </motion.button>
-              </div>
-            </motion.div>
-          </motion.div>
-        )}
-      </AnimatePresence>
 
       {/* Bottom Navigation */}
       <BottomNav />
