@@ -1,4 +1,4 @@
-import { render, screen, fireEvent, waitFor, act } from '@testing-library/react';
+import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import Dashboard from '../Dashboard';
 import { useAuth } from '../../../context/AuthContext';
 import { getDocs, getDoc } from 'firebase/firestore';
@@ -38,15 +38,11 @@ describe('Dashboard Page', () => {
 
   // Helper to render and wait for loading to complete
   const renderAndWait = async () => {
-    let result;
-    await act(async () => {
-      result = render(<Dashboard />);
-    });
+    render(<Dashboard />);
     // Wait for content to appear (indicates loading is done)
     await waitFor(() => {
       expect(screen.getByText('Test User')).toBeInTheDocument();
     }, { timeout: 3000 });
-    return result;
   };
 
   it('should render user name', async () => {
@@ -101,10 +97,7 @@ describe('Dashboard Page', () => {
       userDetails: { name: 'Admin', targetExam: 'CDS', isAdmin: true },
       logout: mockLogout,
     });
-    let result;
-    await act(async () => {
-      result = render(<Dashboard />);
-    });
+    render(<Dashboard />);
     await waitFor(() => {
       expect(screen.getByText('Admin')).toBeInTheDocument();
     }, { timeout: 3000 });
@@ -156,10 +149,7 @@ describe('Dashboard Page', () => {
         ].forEach(cb);
       }),
     });
-    let result;
-    await act(async () => {
-      result = render(<Dashboard />);
-    });
+    render(<Dashboard />);
     await waitFor(() => {
       expect(screen.getByText('Stats User')).toBeInTheDocument();
     }, { timeout: 3000 });
