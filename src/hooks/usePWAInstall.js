@@ -1,5 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 
+const STORAGE_KEY = 'pwa-installed';
+
 /**
  * Hook to handle PWA installation prompt
  * Returns install state and trigger function
@@ -10,10 +12,29 @@ const usePWAInstall = () => {
   const [isIOS, setIsIOS] = useState(false);
 
   useEffect(() => {
-    // Check if already installed
-    if (window.matchMedia('(display-mode: standalone)').matches) {
+    // Check if running in standalone mode (opened from home screen)
+    const isStandalone = window.matchMedia('(display-mode: standalone)').matches 
+      || window.navigator.standalone === true;
+    
+    if (isStandalone) {
       setIsInstalled(true);
+      // Update localStorage when opened in standalone mode
+      try {
+        localStorage.setItem(STORAGE_KEY, 'true');
+      } catch (e) {
+        // localStorage might be unavailable
+      }
       return;
+    }
+
+    // Check localStorage for previous installation
+    try {
+      const wasInstalled = localStorage.getItem(STORAGE_KEY) === 'true';
+      if (wasInstalled) {
+        setIsInstalled(true);
+      }
+    } catch (e) {
+      // localStorage might be unavailable
     }
 
     // Check if iOS
@@ -23,6 +44,18 @@ const usePWAInstall = () => {
     // Listen for beforeinstallprompt (Android/Desktop Chrome)
     const handleBeforeInstall = (e) => {
       e.preventDefault();
+      // If we receive this event, app is NOT installed (browser tells us)
+      // Clear the localStorage flag if it was set incorrectly
+      try {
+        const wasInstalled = localStorage.getItem(STORAGE_KEY) === 'true';
+        if (wasInstalled) {
+          // User must have uninstalled - clear the flag
+          localStorage.removeItem(STORAGE_KEY);
+          setIsInstalled(false);
+        }
+      } catch (err) {
+        // localStorage might be unavailable
+      }
       setInstallPrompt(e);
     };
 
@@ -30,6 +63,11 @@ const usePWAInstall = () => {
     const handleAppInstalled = () => {
       setIsInstalled(true);
       setInstallPrompt(null);
+      try {
+        localStorage.setItem(STORAGE_KEY, 'true');
+      } catch (e) {
+        // localStorage might be unavailable
+      }
     };
 
     window.addEventListener('beforeinstallprompt', handleBeforeInstall);
@@ -51,6 +89,11 @@ const usePWAInstall = () => {
       if (outcome === 'accepted') {
         setIsInstalled(true);
         setInstallPrompt(null);
+        try {
+          localStorage.setItem(STORAGE_KEY, 'true');
+        } catch (e) {
+          // localStorage might be unavailable
+        }
         return true;
       }
       return false;
@@ -60,11 +103,22 @@ const usePWAInstall = () => {
     }
   }, [installPrompt]);
 
+  // Function to mark as installed (for iOS manual install)
+  const markAsInstalled = useCallback(() => {
+    setIsInstalled(true);
+    try {
+      localStorage.setItem(STORAGE_KEY, 'true');
+    } catch (e) {
+      // localStorage might be unavailable
+    }
+  }, []);
+
   return {
     canInstall: !!installPrompt,
     isInstalled,
     isIOS,
     promptInstall,
+    markAsInstalled,
   };
 };
 

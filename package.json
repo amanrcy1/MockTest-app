@@ -39,12 +39,6 @@
     "deploy": "vercel --prod",
     "deploy:preview": "vercel"
   },
-  "eslintConfig": {
-    "extends": [
-      "react-app",
-      "react-app/jest"
-    ]
-  },
   "jest": {
     "moduleNameMapper": {
       "^react-router-dom$": "<rootDir>/__mocks__/react-router-dom.js",

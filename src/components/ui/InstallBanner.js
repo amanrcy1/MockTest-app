@@ -6,7 +6,7 @@ import usePWAInstall from '../../hooks/usePWAInstall';
  * PWA Install Banner - Shows install prompt for mobile users
  */
 const InstallBanner = () => {
-  const { canInstall, isInstalled, isIOS, promptInstall } = usePWAInstall();
+  const { canInstall, isInstalled, isIOS, promptInstall, markAsInstalled } = usePWAInstall();
   const [showBanner, setShowBanner] = useState(false);
   const [showIOSGuide, setShowIOSGuide] = useState(false);
 
@@ -46,6 +46,13 @@ const InstallBanner = () => {
         setShowBanner(false);
       }
     }
+  };
+
+  // iOS: Mark as installed when user says "Got it" (assumes they followed instructions)
+  const handleIOSComplete = () => {
+    markAsInstalled();
+    setShowBanner(false);
+    setShowIOSGuide(false);
   };
 
   if (isInstalled || (!canInstall && !isIOS)) return null;
@@ -133,10 +140,16 @@ const InstallBanner = () => {
                   </li>
                 </ol>
                 <button
-                  onClick={handleDismiss}
-                  className="w-full mt-4 py-2 text-sm font-medium text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors"
+                  onClick={handleIOSComplete}
+                  className="w-full mt-4 py-2 text-sm font-medium text-white bg-gradient-to-r from-blue-500 to-purple-600 rounded-lg hover:opacity-90 transition-opacity"
                 >
-                  Got it
+                  I've installed it
+                </button>
+                <button
+                  onClick={handleDismiss}
+                  className="w-full mt-2 py-2 text-sm font-medium text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors"
+                >
+                  Maybe later
                 </button>
               </div>
             )}
