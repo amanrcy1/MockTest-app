@@ -1,21 +1,40 @@
 {
   "short_name": "Mockzam",
   "name": "Mockzam - Smart Mock Test Platform",
+  "description": "Prepare for CDS, NDA, AFCAT & more with AI-powered mock tests",
   "icons": [
     {
       "src": "favicon.svg",
       "sizes": "any",
       "type": "image/svg+xml",
-      "purpose": "any maskable"
+      "purpose": "any"
     },
     {
       "src": "logo.svg",
       "sizes": "any",
-      "type": "image/svg+xml"
+      "type": "image/svg+xml",
+      "purpose": "maskable"
     }
   ],
-  "start_url": ".",
+  "start_url": "/",
+  "scope": "/",
   "display": "standalone",
+  "orientation": "portrait",
   "theme_color": "#3b82f6",
-  "background_color": "#ffffff"
+  "background_color": "#ffffff",
+  "categories": ["education", "productivity"],
+  "shortcuts": [
+    {
+      "name": "Start Mock Test",
+      "short_name": "Mock Test",
+      "url": "/test-selection",
+      "icons": [{ "src": "logo.svg", "sizes": "any" }]
+    },
+    {
+      "name": "Practice Mode",
+      "short_name": "Practice",
+      "url": "/test-selection?mode=practice",
+      "icons": [{ "src": "logo.svg", "sizes": "any" }]
+    }
+  ]
 }

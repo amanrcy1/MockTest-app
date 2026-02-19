@@ -21,6 +21,7 @@ import { motion } from "framer-motion";
 import { db } from "../../config/firebase";
 import { EXAM_PATTERNS } from "../../utils/examPatterns";
 import { TopNav, BottomNav } from "../../components";
+import { LeaderboardSkeleton } from "../../components/ui/LoadingSkeleton";
 
 // Cache for leaderboard data (keyed by examType_weekOffset)
 const leaderboardCache = new Map();
@@ -318,10 +319,7 @@ const Leaderboard = () => {
         )}
 
         {loading ? (
-          <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-xl p-12 text-center border border-gray-100 dark:border-gray-700">
-            <div className="inline-block animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
-            <p className="mt-4 text-gray-500 dark:text-gray-400">Loading leaderboard...</p>
-          </div>
+          <LeaderboardSkeleton />
         ) : entries.length === 0 ? (
           <motion.div 
             initial={{ opacity: 0, scale: 0.95 }}

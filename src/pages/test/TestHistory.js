@@ -15,6 +15,7 @@ import { db } from "../../config/firebase";
 import { useAuth } from "../../context/AuthContext";
 import { BottomNav } from "../../components";
 import { TopNav } from "../../components";
+import { TestHistorySkeleton } from "../../components/ui/LoadingSkeleton";
 import logger from "../../utils/logger";
 
 const TestHistory = () => {
@@ -117,15 +118,7 @@ const TestHistory = () => {
 
       <main className="px-4 py-4 max-w-5xl mx-auto">
         {loading ? (
-          <div className="space-y-3">
-            {[1, 2, 3].map((item) => (
-              <div key={item} className="bg-white dark:bg-gray-800 rounded-xl p-4 animate-pulse">
-                <div className="h-3 bg-gray-200 dark:bg-gray-700 rounded w-1/4 mb-3"></div>
-                <div className="h-5 bg-gray-200 dark:bg-gray-700 rounded w-1/2 mb-2"></div>
-                <div className="h-3 bg-gray-200 dark:bg-gray-700 rounded w-2/3"></div>
-              </div>
-            ))}
-          </div>
+          <TestHistorySkeleton />
         ) : tests.length === 0 ? (
           <motion.div
             initial={{ opacity: 0, y: 20 }}

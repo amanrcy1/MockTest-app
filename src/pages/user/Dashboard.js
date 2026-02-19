@@ -10,6 +10,7 @@ import { db } from "../../config/firebase";
 import { ThemeToggle } from "../../components";
 import { BottomNav } from "../../components";
 import { TopNav } from "../../components";
+import { DashboardSkeleton } from "../../components/ui/LoadingSkeleton";
 import logger from "../../utils/logger";
 
 // Cache for dashboard stats (5 minute TTL)
@@ -102,7 +103,7 @@ const QuickActionCard = ({ title, subtitle, icon, gradient, onClick, delay = 0 }
       whileTap={{ scale: 0.98 }}
       onClick={onClick}
       className={`relative bg-gradient-to-br ${gradient} rounded-2xl p-5 md:p-6 text-left text-white 
-        overflow-hidden shadow-xl group`}
+        overflow-hidden shadow-xl group ripple btn-lift`}
     >
       {/* Animated background pattern */}
       <div className="absolute inset-0 opacity-20">
@@ -156,7 +157,7 @@ const QuickLinkItem = ({ title, subtitle, icon, iconBg, onClick, delay = 0 }) =>
       onClick={onClick}
       className="w-full bg-white dark:bg-gray-800 rounded-xl p-4 flex items-center gap-4 
         shadow-sm hover:shadow-md border border-gray-100 dark:border-gray-700
-        active:bg-gray-50 dark:active:bg-gray-700 transition-all duration-200 group"
+        active:bg-gray-50 dark:active:bg-gray-700 transition-all duration-200 group card-hover ripple"
     >
       <div className={`w-12 h-12 ${iconBg} rounded-xl flex items-center justify-center flex-shrink-0`}>
         {icon}
@@ -192,6 +193,7 @@ QuickLinkItem.propTypes = {
 const Dashboard = () => {
   const { userDetails, logout, currentUser } = useAuth();
   const navigate = useNavigate();
+  const [loading, setLoading] = useState(true);
   const [stats, setStats] = useState({
     attempted: 0,
     averageAccuracy: 0,
@@ -212,11 +214,17 @@ const Dashboard = () => {
 
   useEffect(() => {
     const fetchStats = async () => {
-      if (!currentUser || fetchingRef.current) return;
+      if (!currentUser) {
+        setLoading(false);
+        return;
+      }
+      
+      if (fetchingRef.current) return;
 
       const examTypeForRank = userDetails?.targetExam || null;
       const now = Date.now();
       
+      // Check cache - if valid, use cached data and stop loading
       if (
         statsCache.data &&
         statsCache.userId === currentUser.uid &&
@@ -224,6 +232,7 @@ const Dashboard = () => {
         now - statsCache.timestamp < CACHE_TTL
       ) {
         setStats(statsCache.data);
+        setLoading(false);
         return;
       }
 
@@ -295,6 +304,7 @@ const Dashboard = () => {
         logger.error("Error loading dashboard stats:", error);
       } finally {
         fetchingRef.current = false;
+        setLoading(false);
       }
     };
 
@@ -329,6 +339,32 @@ const Dashboard = () => {
 
   const rankTier = getRankTier(stats.weeklyRank);
 
+  // Show skeleton while loading
+  if (loading) {
+    return (
+      <div className="min-h-screen mesh-gradient pb-20 md:pb-0">
+        <TopNav />
+        <header className="glass-card sticky top-0 z-40 md:hidden">
+          <div className="px-4 py-3 md:py-4 max-w-7xl mx-auto">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <div className="w-11 h-11 rounded-full bg-gray-200 dark:bg-gray-700 animate-pulse" />
+                <div>
+                  <div className="h-3 w-16 bg-gray-200 dark:bg-gray-700 rounded mb-1 animate-pulse" />
+                  <div className="h-4 w-24 bg-gray-200 dark:bg-gray-700 rounded animate-pulse" />
+                </div>
+              </div>
+              <ThemeToggle />
+            </div>
+          </div>
+        </header>
+        <main className="px-4 py-5 max-w-7xl mx-auto">
+          <DashboardSkeleton />
+        </main>
+        <BottomNav />
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen mesh-gradient pb-20 md:pb-0">

@@ -18,7 +18,7 @@ describe('LoadingSkeleton Components', () => {
     it('should render 4 option placeholders', () => {
       const { container } = render(<QuestionSkeleton />);
       // eslint-disable-next-line testing-library/no-container, testing-library/no-node-access
-      const options = container.querySelectorAll('.h-16');
+      const options = container.querySelectorAll('.h-14');
       expect(options.length).toBe(4);
     });
   });
@@ -41,8 +41,9 @@ describe('LoadingSkeleton Components', () => {
     it('should render custom number of rows', () => {
       const { container } = render(<TableSkeleton rows={3} cols={4} />);
       // eslint-disable-next-line testing-library/no-container, testing-library/no-node-access
-      const rows = container.querySelectorAll('.border-t');
-      expect(rows.length).toBe(3);
+      // The header has border-b too, so we check for rows with both p-4 and border-b (excluding header which has bg-gray-50)
+      const dataRows = container.querySelectorAll('.p-4.border-b:not(.bg-gray-50)');
+      expect(dataRows.length).toBe(3);
     });
   });
 
@@ -50,7 +51,7 @@ describe('LoadingSkeleton Components', () => {
     it('should render chart skeleton', () => {
       const { container } = render(<ChartSkeleton />);
       // eslint-disable-next-line testing-library/no-container, testing-library/no-node-access
-      expect(container.querySelector('.h-64')).toBeInTheDocument();
+      expect(container.querySelector('.h-48')).toBeInTheDocument();
     });
   });
 

@@ -9,3 +9,4 @@ export { useTestSession } from "./useTestSession";
 export { useBookmarks } from "./useBookmarks";
 export { useErrorReport } from "./useErrorReport";
 export { useSessionTimeout } from "./useSessionTimeout";
+export { default as usePWAInstall } from "./usePWAInstall";

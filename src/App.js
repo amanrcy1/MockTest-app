@@ -11,6 +11,7 @@ import { ThemeProvider } from "./context/ThemeContext";
 import { ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 import { ErrorBoundary } from "./components";
+import InstallBanner from "./components/ui/InstallBanner";
 
 // Eager load critical pages
 import Auth from "./pages/auth/Auth";
@@ -320,6 +321,9 @@ function App() {
                 </Routes>
               </Suspense>
             </main>
+            
+            {/* PWA Install Banner */}
+            <InstallBanner />
           </AuthProvider>
         </Router>
       </ThemeProvider>

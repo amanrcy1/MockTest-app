@@ -8,6 +8,7 @@ import { db } from "../../config/firebase";
 import { useAuth } from "../../context/AuthContext";
 import { EXAM_PATTERNS } from "../../utils/examPatterns";
 import { ThemeToggle, AuthAuroraCanvas, BottomNav, TopNav } from "../../components";
+import { ProfileSkeleton } from "../../components/ui/LoadingSkeleton";
 import logger from "../../utils/logger";
 
 const createCroppedImage = async (imageSrc, pixelCrop, maxSize = 200, quality = 0.8) => {
@@ -42,6 +43,7 @@ const Profile = () => {
   const fileInputRef = useRef(null);
   const [formData, setFormData] = useState({ name: "", targetExam: "CDS" });
   const [saving, setSaving] = useState(false);
+  const [loading, setLoading] = useState(true);
   const [uploadingPhoto, setUploadingPhoto] = useState(false);
   const [previewUrl, setPreviewUrl] = useState(null);
   const [showPhotoOptions, setShowPhotoOptions] = useState(false);
@@ -55,6 +57,7 @@ const Profile = () => {
     if (userDetails) {
       setFormData({ name: userDetails.name || "", targetExam: userDetails.targetExam || "CDS" });
       if (userDetails.photoURL) setPreviewUrl(userDetails.photoURL);
+      setLoading(false);
     }
   }, [userDetails]);
 
@@ -109,6 +112,28 @@ const Profile = () => {
 
   const initial = userDetails?.name?.charAt(0)?.toUpperCase() || "U";
   const memberSince = userDetails?.createdAt ? new Date(userDetails.createdAt).toLocaleDateString("en-IN", { month: "short", year: "numeric" }) : null;
+
+  if (loading) {
+    return (
+      <div className="min-h-screen relative overflow-hidden pb-20 md:pb-0">
+        <AuthAuroraCanvas />
+        <TopNav />
+        <header className="sticky top-0 md:top-14 z-40 backdrop-blur-xl bg-white/60 dark:bg-gray-900/60 border-b border-white/20 dark:border-gray-700/30">
+          <div className="px-4 py-3 max-w-2xl mx-auto flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <div className="p-2 -ml-2 md:hidden"><div className="w-5 h-5" /></div>
+              <h1 className="text-lg font-bold text-gray-900 dark:text-white">Profile</h1>
+            </div>
+            <ThemeToggle className="md:hidden" />
+          </div>
+        </header>
+        <main className="relative z-10 px-4 py-8 max-w-2xl mx-auto">
+          <ProfileSkeleton />
+        </main>
+        <BottomNav />
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen relative overflow-hidden pb-20 md:pb-0">
