@@ -13,18 +13,22 @@ const Auth = () => {
   const handleGoogleSignIn = async () => {
     if (loading) return;
     setLoading(true);
-    try {
-      const result = await loginWithGoogle();
-      if (result?.success) {
-        toast.success(result.isNewUser ? "Welcome! Let's set up your profile." : "Welcome back!");
-        navigate(result.isNewUser ? "/onboarding" : "/dashboard");
-      } else if (result?.error && result.error !== "Sign-in cancelled.") {
-        toast.error(result.error);
-      }
-    } catch {
-      // popup closed
-    } finally {
-      setLoading(false);
+    
+    const result = await loginWithGoogle();
+    
+    if (result?.success) {
+      toast.success(result.isNewUser ? "Welcome! Let's set up your profile." : "Welcome back!");
+      navigate(result.isNewUser ? "/onboarding" : "/dashboard");
+      // Don't reset loading on success - we're navigating away
+      return;
+    }
+    
+    // Reset loading for any non-success case
+    setLoading(false);
+    
+    // Show error toast only for real errors (not cancelled)
+    if (result?.error && result.error !== "Sign-in cancelled.") {
+      toast.error(result.error);
     }
   };
 
@@ -63,14 +67,33 @@ const Auth = () => {
           {/* Logo */}
           <div className="text-center mb-8">
             <motion.div
-              className="inline-flex items-center justify-center w-16 h-16 bg-gradient-to-br from-blue-500 to-purple-600 rounded-2xl mb-4 shadow-lg shadow-blue-500/30"
+              className="inline-flex items-center justify-center w-16 h-16 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-2xl mb-4 shadow-lg shadow-blue-500/30 overflow-hidden"
               whileHover={{ scale: 1.05, rotate: 5 }}
             >
-              <svg className="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4" />
+              <svg className="w-16 h-16" viewBox="0 0 64 64" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <defs>
+                  <linearGradient id="authBolt" x1="0%" y1="0%" x2="100%" y2="100%">
+                    <stop offset="0%" stopColor="#fbbf24"/>
+                    <stop offset="100%" stopColor="#f59e0b"/>
+                  </linearGradient>
+                  <filter id="authGlow">
+                    <feGaussianBlur stdDeviation="1.5" result="coloredBlur"/>
+                    <feMerge>
+                      <feMergeNode in="coloredBlur"/>
+                      <feMergeNode in="SourceGraphic"/>
+                    </feMerge>
+                  </filter>
+                </defs>
+                <path d="M16 48 L16 20 L26 35 L32 20 L38 35 L48 20 L48 48" fill="none" stroke="white" strokeWidth="5" strokeLinecap="round" strokeLinejoin="round"/>
+                <path d="M38 8 L30 24 L36 24 L28 40 L42 20 L36 20 L42 8 Z" fill="url(#authBolt)" filter="url(#authGlow)">
+                  <animate attributeName="opacity" values="0.7;1;0.7" dur="2s" repeatCount="indefinite"/>
+                </path>
+                <path d="M38 8 L30 24 L36 24 L28 40 L42 20 L36 20 L42 8 Z" fill="#fef3c7" opacity="0">
+                  <animate attributeName="opacity" values="0;0.5;0" dur="2s" repeatCount="indefinite"/>
+                </path>
               </svg>
             </motion.div>
-            <h1 className="text-2xl font-bold gradient-text mb-2">UPSC MockTest</h1>
+            <h1 className="text-2xl font-bold gradient-text mb-2">Mockzam</h1>
             <p className="text-sm text-gray-500 dark:text-gray-400">
               Practice smarter, score higher
             </p>

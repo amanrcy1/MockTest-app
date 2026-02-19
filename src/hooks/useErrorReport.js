@@ -1,6 +1,6 @@
 import { useCallback, useState } from "react";
 import { addDoc, collection } from "firebase/firestore";
-import { toast } from "react-toastify";
+import toast, { messages } from "../utils/toast";
 import { db } from "../config/firebase";
 import logger from "../utils/logger";
 
@@ -24,7 +24,7 @@ export const useErrorReport = (userId, examType) => {
   const submitReport = useCallback(
     async (questionId) => {
       if (!reportText.trim()) {
-        toast.error("Please enter a report message.");
+        toast.error(messages.REPORT_EMPTY);
         return;
       }
       try {
@@ -37,11 +37,11 @@ export const useErrorReport = (userId, examType) => {
           createdAt: new Date().toISOString(),
           status: "pending",
         });
-        toast.success("Report submitted");
+        toast.success(messages.REPORT_SUBMITTED);
         closeReport();
       } catch (error) {
         logger.error("Error submitting report:", error);
-        toast.error("Failed to submit report");
+        toast.error(messages.REPORT_FAILED);
       } finally {
         setReportSubmitting(false);
       }

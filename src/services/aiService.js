@@ -16,6 +16,7 @@ const MAX_CACHE_SIZE = 100; // Limit cache to 100 entries
  * @param {string} params.userAnswer - The user's selected answer (A/B/C/D)
  * @param {string} params.subject - The subject of the question
  * @param {string} params.topic - The topic of the question
+ * @param {string} params.existingSolution - The existing solution text (optional)
  * @returns {Promise<string>} - AI generated explanation
  */
 export const generateExplanation = async ({
@@ -25,6 +26,7 @@ export const generateExplanation = async ({
   userAnswer,
   subject,
   topic,
+  existingSolution,
 }) => {
   // Rate limiting (client-side check)
   if (!aiRequestLimiter.canMakeRequest('ai-explanation')) {
@@ -69,6 +71,21 @@ export const generateExplanation = async ({
 
     clearTimeout(timeoutId);
 
+    // If API returns 404 (not available in local dev), use fallback
+    if (response.status === 404) {
+      const fallbackExplanation = generateFallbackExplanation({
+        questionText,
+        options,
+        correctAnswer,
+        userAnswer,
+        subject,
+        topic,
+        existingSolution,
+      });
+      explanationCache.set(cacheKey, fallbackExplanation);
+      return fallbackExplanation;
+    }
+
     if (!response.ok) {
       const error = await response.json();
       throw new Error(error.message || 'Failed to generate explanation');
@@ -102,11 +119,51 @@ export const generateExplanation = async ({
       throw new Error("Too many AI requests. Wait a moment.");
     }
     if (error.message?.includes("network") || error.message?.includes("fetch")) {
-      throw new Error("Network error. Check your connection.");
+      // Network error - use fallback
+      const fallbackExplanation = generateFallbackExplanation({
+        questionText,
+        options,
+        correctAnswer,
+        userAnswer,
+        subject,
+        topic,
+        existingSolution,
+      });
+      return fallbackExplanation;
     }
     
     throw new Error("Failed to generate explanation. Try again.");
   }
+};
+
+/**
+ * Generate a fallback explanation when AI API is not available
+ * Uses the existing solution and formats it nicely
+ */
+const generateFallbackExplanation = ({
+  options,
+  correctAnswer,
+  userAnswer,
+  existingSolution,
+}) => {
+  const correctOption = options?.[correctAnswer] || 'the correct option';
+  const userOption = options?.[userAnswer] || 'your selected option';
+  
+  let explanation = `**Why ${correctAnswer} is correct:**\n`;
+  explanation += `The correct answer is "${correctOption}".\n\n`;
+  
+  if (userAnswer !== correctAnswer) {
+    explanation += `**Why ${userAnswer} is incorrect:**\n`;
+    explanation += `You selected "${userOption}", which is not the right answer.\n\n`;
+  }
+  
+  if (existingSolution) {
+    explanation += `**Detailed Explanation:**\n${existingSolution}`;
+  } else {
+    explanation += `**Tip:** Review this topic to better understand the concept.`;
+  }
+  
+  return explanation;
 };
 
 /**

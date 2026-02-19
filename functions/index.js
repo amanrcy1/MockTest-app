@@ -1,5 +1,5 @@
 /**
- * Firebase Cloud Functions for UPSC Mock Test Platform
+ * Firebase Cloud Functions for Mockzam
  * 
  * Setup:
  * 1. npm install -g firebase-tools

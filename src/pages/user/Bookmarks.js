@@ -9,7 +9,7 @@ import {
   query,
   where,
 } from "firebase/firestore";
-import { toast } from "react-toastify";
+import toast, { messages } from "../../utils/toast";
 import { motion, AnimatePresence } from "framer-motion";
 import { db } from "../../config/firebase";
 import { useAuth } from "../../context/AuthContext";
@@ -246,7 +246,7 @@ const Bookmarks = () => {
       setBookmarks(merged.filter((item) => item.question));
     } catch (error) {
       logger.error("Error fetching bookmarks:", error);
-      toast.error("Failed to load bookmarks");
+      toast.error(messages.BOOKMARKS_LOAD_FAILED);
     } finally {
       setLoading(false);
     }
@@ -274,10 +274,10 @@ const Bookmarks = () => {
       setBookmarks((prev) =>
         prev.filter((item) => item.id !== bookmarkId),
       );
-      toast.info("Bookmark removed");
+      toast.success(messages.BOOKMARK_REMOVED);
     } catch (error) {
       logger.error("Error removing bookmark:", error);
-      toast.error("Failed to remove bookmark");
+      toast.error(messages.BOOKMARK_REMOVE_FAILED);
     }
   };
 

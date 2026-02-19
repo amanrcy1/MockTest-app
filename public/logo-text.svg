@@ -1,0 +1,30 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 280 60">
+  <defs>
+    <linearGradient id="textBolt" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#fbbf24"/>
+      <stop offset="100%" style="stop-color:#f59e0b"/>
+    </linearGradient>
+    <linearGradient id="textBlue" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" style="stop-color:#3b82f6"/>
+      <stop offset="100%" style="stop-color:#1d4ed8"/>
+    </linearGradient>
+  </defs>
+  
+  <!-- Icon -->
+  <g transform="translate(5, 5)">
+    <rect x="0" y="0" width="50" height="50" rx="10" fill="url(#textBlue)"/>
+    <path d="M12 40 L12 15 L20 27 L25 15 L30 27 L38 15 L38 40" 
+          fill="none" 
+          stroke="white" 
+          stroke-width="4" 
+          stroke-linecap="round" 
+          stroke-linejoin="round"/>
+    <path d="M30 5 L24 18 L28 18 L22 32 L34 15 L29 15 L34 5 Z" 
+          fill="url(#textBolt)"/>
+  </g>
+  
+  <!-- Text: Mockzam -->
+  <text x="65" y="42" font-family="system-ui, -apple-system, sans-serif" font-size="32" font-weight="700">
+    <tspan fill="url(#textBlue)">Mock</tspan><tspan fill="url(#textBolt)">zam</tspan>
+  </text>
+</svg>

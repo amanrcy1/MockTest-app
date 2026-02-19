@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Email Action - UPSC Mock Test Platform</title>
+  <title>Email Action - Mockzam</title>
   <style>
     * {
       margin: 0;
@@ -131,8 +131,24 @@
 </head>
 <body>
   <div class="container">
-    <div class="logo">🎓</div>
-    <h1>UPSC Mock Test Platform</h1>
+    <div class="logo">
+      <svg width="64" height="64" viewBox="0 0 64 64" xmlns="http://www.w3.org/2000/svg">
+        <defs>
+          <linearGradient id="bolt" x1="0%" y1="0%" x2="100%" y2="100%">
+            <stop offset="0%" style="stop-color:#fbbf24"/>
+            <stop offset="100%" style="stop-color:#f59e0b"/>
+          </linearGradient>
+          <linearGradient id="book" x1="0%" y1="0%" x2="0%" y2="100%">
+            <stop offset="0%" style="stop-color:#667eea"/>
+            <stop offset="100%" style="stop-color:#764ba2"/>
+          </linearGradient>
+        </defs>
+        <rect x="4" y="4" width="56" height="56" rx="12" fill="url(#book)"/>
+        <path d="M16 48 L16 20 L26 35 L32 20 L38 35 L48 20 L48 48" fill="none" stroke="white" stroke-width="5" stroke-linecap="round" stroke-linejoin="round"/>
+        <path d="M38 8 L30 24 L36 24 L28 40 L42 20 L36 20 L42 8 Z" fill="url(#bolt)"/>
+      </svg>
+    </div>
+    <h1>Mockzam</h1>
     <div id="message" class="loading">
       <div class="spinner"></div>
       Processing your request...

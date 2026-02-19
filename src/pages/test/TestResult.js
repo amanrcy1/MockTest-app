@@ -1,7 +1,7 @@
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useState, useRef } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { collection, getDocs, query, where } from "firebase/firestore";
-import { toast } from "react-toastify";
+import toast, { messages } from "../../utils/toast";
 import { db } from "../../config/firebase";
 import { calculateScore, formatTime } from "../../utils/testUtils";
 import { CelebrationEffect } from "../../components/3d";
@@ -12,6 +12,7 @@ import ReactMarkdown from "react-markdown";
 const TestResult = () => {
   const navigate = useNavigate();
   const location = useLocation();
+  const solutionsRef = useRef(null);
 
   const { questions, responses, examType, testMode } = location.state || {};
   const [showSolutions, setShowSolutions] = useState(false);
@@ -21,6 +22,27 @@ const TestResult = () => {
   const [showCelebration, setShowCelebration] = useState(true);
   const [aiExplanations, setAiExplanations] = useState({});
   const [loadingAi, setLoadingAi] = useState({});
+  const [showViewSolutionsHint, setShowViewSolutionsHint] = useState(true);
+
+  // Hide the hint after 5 seconds
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setShowViewSolutionsHint(false);
+    }, 5000);
+    return () => clearTimeout(timer);
+  }, []);
+
+  // Scroll to solutions when they become visible
+  const handleViewSolutions = () => {
+    setShowSolutions(!showSolutions);
+    setShowViewSolutionsHint(false);
+    if (!showSolutions) {
+      // Wait for the section to render, then scroll
+      setTimeout(() => {
+        solutionsRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      }, 100);
+    }
+  };
 
   const calculatePercentile = useCallback(async () => {
     try {
@@ -55,7 +77,7 @@ const TestResult = () => {
 
   useEffect(() => {
     if (!questions || !responses) {
-      toast.error("No test data available");
+      toast.error(messages.NO_TEST_DATA);
       navigate("/dashboard");
       return;
     }
@@ -80,7 +102,7 @@ const TestResult = () => {
 
       setAiExplanations((prev) => ({ ...prev, [index]: explanation }));
     } catch (error) {
-      toast.error("Failed to generate AI explanation");
+      toast.error(messages.AI_EXPLANATION_FAILED);
       logger.error("AI explanation error:", error);
     } finally {
       setLoadingAi((prev) => ({ ...prev, [index]: false }));
@@ -165,12 +187,31 @@ const TestResult = () => {
             </p>
           </div>
           <div className="flex gap-3">
-            <button
-              onClick={() => setShowSolutions(!showSolutions)}
-              className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors text-sm"
-            >
-              {showSolutions ? "Hide" : "View"} Solutions
-            </button>
+            <div className="relative">
+              {/* Pointing finger hint */}
+              {showViewSolutionsHint && !showSolutions && (
+                <div className="absolute -top-12 left-1/2 -translate-x-1/2 flex flex-col items-center animate-bounce z-10">
+                  <span className="text-2xl transform rotate-90">👆</span>
+                  <span className="text-xs text-gray-600 dark:text-gray-400 whitespace-nowrap font-medium">Click here!</span>
+                </div>
+              )}
+              <button
+                onClick={handleViewSolutions}
+                className={`relative px-4 py-2 rounded-lg text-sm font-semibold transition-all ${
+                  showViewSolutionsHint && !showSolutions
+                    ? "bg-gradient-to-r from-blue-600 via-purple-600 to-blue-600 bg-[length:200%_100%] animate-gradient-x text-white shadow-lg shadow-blue-500/50 scale-105"
+                    : "bg-blue-600 text-white hover:bg-blue-700"
+                }`}
+              >
+                {showViewSolutionsHint && !showSolutions && (
+                  <span className="absolute inset-0 rounded-lg bg-white/20 animate-ping" />
+                )}
+                <span className="relative flex items-center gap-2">
+                  {showSolutions ? "Hide" : "View"} Solutions
+                  {!showSolutions && <span className="text-lg">📋</span>}
+                </span>
+              </button>
+            </div>
             <button
               onClick={() => navigate("/dashboard")}
               className="bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-200 px-4 py-2 rounded-lg hover:bg-gray-300 dark:hover:bg-gray-600 transition-colors text-sm"
@@ -474,7 +515,7 @@ const TestResult = () => {
 
         {/* Solutions Section */}
         {showSolutions && (
-          <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-6">
+          <div ref={solutionsRef} className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-6">
             <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
               <h3 className="text-xl font-bold text-gray-800 dark:text-white">
                 Detailed Solutions

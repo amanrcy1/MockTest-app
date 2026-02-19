@@ -25,4 +25,3 @@ export { default as AuthAuroraCanvas } from './ui/AuthAuroraCanvas';
 
 // Other
 export { default as ErrorBoundary } from './ErrorBoundary';
-export * from '../types/propTypes';

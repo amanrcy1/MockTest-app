@@ -290,6 +290,7 @@ const DemoQuiz = () => {
   const [answered, setAnswered] = useState(false);
   const [score, setScore] = useState(0);
   const [finished, setFinished] = useState(false);
+  const [results, setResults] = useState([]); // Track correct/incorrect for each question
   const navigate = useNavigate();
 
   const q = DEMO_QUESTIONS[currentQ];
@@ -298,7 +299,9 @@ const DemoQuiz = () => {
     if (answered) return;
     setSelected(idx);
     setAnswered(true);
-    if (idx === q.correct) setScore((s) => s + 1);
+    const isCorrect = idx === q.correct;
+    setResults((prev) => [...prev, isCorrect]);
+    if (isCorrect) setScore((s) => s + 1);
   };
 
   const handleNext = () => {
@@ -317,6 +320,7 @@ const DemoQuiz = () => {
     setAnswered(false);
     setScore(0);
     setFinished(false);
+    setResults([]);
   };
 
   const getOptionStyle = (idx) => {
@@ -419,7 +423,13 @@ const DemoQuiz = () => {
               {/* Progress bar */}
               <div className="w-full h-1.5 bg-gray-200 dark:bg-gray-700 rounded-full overflow-hidden">
                 <motion.div
-                  className="h-full bg-gradient-to-r from-blue-500 to-indigo-500 rounded-full"
+                  className={`h-full rounded-full ${
+                    answered
+                      ? selected === q.correct
+                        ? "bg-gradient-to-r from-green-500 to-emerald-500"
+                        : "bg-gradient-to-r from-red-500 to-rose-500"
+                      : "bg-gradient-to-r from-blue-500 to-indigo-500"
+                  }`}
                   initial={{ width: 0 }}
                   animate={{ width: `${((currentQ + (answered ? 1 : 0)) / DEMO_QUESTIONS.length) * 100}%` }}
                   transition={{ duration: 0.3 }}
@@ -484,7 +494,17 @@ const DemoQuiz = () => {
                 <div className="flex gap-1">
                   {DEMO_QUESTIONS.map((_, i) => (
                     <div key={i} className={`w-2.5 h-2.5 rounded-full transition-colors ${
-                      i < currentQ ? "bg-green-400" : i === currentQ ? "bg-blue-500" : "bg-gray-300 dark:bg-gray-600"
+                      i < currentQ 
+                        ? results[i] 
+                          ? "bg-green-400" 
+                          : "bg-red-400"
+                        : i === currentQ 
+                          ? answered
+                            ? selected === q.correct
+                              ? "bg-green-400"
+                              : "bg-red-400"
+                            : "bg-blue-500"
+                          : "bg-gray-300 dark:bg-gray-600"
                     }`} />
                   ))}
                 </div>
@@ -678,14 +698,33 @@ const Landing = () => {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 py-3 flex items-center justify-between">
           <motion.div className="flex items-center gap-2.5" whileHover={{ scale: 1.02 }}>
             <motion.div
-              className="w-10 h-10 bg-gradient-to-br from-blue-500 to-purple-600 rounded-xl flex items-center justify-center shadow-lg shadow-blue-500/30"
+              className="w-10 h-10 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-xl flex items-center justify-center shadow-lg shadow-blue-500/30 overflow-hidden"
               whileHover={{ rotate: 10 }}
             >
-              <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4" />
+              <svg className="w-10 h-10" viewBox="0 0 64 64" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <defs>
+                  <linearGradient id="navBolt" x1="0%" y1="0%" x2="100%" y2="100%">
+                    <stop offset="0%" stopColor="#fbbf24"/>
+                    <stop offset="100%" stopColor="#f59e0b"/>
+                  </linearGradient>
+                  <filter id="navGlow">
+                    <feGaussianBlur stdDeviation="1.5" result="coloredBlur"/>
+                    <feMerge>
+                      <feMergeNode in="coloredBlur"/>
+                      <feMergeNode in="SourceGraphic"/>
+                    </feMerge>
+                  </filter>
+                </defs>
+                <path d="M16 48 L16 20 L26 35 L32 20 L38 35 L48 20 L48 48" fill="none" stroke="white" strokeWidth="5" strokeLinecap="round" strokeLinejoin="round"/>
+                <path d="M38 8 L30 24 L36 24 L28 40 L42 20 L36 20 L42 8 Z" fill="url(#navBolt)" filter="url(#navGlow)">
+                  <animate attributeName="opacity" values="0.7;1;0.7" dur="2s" repeatCount="indefinite"/>
+                </path>
+                <path d="M38 8 L30 24 L36 24 L28 40 L42 20 L36 20 L42 8 Z" fill="#fef3c7" opacity="0">
+                  <animate attributeName="opacity" values="0;0.5;0" dur="2s" repeatCount="indefinite"/>
+                </path>
               </svg>
             </motion.div>
-            <span className="font-bold text-lg gradient-text hidden sm:block">UPSC MockTest</span>
+            <span className="font-bold text-lg gradient-text hidden sm:block">Mockzam</span>
           </motion.div>
           <div className="flex items-center gap-2">
             <ThemeToggle />
@@ -997,26 +1036,38 @@ const Landing = () => {
 
       {/* ========== FOOTER ========== */}
       <footer className="py-8 px-4 border-t border-gray-200 dark:border-gray-800">
-        <div className="max-w-6xl mx-auto flex flex-col md:flex-row items-center justify-between gap-4">
+        <div className="max-w-6xl mx-auto flex flex-col md:flex-row items-center justify-center gap-4">
           <div className="flex items-center gap-2">
-            <div className="w-8 h-8 bg-gradient-to-br from-blue-500 to-purple-600 rounded-lg flex items-center justify-center shadow-md">
-              <svg className="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4" />
+            <div className="w-8 h-8 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-lg flex items-center justify-center shadow-md overflow-hidden">
+              <svg className="w-8 h-8" viewBox="0 0 64 64" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <defs>
+                  <linearGradient id="footerBolt" x1="0%" y1="0%" x2="100%" y2="100%">
+                    <stop offset="0%" stopColor="#fbbf24"/>
+                    <stop offset="100%" stopColor="#f59e0b"/>
+                  </linearGradient>
+                  <filter id="footerGlow">
+                    <feGaussianBlur stdDeviation="1.5" result="coloredBlur"/>
+                    <feMerge>
+                      <feMergeNode in="coloredBlur"/>
+                      <feMergeNode in="SourceGraphic"/>
+                    </feMerge>
+                  </filter>
+                </defs>
+                <path d="M16 48 L16 20 L26 35 L32 20 L38 35 L48 20 L48 48" fill="none" stroke="white" strokeWidth="5" strokeLinecap="round" strokeLinejoin="round"/>
+                <path d="M38 8 L30 24 L36 24 L28 40 L42 20 L36 20 L42 8 Z" fill="url(#footerBolt)" filter="url(#footerGlow)">
+                  <animate attributeName="opacity" values="0.7;1;0.7" dur="2s" repeatCount="indefinite"/>
+                </path>
+                <path d="M38 8 L30 24 L36 24 L28 40 L42 20 L36 20 L42 8 Z" fill="#fef3c7" opacity="0">
+                  <animate attributeName="opacity" values="0;0.5;0" dur="2s" repeatCount="indefinite"/>
+                </path>
               </svg>
             </div>
-            <span className="font-semibold text-sm text-gray-700 dark:text-gray-300">UPSC MockTest</span>
+            <span className="font-semibold text-sm text-gray-700 dark:text-gray-300">Mockzam</span>
           </div>
+          <span className="text-gray-300 dark:text-gray-600 hidden md:block">•</span>
           <p className="text-sm text-gray-500 dark:text-gray-400">
             Made with ❤️ for UPSC Aspirants
           </p>
-          <a
-            href="https://github.com/amanrcy1/upsc-mock-test"
-            target="_blank"
-            rel="noopener noreferrer"
-            className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 transition-colors"
-          >
-            <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 24 24"><path d="M12 0c-6.626 0-12 5.373-12 12 0 5.302 3.438 9.8 8.207 11.387.599.111.793-.261.793-.577v-2.234c-3.338.726-4.033-1.416-4.033-1.416-.546-1.387-1.333-1.756-1.333-1.756-1.089-.745.083-.729.083-.729 1.205.084 1.839 1.237 1.839 1.237 1.07 1.834 2.807 1.304 3.492.997.107-.775.418-1.305.762-1.604-2.665-.305-5.467-1.334-5.467-5.931 0-1.311.469-2.381 1.236-3.221-.124-.303-.535-1.524.117-3.176 0 0 1.008-.322 3.301 1.23.957-.266 1.983-.399 3.003-.404 1.02.005 2.047.138 3.006.404 2.291-1.552 3.297-1.23 3.297-1.23.653 1.653.242 2.874.118 3.176.77.84 1.235 1.911 1.235 3.221 0 4.609-2.807 5.624-5.479 5.921.43.372.823 1.102.823 2.222v3.293c0 .319.192.694.801.576 4.765-1.589 8.199-6.086 8.199-11.386 0-6.627-5.373-12-12-12z" /></svg>
-          </a>
         </div>
       </footer>
       </div>

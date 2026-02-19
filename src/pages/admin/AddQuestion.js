@@ -2,7 +2,7 @@ import React, { useState, useEffect } from "react";
 import { useNavigate, Navigate } from "react-router-dom";
 import { collection, addDoc } from "firebase/firestore";
 import { db } from "../../config/firebase";
-import { toast } from "react-toastify";
+import toast, { messages } from "../../utils/toast";
 import {
   EXAM_PATTERNS,
   getSubjectsByExam,
@@ -78,7 +78,7 @@ const AddQuestion = () => {
 
     // Validation
     if (!formData.questionText.trim()) {
-      toast.error("Question text is required");
+      toast.error(messages.QUESTION_TEXT_REQUIRED);
       return;
     }
 
@@ -88,12 +88,12 @@ const AddQuestion = () => {
       !formData.optionC.trim() ||
       !formData.optionD.trim()
     ) {
-      toast.error("All options are required");
+      toast.error(messages.OPTIONS_REQUIRED);
       return;
     }
 
     if (!formData.solution.trim()) {
-      toast.error("Solution is required");
+      toast.error(messages.SOLUTION_REQUIRED);
       return;
     }
 
@@ -128,7 +128,7 @@ const AddQuestion = () => {
       // Add to Firestore
       const docRef = await addDoc(collection(db, "questions"), questionData);
       logAdminAction({ adminId: userDetails?.userId, action: "addQuestion", targetId: docRef.id });
-      toast.success("Question added successfully!");
+      toast.success(messages.QUESTION_ADDED);
 
       // Reset form
       setFormData({
@@ -145,7 +145,7 @@ const AddQuestion = () => {
       });
     } catch (error) {
       logger.error("Error adding question:", error);
-      toast.error("Failed to add question. Please try again.");
+      toast.error(messages.QUESTION_ADD_FAILED);
     } finally {
       setLoading(false);
     }
@@ -160,7 +160,7 @@ const AddQuestion = () => {
             <h1 className="text-2xl font-bold text-blue-600">
               Add New Question
             </h1>
-            <p className="text-sm text-gray-600 dark:text-gray-400">UPSC Mock Test Platform</p>
+            <p className="text-sm text-gray-600 dark:text-gray-400">Mockzam Admin</p>
           </div>
           <button
             onClick={() => navigate("/admin/dashboard")}

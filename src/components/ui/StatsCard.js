@@ -15,34 +15,34 @@ const StatsCard = memo(({
 }) => {
   const colorClasses = {
     blue: {
-      bg: "bg-blue-100",
-      text: "text-blue-600",
-      icon: "text-blue-600",
+      bg: "bg-blue-100 dark:bg-blue-900/30",
+      text: "text-blue-600 dark:text-blue-400",
+      icon: "text-blue-600 dark:text-blue-400",
     },
     green: {
-      bg: "bg-green-100",
-      text: "text-green-600",
-      icon: "text-green-600",
+      bg: "bg-green-100 dark:bg-green-900/30",
+      text: "text-green-600 dark:text-green-400",
+      icon: "text-green-600 dark:text-green-400",
     },
     purple: {
-      bg: "bg-purple-100",
-      text: "text-purple-600",
-      icon: "text-purple-600",
+      bg: "bg-purple-100 dark:bg-purple-900/30",
+      text: "text-purple-600 dark:text-purple-400",
+      icon: "text-purple-600 dark:text-purple-400",
     },
     red: {
-      bg: "bg-red-100",
-      text: "text-red-600",
-      icon: "text-red-600",
+      bg: "bg-red-100 dark:bg-red-900/30",
+      text: "text-red-600 dark:text-red-400",
+      icon: "text-red-600 dark:text-red-400",
     },
     yellow: {
-      bg: "bg-yellow-100",
-      text: "text-yellow-600",
-      icon: "text-yellow-600",
+      bg: "bg-yellow-100 dark:bg-yellow-900/30",
+      text: "text-yellow-600 dark:text-yellow-400",
+      icon: "text-yellow-600 dark:text-yellow-400",
     },
     orange: {
-      bg: "bg-orange-100",
-      text: "text-orange-600",
-      icon: "text-orange-600",
+      bg: "bg-orange-100 dark:bg-orange-900/30",
+      text: "text-orange-600 dark:text-orange-400",
+      icon: "text-orange-600 dark:text-orange-400",
     },
   };
 
@@ -50,31 +50,31 @@ const StatsCard = memo(({
 
   if (loading) {
     return (
-      <div className="bg-white rounded-lg shadow-md p-6 animate-pulse">
+      <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-6 animate-pulse">
         <div className="flex items-center justify-between">
           <div>
-            <div className="h-3 bg-gray-200 rounded w-24 mb-2" />
-            <div className="h-8 bg-gray-200 rounded w-16" />
+            <div className="h-3 bg-gray-200 dark:bg-gray-700 rounded w-24 mb-2" />
+            <div className="h-8 bg-gray-200 dark:bg-gray-700 rounded w-16" />
           </div>
-          <div className="h-14 w-14 bg-gray-200 rounded-full" />
+          <div className="h-14 w-14 bg-gray-200 dark:bg-gray-700 rounded-full" />
         </div>
       </div>
     );
   }
 
   return (
-    <div className="bg-white rounded-lg shadow-md p-6">
+    <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-6">
       <div className="flex items-center justify-between">
         <div>
-          <p className="text-gray-600 text-sm">{title}</p>
+          <p className="text-gray-600 dark:text-gray-400 text-sm">{title}</p>
           <p className={`text-3xl font-bold ${colors.text}`}>{value}</p>
           {trend !== undefined && (
             <div className="flex items-center mt-1">
-              <span className={`text-sm ${trend >= 0 ? "text-green-600" : "text-red-600"}`}>
+              <span className={`text-sm ${trend >= 0 ? "text-green-600 dark:text-green-400" : "text-red-600 dark:text-red-400"}`}>
                 {trend >= 0 ? "↑" : "↓"} {Math.abs(trend)}%
               </span>
               {trendLabel && (
-                <span className="text-xs text-gray-500 ml-1">{trendLabel}</span>
+                <span className="text-xs text-gray-500 dark:text-gray-400 ml-1">{trendLabel}</span>
               )}
             </div>
           )}

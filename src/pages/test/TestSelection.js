@@ -5,7 +5,7 @@ import { motion } from "framer-motion";
 import { db } from "../../config/firebase";
 import { useAuth } from "../../context/AuthContext";
 import { EXAM_PATTERNS } from "../../utils/examPatterns";
-import { toast } from "react-toastify";
+import toast, { messages } from "../../utils/toast";
 import { BottomNav, TopNav } from "../../components";
 import logger from "../../utils/logger";
 
@@ -240,7 +240,7 @@ const TestSelection = () => {
       setLoading(false);
     } catch (error) {
       logger.error("Error fetching question counts:", error);
-      toast.error("Failed to load question data");
+      toast.error(messages.QUESTIONS_LOAD_FAILED);
       setLoadError("Failed to load question data. Please try again.");
       setLoading(false);
     }
@@ -249,7 +249,7 @@ const TestSelection = () => {
   const handleStartTest = (mode, exam) => {
     const questionCount = availableQuestions[exam] || 0;
     if (questionCount === 0) {
-      toast.error("No questions available for this exam type");
+      toast.error(messages.NO_QUESTIONS_AVAILABLE);
       return;
     }
 

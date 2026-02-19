@@ -1,6 +1,6 @@
 {
   "name": "functions",
-  "description": "Cloud Functions for UPSC Mock Test Platform",
+  "description": "Cloud Functions for Mockzam",
   "scripts": {
     "lint": "echo 'Lint check passed'",
     "serve": "firebase emulators:start --only functions",

@@ -8,7 +8,7 @@ import {
   getTopicsBySubject,
   DIFFICULTY_LEVELS,
 } from "../../utils/examPatterns";
-import { toast } from "react-toastify";
+import toast, { messages } from "../../utils/toast";
 import logger from "../../utils/logger";
 
 const CustomTestSetup = () => {
@@ -113,19 +113,17 @@ const CustomTestSetup = () => {
 
   const handleStartTest = () => {
     if (questionCount === 0) {
-      toast.error("No questions available with selected filters");
+      toast.error(messages.NO_QUESTIONS_WITH_FILTERS);
       return;
     }
 
     if (settings.numberOfQuestions > questionCount) {
-      toast.error(
-        `Only ${questionCount} questions available. Reduce the number of questions.`,
-      );
+      toast.error(messages.REDUCE_QUESTIONS(questionCount));
       return;
     }
 
     if (settings.subjects.length === 0) {
-      toast.error("Please select at least one subject");
+      toast.error(messages.SELECT_SUBJECT);
       return;
     }
 

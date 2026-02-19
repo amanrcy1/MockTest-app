@@ -8,7 +8,7 @@ import {
   updateDoc,
 } from "firebase/firestore";
 import { db } from "../../config/firebase";
-import { toast } from "react-toastify";
+import toast, { messages } from "../../utils/toast";
 import { useAuth } from "../../context/AuthContext";
 import { logAdminAction } from "../../utils/auditLog";
 import logger from "../../utils/logger";
@@ -65,7 +65,7 @@ const ManageQuestions = () => {
       setLoading(false);
     } catch (error) {
       logger.error("Error fetching questions:", error);
-      toast.error("Failed to load questions");
+      toast.error(messages.QUESTIONS_LOAD_FAILED);
       setLoading(false);
     }
   };
@@ -123,13 +123,13 @@ const ManageQuestions = () => {
     try {
       await deleteDoc(doc(db, "questions", questionId));
       logAdminAction({ adminId: userDetails?.userId, action: "deleteQuestion", targetId: questionId });
-      toast.success("Question deleted successfully");
+      toast.success(messages.QUESTION_DELETED);
       setShowDeleteModal(false);
       setSelectedQuestion(null);
       fetchQuestions(); // Refresh list
     } catch (error) {
       logger.error("Error deleting question:", error);
-      toast.error("Failed to delete question");
+      toast.error(messages.QUESTION_DELETE_FAILED);
     }
   };
 
@@ -258,14 +258,14 @@ const ManageQuestions = () => {
 
         {/* Questions List */}
         {loading ? (
-          <div className="bg-white rounded-lg shadow-md p-12 text-center">
+          <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-12 text-center">
             <div className="inline-block animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
-            <p className="mt-4 text-gray-600">Loading questions...</p>
+            <p className="mt-4 text-gray-600 dark:text-gray-400">Loading questions...</p>
           </div>
         ) : filteredQuestions.length === 0 ? (
-          <div className="bg-white rounded-lg shadow-md p-12 text-center">
+          <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-12 text-center">
             <svg
-              className="mx-auto h-12 w-12 text-gray-400"
+              className="mx-auto h-12 w-12 text-gray-400 dark:text-gray-500"
               fill="none"
               stroke="currentColor"
               viewBox="0 0 24 24"
@@ -277,10 +277,10 @@ const ManageQuestions = () => {
                 d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
               />
             </svg>
-            <h3 className="mt-2 text-lg font-medium text-gray-900">
+            <h3 className="mt-2 text-lg font-medium text-gray-900 dark:text-white">
               No questions found
             </h3>
-            <p className="mt-1 text-gray-500">
+            <p className="mt-1 text-gray-500 dark:text-gray-400">
               Try adjusting your filters or add new questions
             </p>
             <button
@@ -296,7 +296,7 @@ const ManageQuestions = () => {
             {paginatedQuestions.map((question, index) => (
               <div
                 key={question.id}
-                className="bg-white rounded-lg shadow-md p-6"
+                className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-6"
               >
                 {/* Question Header */}
                 <div className="flex justify-between items-start mb-4">
@@ -312,7 +312,7 @@ const ManageQuestions = () => {
                         {question.difficulty}
                       </span>
                     </div>
-                    <p className="text-sm text-gray-600">
+                    <p className="text-sm text-gray-600 dark:text-gray-400">
                       {question.topic}{" "}
                       {question.subtopic && `| ${question.subtopic}`}
                     </p>
@@ -335,7 +335,7 @@ const ManageQuestions = () => {
 
                 {/* Question Text */}
                 <div className="mb-4">
-                  <p className="text-gray-800 font-medium">
+                  <p className="text-gray-800 dark:text-gray-200 font-medium">
                     Q{(currentPage - 1) * ITEMS_PER_PAGE + index + 1}. {question.questionText}
                   </p>
                 </div>
@@ -347,14 +347,14 @@ const ManageQuestions = () => {
                       key={option}
                       className={`p-3 rounded-lg border-2 ${
                         question.correctAnswer === option
-                          ? "border-green-500 bg-green-50"
-                          : "border-gray-200 bg-gray-50"
+                          ? "border-green-500 bg-green-50 dark:bg-green-900/30"
+                          : "border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-700"
                       }`}
                     >
-                      <span className="font-semibold">{option}.</span>{" "}
-                      {question.options[option]}
+                      <span className="font-semibold text-gray-800 dark:text-gray-200">{option}.</span>{" "}
+                      <span className="text-gray-700 dark:text-gray-300">{question.options[option]}</span>
                       {question.correctAnswer === option && (
-                        <span className="ml-2 text-green-600 text-sm font-semibold">
+                        <span className="ml-2 text-green-600 dark:text-green-400 text-sm font-semibold">
                           Correct
                         </span>
                       )}
@@ -363,11 +363,11 @@ const ManageQuestions = () => {
                 </div>
 
                 {/* Solution */}
-                <div className="bg-gray-50 p-4 rounded-lg">
-                  <p className="text-sm font-semibold text-gray-700 mb-2">
+                <div className="bg-gray-50 dark:bg-gray-700 p-4 rounded-lg">
+                  <p className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
                     Solution:
                   </p>
-                  <p className="text-sm text-gray-600">{question.solution}</p>
+                  <p className="text-sm text-gray-600 dark:text-gray-400">{question.solution}</p>
                 </div>
 
                 {/* Tags */}
@@ -376,7 +376,7 @@ const ManageQuestions = () => {
                     {question.tags.map((tag, idx) => (
                       <span
                         key={idx}
-                        className="bg-gray-200 text-gray-700 text-xs px-2 py-1 rounded"
+                        className="bg-gray-200 dark:bg-gray-600 text-gray-700 dark:text-gray-300 text-xs px-2 py-1 rounded"
                       >
                         #{tag}
                       </span>
@@ -393,7 +393,7 @@ const ManageQuestions = () => {
               <button
                 onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
                 disabled={currentPage === 1}
-                className="px-4 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 disabled:opacity-50 disabled:cursor-not-allowed"
+                className="px-4 py-2 bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-200 rounded-lg hover:bg-gray-300 dark:hover:bg-gray-600 disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 Previous
               </button>
@@ -416,7 +416,7 @@ const ManageQuestions = () => {
                       className={`w-10 h-10 rounded-lg font-semibold ${
                         currentPage === pageNum
                           ? 'bg-blue-600 text-white'
-                          : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
+                          : 'bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-200 hover:bg-gray-300 dark:hover:bg-gray-600'
                       }`}
                     >
                       {pageNum}
@@ -427,7 +427,7 @@ const ManageQuestions = () => {
               <button
                 onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
                 disabled={currentPage === totalPages}
-                className="px-4 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 disabled:opacity-50 disabled:cursor-not-allowed"
+                className="px-4 py-2 bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-200 rounded-lg hover:bg-gray-300 dark:hover:bg-gray-600 disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 Next
               </button>
@@ -535,11 +535,11 @@ const EditQuestionModal = ({ question, userDetails, onClose, onSave }) => {
 
       await updateDoc(doc(db, "questions", question.id), updatedData);
       logAdminAction({ adminId: userDetails?.userId, action: "updateQuestion", targetId: question.id });
-      toast.success("Question updated successfully");
+      toast.success(messages.QUESTION_UPDATED);
       onSave();
     } catch (error) {
       logger.error("Error updating question:", error);
-      toast.error("Failed to update question");
+      toast.error(messages.QUESTION_UPDATE_FAILED);
       setSaving(false);
     }
   };

@@ -9,7 +9,7 @@ import {
   updateDoc,
   query,
 } from "firebase/firestore";
-import { toast } from "react-toastify";
+import toast, { messages } from "../../utils/toast";
 import { db } from "../../config/firebase";
 import { useAuth } from "../../context/AuthContext";
 import { logAdminAction } from "../../utils/auditLog";
@@ -68,7 +68,7 @@ const AdminErrorReports = () => {
       setNotes(noteMap);
     } catch (error) {
       logger.error("Error loading reports:", error);
-      toast.error("Failed to load error reports");
+      toast.error(messages.REPORTS_LOAD_FAILED);
     } finally {
       setLoading(false);
     }
@@ -101,10 +101,10 @@ const AdminErrorReports = () => {
         ),
       );
       logAdminAction({ adminId: userDetails?.userId, action: "resolveErrorReport", targetId: reportId });
-      toast.success("Report marked as resolved");
+      toast.success(messages.REPORT_RESOLVED);
     } catch (error) {
       logger.error("Error updating report:", error);
-      toast.error("Failed to update report");
+      toast.error(messages.REPORT_UPDATE_FAILED);
     } finally {
       setUpdatingId(null);
     }
@@ -117,7 +117,7 @@ const AdminErrorReports = () => {
       : [];
     const noteText = (notes[reportId] || "").trim();
     if (!noteText) {
-      toast.error("Please enter a note before saving.");
+      toast.error(messages.NOTE_REQUIRED);
       return;
     }
     try {
@@ -158,10 +158,10 @@ const AdminErrorReports = () => {
         ...prev,
         [reportId]: "",
       }));
-      toast.success("Note saved");
+      toast.success(messages.NOTE_SAVED);
     } catch (error) {
       logger.error("Error saving note:", error);
-      toast.error("Failed to save note");
+      toast.error(messages.NOTE_SAVE_FAILED);
     } finally {
       setUpdatingId(null);
     }
@@ -177,10 +177,10 @@ const AdminErrorReports = () => {
       await deleteDoc(doc(db, "errorReports", reportId));
       setReports((prev) => prev.filter((item) => item.id !== reportId));
       logAdminAction({ adminId: userDetails?.userId, action: "deleteErrorReport", targetId: reportId });
-      toast.success("Error report deleted successfully");
+      toast.success(messages.REPORT_DELETED);
     } catch (error) {
       logger.error("Error deleting report:", error);
-      toast.error("Failed to delete report");
+      toast.error(messages.REPORT_DELETE_FAILED);
     } finally {
       setDeletingId(null);
     }

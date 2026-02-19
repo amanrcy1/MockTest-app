@@ -6,7 +6,7 @@ import { db } from "../config/firebase";
 import { useAuth } from "../context/AuthContext";
 import { AuthAuroraCanvas } from "../components";
 import { EXAM_PATTERNS } from "../utils/examPatterns";
-import { toast } from "react-toastify";
+import toast, { messages } from "../utils/toast";
 
 const STEPS = [
   { id: "name", title: "What should we call you?", subtitle: "This will be your display name" },
@@ -31,7 +31,7 @@ const Onboarding = () => {
   const handleNext = () => {
     if (step === 0) {
       if (!displayName.trim() || displayName.trim().length < 2) {
-        toast.error("Please enter your name (at least 2 characters)");
+        toast.error(messages.NAME_REQUIRED);
         return;
       }
       setStep(1);
@@ -40,7 +40,7 @@ const Onboarding = () => {
 
   const handleFinish = async () => {
     if (!selectedExam) {
-      toast.error("Please select your target exam");
+      toast.error(messages.EXAM_REQUIRED);
       return;
     }
     if (!currentUser) return;
@@ -54,10 +54,10 @@ const Onboarding = () => {
         updatedAt: new Date().toISOString(),
       });
       await refreshUserDetails();
-      toast.success("You're all set! Let's go!");
+      toast.success(messages.ONBOARDING_SUCCESS);
       navigate("/dashboard");
     } catch {
-      toast.error("Something went wrong. Please try again.");
+      toast.error(messages.ONBOARDING_FAILED);
     } finally {
       setSaving(false);
     }

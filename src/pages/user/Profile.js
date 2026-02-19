@@ -1,7 +1,7 @@
 import React, { useEffect, useState, useRef, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import { doc, updateDoc } from "firebase/firestore";
-import { toast } from "react-toastify";
+import toast, { messages } from "../../utils/toast";
 import { motion, AnimatePresence } from "framer-motion";
 import Cropper from "react-easy-crop";
 import { db } from "../../config/firebase";
@@ -63,8 +63,8 @@ const Profile = () => {
   const handleFileSelect = async (e) => {
     const file = e.target.files?.[0];
     if (!file) return;
-    if (!file.type.startsWith("image/")) { toast.error("Please select an image"); return; }
-    if (file.size > 5 * 1024 * 1024) { toast.error("Max 5MB"); return; }
+    if (!file.type.startsWith("image/")) { toast.error(messages.INVALID_IMAGE); return; }
+    if (file.size > 5 * 1024 * 1024) { toast.error(messages.IMAGE_TOO_LARGE); return; }
     setShowPhotoOptions(false);
     const reader = new FileReader();
     reader.onload = () => { setImageToCrop(reader.result); setShowCropper(true); setCrop({ x: 0, y: 0 }); setZoom(1); };
@@ -82,8 +82,8 @@ const Profile = () => {
       await updateDoc(doc(db, "users", currentUser.uid), { photoURL: cropped, updatedAt: new Date().toISOString() });
       setPreviewUrl(cropped); setShowCropper(false); setImageToCrop(null);
       await refreshUserDetails();
-      toast.success("Photo updated!");
-    } catch (err) { logger.error("Crop save error:", err); toast.error("Failed to save photo"); }
+      toast.success(messages.PHOTO_UPDATED);
+    } catch (err) { logger.error("Crop save error:", err); toast.error(messages.PHOTO_SAVE_FAILED); }
     finally { setUploadingPhoto(false); }
   };
 
@@ -92,18 +92,18 @@ const Profile = () => {
     try {
       setUploadingPhoto(true); setShowPhotoOptions(false);
       await updateDoc(doc(db, "users", currentUser.uid), { photoURL: null, updatedAt: new Date().toISOString() });
-      setPreviewUrl(null); await refreshUserDetails(); toast.success("Photo removed");
-    } catch (err) { logger.error("Remove photo error:", err); toast.error("Failed to remove photo"); }
+      setPreviewUrl(null); await refreshUserDetails(); toast.success(messages.PHOTO_REMOVED);
+    } catch (err) { logger.error("Remove photo error:", err); toast.error(messages.PHOTO_REMOVE_FAILED); }
     finally { setUploadingPhoto(false); }
   };
 
   const handleSave = async () => {
-    if (!currentUser) { toast.error("Please log in again."); return; }
+    if (!currentUser) { toast.error(messages.LOGIN_REQUIRED); return; }
     try {
       setSaving(true);
       await updateDoc(doc(db, "users", currentUser.uid), { name: formData.name.trim(), targetExam: formData.targetExam, updatedAt: new Date().toISOString() });
-      await refreshUserDetails(); toast.success("Profile updated"); navigate("/dashboard");
-    } catch (err) { logger.error("Save error:", err); toast.error("Failed to update profile"); }
+      await refreshUserDetails(); toast.success(messages.PROFILE_UPDATED); navigate("/dashboard");
+    } catch (err) { logger.error("Save error:", err); toast.error(messages.PROFILE_UPDATE_FAILED); }
     finally { setSaving(false); }
   };
 

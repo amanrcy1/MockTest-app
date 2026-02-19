@@ -9,7 +9,7 @@ import {
   query,
   where,
 } from "firebase/firestore";
-import { toast } from "react-toastify";
+import toast, { messages } from "../../utils/toast";
 import { motion } from "framer-motion";
 import { db } from "../../config/firebase";
 import { useAuth } from "../../context/AuthContext";
@@ -52,7 +52,7 @@ const TestHistory = () => {
 
   const handleViewResult = async (test) => {
     if (!test.questions || test.questions.length === 0) {
-      toast.error("Test details are incomplete.");
+      toast.error(messages.TEST_DETAILS_INCOMPLETE);
       return;
     }
 
@@ -77,7 +77,7 @@ const TestHistory = () => {
       });
     } catch (error) {
       logger.error("Error loading test result:", error);
-      toast.error("Failed to load test result.");
+      toast.error(messages.TEST_RESULT_LOAD_FAILED);
     } finally {
       setLoadingTestId(null);
     }

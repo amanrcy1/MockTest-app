@@ -276,6 +276,17 @@ body {
   background-clip: text;
 }
 
+/* Animated gradient background */
+@keyframes gradient-x {
+  0% { background-position: 0% 50%; }
+  50% { background-position: 100% 50%; }
+  100% { background-position: 0% 50%; }
+}
+
+.animate-gradient-x {
+  animation: gradient-x 2s ease infinite;
+}
+
 /* 3D Perspective */
 .perspective-1000 {
   perspective: 1000px;

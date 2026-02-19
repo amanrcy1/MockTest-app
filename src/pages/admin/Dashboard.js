@@ -190,7 +190,7 @@ const AdminDashboard = () => {
         <div className="max-w-7xl mx-auto px-4 py-4 flex justify-between items-center">
           <div>
             <h1 className="text-2xl font-bold text-blue-600">Admin Panel</h1>
-            <p className="text-sm text-gray-600 dark:text-gray-400">UPSC Mock Test Platform</p>
+            <p className="text-sm text-gray-600 dark:text-gray-400">Mockzam Admin</p>
           </div>
           <div className="flex items-center gap-4">
             <ThemeToggle />

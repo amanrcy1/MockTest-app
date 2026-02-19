@@ -1,0 +1,56 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
+  <defs>
+    <linearGradient id="bolt" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#fbbf24"/>
+      <stop offset="100%" style="stop-color:#f59e0b"/>
+    </linearGradient>
+    <linearGradient id="book" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" style="stop-color:#3b82f6"/>
+      <stop offset="100%" style="stop-color:#1d4ed8"/>
+    </linearGradient>
+    <filter id="glow">
+      <feGaussianBlur stdDeviation="2" result="coloredBlur"/>
+      <feMerge>
+        <feMergeNode in="coloredBlur"/>
+        <feMergeNode in="SourceGraphic"/>
+      </feMerge>
+    </filter>
+  </defs>
+  
+  <!-- Background -->
+  <rect x="4" y="4" width="56" height="56" rx="12" fill="url(#book)"/>
+  
+  <!-- M shape -->
+  <path d="M16 48 L16 20 L26 35 L32 20 L38 35 L48 20 L48 48" 
+        fill="none" 
+        stroke="white" 
+        stroke-width="5" 
+        stroke-linecap="round" 
+        stroke-linejoin="round"/>
+  
+  <!-- Lightning bolt with glow animation -->
+  <path d="M38 8 L30 24 L36 24 L28 40 L42 20 L36 20 L42 8 Z" 
+        fill="url(#bolt)"
+        filter="url(#glow)">
+    <animate 
+      attributeName="opacity" 
+      values="0.7;1;0.7" 
+      dur="2s" 
+      repeatCount="indefinite"
+      calcMode="spline"
+      keySplines="0.4 0 0.6 1; 0.4 0 0.6 1"/>
+  </path>
+  
+  <!-- Glow overlay for extra effect -->
+  <path d="M38 8 L30 24 L36 24 L28 40 L42 20 L36 20 L42 8 Z" 
+        fill="#fde68a"
+        opacity="0">
+    <animate 
+      attributeName="opacity" 
+      values="0;0.5;0" 
+      dur="2s" 
+      repeatCount="indefinite"
+      calcMode="spline"
+      keySplines="0.4 0 0.6 1; 0.4 0 0.6 1"/>
+  </path>
+</svg>

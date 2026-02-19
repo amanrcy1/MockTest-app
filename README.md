@@ -1,4 +1,4 @@
-# 📚 UPSC Mock Test Platform
+# 📚 Mockzam
 
 > A comprehensive, feature-rich mock test platform designed for UPSC aspirants to practice and excel in their exam preparation.
 
@@ -75,8 +75,8 @@
 
 1. **Clone the repository**
    ```bash
-   git clone https://github.com/amanrcy1/upsc-mock-test.git
-   cd upsc-mock-test
+   git clone https://github.com/amanrcy1/mockzam.git
+   cd mockzam
    ```
 
 2. **Install dependencies**
@@ -152,7 +152,7 @@ Note: If deploying to Firebase, you'll need to migrate the `/api/ai-explanation.
 ## 📁 Project Structure
 
 ```
-upsc-mock-test/
+mockzam/
 ├── api/                   # Vercel serverless functions
 ├── public/                # Static files
 ├── src/
@@ -292,7 +292,7 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 
 For support, open an issue in the repository or reach out via:
 - 📧 Email: amanrcy1@gmail.com
-- 💬 GitHub Issues: [Report a bug](https://github.com/amanrcy1/upsc-mock-test/issues)
+- 💬 GitHub Issues: [Report a bug](https://github.com/amanrcy1/mockzam/issues)
 - 🌐 Website: [amanrcy.vercel.app](https://amanrcy.vercel.app)
 
 ---

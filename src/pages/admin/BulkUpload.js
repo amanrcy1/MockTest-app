@@ -2,7 +2,7 @@ import React, { useState } from "react";
 import { useNavigate, Navigate } from "react-router-dom";
 import { collection, addDoc } from "firebase/firestore";
 import { db } from "../../config/firebase";
-import { toast } from "react-toastify";
+import toast, { messages } from "../../utils/toast";
 import Papa from "papaparse";
 import { sanitizeForStorage } from "../../utils/testUtils";
 import { useAuth } from "../../context/AuthContext";
@@ -25,7 +25,7 @@ const BulkUpload = () => {
     if (selectedFile) {
       const fileType = selectedFile.name.split(".").pop().toLowerCase();
       if (fileType !== "csv") {
-        toast.error("Please upload a CSV file");
+        toast.error(messages.CSV_REQUIRED);
         return;
       }
       setFile(selectedFile);
@@ -43,7 +43,7 @@ const BulkUpload = () => {
       },
       error: (error) => {
         logger.error("CSV Parse Error:", error);
-        toast.error("Failed to parse CSV file");
+        toast.error(messages.CSV_PARSE_FAILED);
       },
     });
   };
@@ -113,7 +113,7 @@ const BulkUpload = () => {
     const validQuestions = preview.filter((q) => q.valid);
 
     if (validQuestions.length === 0) {
-      toast.error("No valid questions to upload");
+      toast.error(messages.NO_VALID_QUESTIONS);
       return;
     }
 
@@ -142,10 +142,10 @@ const BulkUpload = () => {
 
       if (successCount > 0) {
         logAdminAction({ adminId: userDetails?.userId, action: "bulkUploadQuestions", details: { successCount, errorCount } });
-        toast.success(`Successfully uploaded ${successCount} questions!`);
+        toast.success(messages.BULK_UPLOAD_SUCCESS(successCount));
       }
       if (errorCount > 0) {
-        toast.warning(`Failed to upload ${errorCount} questions`);
+        toast.warning(messages.BULK_UPLOAD_PARTIAL(errorCount));
       }
 
       // Reset state
@@ -154,7 +154,7 @@ const BulkUpload = () => {
       setShowPreview(false);
     } catch (error) {
       logger.error("Bulk upload error:", error);
-      toast.error("Failed to upload questions");
+      toast.error(messages.BULK_UPLOAD_FAILED);
     } finally {
       setUploading(false);
     }
@@ -210,7 +210,7 @@ const BulkUpload = () => {
     link.click();
     document.body.removeChild(link);
     
-    toast.success("Template downloaded successfully");
+    toast.success(messages.TEMPLATE_DOWNLOADED);
   };
 
   return (
@@ -281,10 +281,10 @@ const BulkUpload = () => {
         </div>
 
         {/* File Upload */}
-        <div className="bg-white rounded-lg shadow-md p-6 mb-6">
-          <h2 className="text-xl font-bold text-gray-800 mb-4">Upload File</h2>
+        <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-6 mb-6">
+          <h2 className="text-xl font-bold text-gray-800 dark:text-white mb-4">Upload File</h2>
 
-          <div className="border-2 border-dashed border-gray-300 rounded-lg p-12 text-center">
+          <div className="border-2 border-dashed border-gray-300 dark:border-gray-600 rounded-lg p-12 text-center">
             <input
               type="file"
               accept=".csv"
@@ -296,7 +296,7 @@ const BulkUpload = () => {
             <label htmlFor="file-upload" className="cursor-pointer">
               <div className="mb-4">
                 <svg
-                  className="mx-auto h-12 w-12 text-gray-400"
+                  className="mx-auto h-12 w-12 text-gray-400 dark:text-gray-500"
                   fill="none"
                   stroke="currentColor"
                   viewBox="0 0 24 24"
@@ -309,20 +309,20 @@ const BulkUpload = () => {
                   />
                 </svg>
               </div>
-              <p className="text-gray-700 font-medium mb-2">
+              <p className="text-gray-700 dark:text-gray-300 font-medium mb-2">
                 Click to upload or drag and drop
               </p>
-              <p className="text-sm text-gray-500">
+              <p className="text-sm text-gray-500 dark:text-gray-400">
                 CSV format only (Max 5MB)
               </p>
             </label>
           </div>
 
           {file && (
-            <div className="mt-4 flex items-center justify-between bg-blue-50 p-4 rounded-lg">
+            <div className="mt-4 flex items-center justify-between bg-blue-50 dark:bg-blue-900/30 p-4 rounded-lg">
               <div className="flex items-center gap-3">
                 <svg
-                  className="w-8 h-8 text-blue-600"
+                  className="w-8 h-8 text-blue-600 dark:text-blue-400"
                   fill="none"
                   stroke="currentColor"
                   viewBox="0 0 24 24"
@@ -335,8 +335,8 @@ const BulkUpload = () => {
                   />
                 </svg>
                 <div>
-                  <p className="font-medium text-gray-800">{file.name}</p>
-                  <p className="text-sm text-gray-600">
+                  <p className="font-medium text-gray-800 dark:text-gray-200">{file.name}</p>
+                  <p className="text-sm text-gray-600 dark:text-gray-400">
                     {(file.size / 1024).toFixed(2)} KB
                   </p>
                 </div>
@@ -347,7 +347,7 @@ const BulkUpload = () => {
                   setPreview([]);
                   setShowPreview(false);
                 }}
-                className="text-red-600 hover:text-red-700"
+                className="text-red-600 dark:text-red-400 hover:text-red-700 dark:hover:text-red-300"
                 disabled={uploading}
               >
                 <svg
@@ -370,44 +370,44 @@ const BulkUpload = () => {
 
         {/* Preview */}
         {showPreview && preview.length > 0 && (
-          <div className="bg-white rounded-lg shadow-md p-6">
-            <h2 className="text-xl font-bold text-gray-800 mb-4">
+          <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-6">
+            <h2 className="text-xl font-bold text-gray-800 dark:text-white mb-4">
               Preview & Validation
             </h2>
 
             {/* Summary */}
             <div className="grid grid-cols-3 gap-4 mb-6">
-              <div className="bg-blue-50 p-4 rounded-lg text-center">
-                <p className="text-2xl font-bold text-blue-600">
+              <div className="bg-blue-50 dark:bg-blue-900/30 p-4 rounded-lg text-center">
+                <p className="text-2xl font-bold text-blue-600 dark:text-blue-400">
                   {preview.length}
                 </p>
-                <p className="text-sm text-gray-600">Total Rows</p>
+                <p className="text-sm text-gray-600 dark:text-gray-400">Total Rows</p>
               </div>
-              <div className="bg-green-50 p-4 rounded-lg text-center">
-                <p className="text-2xl font-bold text-green-600">
+              <div className="bg-green-50 dark:bg-green-900/30 p-4 rounded-lg text-center">
+                <p className="text-2xl font-bold text-green-600 dark:text-green-400">
                   {preview.filter((q) => q.valid).length}
                 </p>
-                <p className="text-sm text-gray-600">Valid Questions</p>
+                <p className="text-sm text-gray-600 dark:text-gray-400">Valid Questions</p>
               </div>
-              <div className="bg-red-50 p-4 rounded-lg text-center">
-                <p className="text-2xl font-bold text-red-600">
+              <div className="bg-red-50 dark:bg-red-900/30 p-4 rounded-lg text-center">
+                <p className="text-2xl font-bold text-red-600 dark:text-red-400">
                   {preview.filter((q) => !q.valid).length}
                 </p>
-                <p className="text-sm text-gray-600">Errors</p>
+                <p className="text-sm text-gray-600 dark:text-gray-400">Errors</p>
               </div>
             </div>
 
             {/* Error List */}
             {preview.some((q) => !q.valid) && (
               <div className="mb-6">
-                <h3 className="text-lg font-semibold text-red-600 mb-3">
+                <h3 className="text-lg font-semibold text-red-600 dark:text-red-400 mb-3">
                   Errors Found:
                 </h3>
-                <div className="bg-red-50 border border-red-200 rounded-lg p-4 max-h-60 overflow-y-auto">
+                <div className="bg-red-50 dark:bg-red-900/30 border border-red-200 dark:border-red-800 rounded-lg p-4 max-h-60 overflow-y-auto">
                   {preview
                     .filter((q) => !q.valid)
                     .map((question, index) => (
-                      <div key={index} className="mb-2 text-sm">
+                      <div key={index} className="mb-2 text-sm text-gray-800 dark:text-gray-200">
                         <span className="font-semibold">
                           Row {question.row}:
                         </span>{" "}
@@ -421,7 +421,7 @@ const BulkUpload = () => {
             {/* Valid Questions Preview */}
             {preview.some((q) => q.valid) && (
               <div className="mb-6">
-                <h3 className="text-lg font-semibold text-green-600 mb-3">
+                <h3 className="text-lg font-semibold text-green-600 dark:text-green-400 mb-3">
                   Valid Questions Preview (First 3):
                 </h3>
                 <div className="space-y-4">
@@ -431,7 +431,7 @@ const BulkUpload = () => {
                     .map((question, index) => (
                       <div
                         key={index}
-                        className="border border-gray-200 rounded-lg p-4"
+                        className="border border-gray-200 dark:border-gray-700 rounded-lg p-4"
                       >
                         <div className="flex gap-2 mb-2">
                           <span className="bg-blue-100 dark:bg-blue-900 text-blue-800 dark:text-blue-200 text-xs px-2 py-1 rounded">
@@ -444,10 +444,10 @@ const BulkUpload = () => {
                             {question.difficulty}
                           </span>
                         </div>
-                        <p className="text-sm text-gray-800 font-medium mb-2">
+                        <p className="text-sm text-gray-800 dark:text-gray-200 font-medium mb-2">
                           {question.questionText}
                         </p>
-                        <div className="text-xs text-gray-600">
+                        <div className="text-xs text-gray-600 dark:text-gray-400">
                           Correct Answer:{" "}
                           <span className="font-semibold">
                             {question.correctAnswer}
@@ -457,7 +457,7 @@ const BulkUpload = () => {
                     ))}
                 </div>
                 {preview.filter((q) => q.valid).length > 3 && (
-                  <p className="text-sm text-gray-500 mt-2">
+                  <p className="text-sm text-gray-500 dark:text-gray-400 mt-2">
                     ... and {preview.filter((q) => q.valid).length - 3} more
                     valid questions
                   </p>

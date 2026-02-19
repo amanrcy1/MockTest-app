@@ -8,7 +8,7 @@ import {
   query,
   where,
 } from "firebase/firestore";
-import { toast } from "react-toastify";
+import toast, { messages } from "../utils/toast";
 import { db } from "../config/firebase";
 
 /**
@@ -48,7 +48,7 @@ export const useBookmarks = (userId, examType) => {
           delete next[questionId];
           return next;
         });
-        toast.info("Bookmark removed");
+        toast.success(messages.BOOKMARK_REMOVED);
       } else {
         const docRef = await addDoc(collection(db, "bookmarks"), {
           userId,
@@ -57,7 +57,7 @@ export const useBookmarks = (userId, examType) => {
           createdAt: new Date().toISOString(),
         });
         setBookmarkMap((prev) => ({ ...prev, [questionId]: docRef.id }));
-        toast.success("Question bookmarked");
+        toast.success(messages.BOOKMARK_ADDED);
       }
     },
     [userId, examType, bookmarkMap]

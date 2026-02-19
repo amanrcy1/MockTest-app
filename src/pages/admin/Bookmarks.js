@@ -9,7 +9,7 @@ import {
   query,
   updateDoc,
 } from "firebase/firestore";
-import { toast } from "react-toastify";
+import toast, { messages } from "../../utils/toast";
 import { db } from "../../config/firebase";
 import { useAuth } from "../../context/AuthContext";
 import { logAdminAction } from "../../utils/auditLog";
@@ -68,7 +68,7 @@ const AdminBookmarks = () => {
       setNotes(noteMap);
     } catch (error) {
       logger.error("Error loading bookmarks:", error);
-      toast.error("Failed to load bookmarks");
+      toast.error(messages.ADMIN_BOOKMARKS_LOAD_FAILED);
     } finally {
       setLoading(false);
     }
@@ -96,7 +96,7 @@ const AdminBookmarks = () => {
       : [];
     const noteText = (notes[bookmarkId] || "").trim();
     if (!noteText) {
-      toast.error("Please enter a note before saving.");
+      toast.error(messages.NOTE_REQUIRED);
       return;
     }
     try {
@@ -132,10 +132,10 @@ const AdminBookmarks = () => {
             : item,
         ),
       );
-      toast.success("Note saved");
+      toast.success(messages.NOTE_SAVED);
     } catch (error) {
       logger.error("Error saving note:", error);
-      toast.error("Failed to save note");
+      toast.error(messages.NOTE_SAVE_FAILED);
     } finally {
       setUpdatingId(null);
     }
@@ -154,10 +154,10 @@ const AdminBookmarks = () => {
         ),
       );
       logAdminAction({ adminId: userDetails?.userId, action: "reviewBookmark", targetId: bookmarkId });
-      toast.success("Bookmark marked as reviewed");
+      toast.success(messages.BOOKMARK_REVIEWED);
     } catch (error) {
       logger.error("Error updating bookmark:", error);
-      toast.error("Failed to update bookmark");
+      toast.error(messages.BOOKMARK_UPDATE_FAILED);
     } finally {
       setUpdatingId(null);
     }
@@ -173,21 +173,21 @@ const AdminBookmarks = () => {
       await deleteDoc(doc(db, "bookmarks", bookmarkId));
       setBookmarks((prev) => prev.filter((item) => item.id !== bookmarkId));
       logAdminAction({ adminId: userDetails?.userId, action: "deleteBookmark", targetId: bookmarkId });
-      toast.success("Bookmark deleted successfully");
+      toast.success(messages.BOOKMARK_DELETED);
     } catch (error) {
       logger.error("Error deleting bookmark:", error);
-      toast.error("Failed to delete bookmark");
+      toast.error(messages.BOOKMARK_DELETE_FAILED);
     } finally {
       setDeletingId(null);
     }
   };
 
   return (
-    <div className="min-h-screen bg-gray-100 dark:bg-gray-900">
-      <nav className="bg-white dark:bg-gray-800 shadow-md">
+    <div className="min-h-screen bg-gray-100 dark:bg-gray-950">
+      <nav className="bg-white dark:bg-gray-900 shadow-md">
         <div className="max-w-7xl mx-auto px-4 py-4 flex justify-between items-center">
           <div>
-            <h1 className="text-2xl font-bold text-blue-600 dark:text-blue-400">
+            <h1 className="text-2xl font-bold text-blue-600">
               Bookmarks Review
             </h1>
             <p className="text-sm text-gray-600 dark:text-gray-400">

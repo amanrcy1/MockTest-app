@@ -32,7 +32,7 @@ const Timer = memo(({
 
   return (
     <div className="text-center" role="timer" aria-live="polite" aria-label={`${label}: ${formatTime(timeRemaining)}`}>
-      {label && <p className="text-sm text-gray-600">{label}</p>}
+      {label && <p className="text-sm text-gray-600 dark:text-gray-400">{label}</p>}
       <div className={`font-bold ${sizeClasses[size]} ${colorClass} ${isCritical ? "animate-pulse" : ""}`}>
         {showIcon && (
           <svg

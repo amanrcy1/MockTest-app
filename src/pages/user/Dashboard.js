@@ -2,7 +2,7 @@ import { useEffect, useState, useCallback, useRef } from "react";
 import PropTypes from "prop-types";
 import { useAuth } from "../../context/AuthContext";
 import { useNavigate } from "react-router-dom";
-import { toast } from "react-toastify";
+import toast, { messages } from "../../utils/toast";
 import { motion, AnimatePresence } from "framer-motion";
 import { collection, getDocs, query, where, doc, getDoc } from "firebase/firestore";
 import { startOfWeek, endOfWeek, getISOWeek, getISOWeekYear } from "date-fns";
@@ -203,10 +203,10 @@ const Dashboard = () => {
   const handleLogout = useCallback(async () => {
     const result = await logout();
     if (result?.success) {
-      toast.success("Logged out successfully");
+      toast.success(messages.LOGOUT_SUCCESS);
       navigate("/", { replace: true });
     } else {
-      toast.error(result?.error || "Failed to logout");
+      toast.error(result?.error || messages.LOGOUT_FAILED);
     }
   }, [logout, navigate]);
 

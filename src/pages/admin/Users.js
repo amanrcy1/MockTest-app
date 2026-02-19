@@ -10,7 +10,7 @@ import {
   updateDoc,
   where,
 } from "firebase/firestore";
-import { toast } from "react-toastify";
+import toast, { messages } from "../../utils/toast";
 import { db } from "../../config/firebase";
 import { useAuth } from "../../context/AuthContext";
 import { ConfirmModal } from "../../components";
@@ -41,7 +41,7 @@ const AdminUsers = () => {
       setUsers(list);
     } catch (error) {
       logger.error("Error fetching users:", error);
-      toast.error("Failed to load users");
+      toast.error(messages.USERS_LOAD_FAILED);
     } finally {
       setLoading(false);
     }
@@ -82,19 +82,19 @@ const AdminUsers = () => {
   const toggleAdmin = async (user) => {
     // Only super admin can promote/demote
     if (!isSuperAdmin) {
-      toast.error("Only super admin can manage user roles");
+      toast.error(messages.ADMIN_ONLY);
       return;
     }
 
     // Prevent self-demotion
     if (user.id === currentUser?.uid && user.isAdmin) {
-      toast.error("You cannot demote yourself");
+      toast.error(messages.CANNOT_DEMOTE_SELF);
       return;
     }
 
     // Prevent demoting super admin (original admin)
     if (user.isSuperAdmin && user.isAdmin) {
-      toast.error("Cannot demote the super admin");
+      toast.error(messages.CANNOT_DEMOTE_SUPER_ADMIN);
       return;
     }
 
@@ -126,10 +126,10 @@ const AdminUsers = () => {
           item.id === user.id ? { ...item, isAdmin: newAdminStatus } : item,
         ),
       );
-      toast.success(`User ${action}d successfully`);
+      toast.success(action === "promote" ? messages.USER_PROMOTED : messages.USER_DEMOTED);
     } catch (error) {
       logger.error("Error updating user:", error);
-      toast.error("Failed to update user");
+      toast.error(messages.USER_UPDATE_FAILED);
     } finally {
       setUpdatingId(null);
     }
@@ -138,19 +138,19 @@ const AdminUsers = () => {
   const deleteUser = async (user) => {
     // Only super admin can delete users
     if (!isSuperAdmin) {
-      toast.error("Only super admin can delete users");
+      toast.error(messages.DELETE_ADMIN_ONLY);
       return;
     }
 
     // Prevent self-deletion
     if (user.id === currentUser?.uid) {
-      toast.error("You cannot delete yourself");
+      toast.error(messages.CANNOT_DELETE_SELF);
       return;
     }
 
     // Prevent deleting super admin
     if (user.isSuperAdmin) {
-      toast.error("Cannot delete the super admin");
+      toast.error(messages.CANNOT_DELETE_SUPER_ADMIN);
       return;
     }
 
@@ -203,10 +203,10 @@ const AdminUsers = () => {
       // Update local state
       setUsers((prev) => prev.filter((item) => item.id !== user.id));
       logAdminAction({ adminId: userDetails?.userId, action: "deleteUser", targetId: user.id, details: { email: user.email } });
-      toast.success("User deleted from Firestore. Don't forget to also delete from Firebase Authentication console!");
+      toast.success(messages.USER_DELETED);
     } catch (error) {
       logger.error("Error deleting user:", error);
-      toast.error("Failed to delete user. Please try again.");
+      toast.error(messages.USER_DELETE_FAILED);
     } finally {
       setDeletingId(null);
     }
