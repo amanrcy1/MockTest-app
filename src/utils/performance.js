@@ -153,7 +153,7 @@ export const monitorLongTasks = () => {
     });
     
     observer.observe({ entryTypes: ['longtask'] });
-  } catch (e) {
+  } catch (_e) {
     // Long task API not supported
   }
 };

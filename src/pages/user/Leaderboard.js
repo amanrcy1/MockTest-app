@@ -345,7 +345,7 @@ const Leaderboard = () => {
               >
                 <div className="flex items-center justify-center gap-4">
                   {entries.slice(0, 3).map((entry, idx) => {
-                    const medals = [<svg className="w-6 h-6 text-yellow-400" fill="currentColor" viewBox="0 0 24 24"><circle cx="12" cy="9" r="6" /><path d="M7 15l-3 7h4l4-4 4 4h4l-3-7" /></svg>, <svg className="w-6 h-6 text-gray-400" fill="currentColor" viewBox="0 0 24 24"><circle cx="12" cy="9" r="6" /><path d="M7 15l-3 7h4l4-4 4 4h4l-3-7" /></svg>, <svg className="w-6 h-6 text-amber-600" fill="currentColor" viewBox="0 0 24 24"><circle cx="12" cy="9" r="6" /><path d="M7 15l-3 7h4l4-4 4 4h4l-3-7" /></svg>];
+                    const medals = [<svg key="gold" className="w-6 h-6 text-yellow-400" fill="currentColor" viewBox="0 0 24 24"><circle cx="12" cy="9" r="6" /><path d="M7 15l-3 7h4l4-4 4 4h4l-3-7" /></svg>, <svg key="silver" className="w-6 h-6 text-gray-400" fill="currentColor" viewBox="0 0 24 24"><circle cx="12" cy="9" r="6" /><path d="M7 15l-3 7h4l4-4 4 4h4l-3-7" /></svg>, <svg key="bronze" className="w-6 h-6 text-amber-600" fill="currentColor" viewBox="0 0 24 24"><circle cx="12" cy="9" r="6" /><path d="M7 15l-3 7h4l4-4 4 4h4l-3-7" /></svg>];
                     return (
                       <div key={entry.userId} className="text-center">
                         <div className="flex justify-center mb-1">{medals[idx]}</div>

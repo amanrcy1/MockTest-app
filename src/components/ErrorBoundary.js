@@ -50,7 +50,7 @@ class ErrorBoundary extends React.Component {
               Something went wrong
             </h1>
             <p className="text-gray-600 dark:text-gray-400 mb-6">
-              We're sorry, but something unexpected happened. Please try again.
+              We&apos;re sorry, but something unexpected happened. Please try again.
             </p>
             <div className="flex flex-col gap-3">
               <button

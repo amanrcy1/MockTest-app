@@ -21,7 +21,7 @@ const usePWAInstall = () => {
       // Update localStorage when opened in standalone mode
       try {
         localStorage.setItem(STORAGE_KEY, 'true');
-      } catch (e) {
+      } catch (_e) {
         // localStorage might be unavailable
       }
       return;
@@ -33,7 +33,7 @@ const usePWAInstall = () => {
       if (wasInstalled) {
         setIsInstalled(true);
       }
-    } catch (e) {
+    } catch (_e) {
       // localStorage might be unavailable
     }
 
@@ -53,7 +53,7 @@ const usePWAInstall = () => {
           localStorage.removeItem(STORAGE_KEY);
           setIsInstalled(false);
         }
-      } catch (err) {
+      } catch (_err) {
         // localStorage might be unavailable
       }
       setInstallPrompt(e);
@@ -65,7 +65,7 @@ const usePWAInstall = () => {
       setInstallPrompt(null);
       try {
         localStorage.setItem(STORAGE_KEY, 'true');
-      } catch (e) {
+      } catch (_e) {
         // localStorage might be unavailable
       }
     };
@@ -91,7 +91,7 @@ const usePWAInstall = () => {
         setInstallPrompt(null);
         try {
           localStorage.setItem(STORAGE_KEY, 'true');
-        } catch (e) {
+        } catch (_e) {
           // localStorage might be unavailable
         }
         return true;
@@ -108,7 +108,7 @@ const usePWAInstall = () => {
     setIsInstalled(true);
     try {
       localStorage.setItem(STORAGE_KEY, 'true');
-    } catch (e) {
+    } catch (_e) {
       // localStorage might be unavailable
     }
   }, []);

@@ -161,7 +161,7 @@ export const getQuestionCountsByExam = async () => {
       if (statsDoc.exists()) {
         return statsDoc.data();
       }
-    } catch (error) {
+    } catch (_error) {
       if (import.meta.env.DEV) {
          
         console.warn('Stats collection not available, falling back to manual count');

@@ -86,7 +86,7 @@ export const useAntiCheat = (isActive = false, options = {}) => {
         document.msExitFullscreen();
       }
       setIsFullscreen(false);
-    } catch (error) {
+    } catch (_error) {
       setIsFullscreen(false);
     }
   }, []);

@@ -117,7 +117,7 @@ export const secureStorage = {
           const serialized = JSON.stringify(value);
           localStorage.setItem(key, serialized);
           return true;
-        } catch (retryError) {
+        } catch (_retryError) {
           if (import.meta.env.DEV) {
              
             console.error('localStorage still full after cleanup');
