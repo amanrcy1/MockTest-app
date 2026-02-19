@@ -162,8 +162,8 @@ export const getQuestionCountsByExam = async () => {
         return statsDoc.data();
       }
     } catch (error) {
-      if (process.env.NODE_ENV === 'development') {
-        // eslint-disable-next-line no-console
+      if (import.meta.env.DEV) {
+         
         console.warn('Stats collection not available, falling back to manual count');
       }
     }

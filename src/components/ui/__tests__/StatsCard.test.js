@@ -26,13 +26,13 @@ describe('StatsCard Component', () => {
       <StatsCard title="Test" value={100} color="green" />
     );
     
-    expect(screen.getByText('100').closest('[class*="green"]')).toBeTruthy(); // eslint-disable-line testing-library/no-node-access
+    expect(screen.getByText('100').closest('[class*="green"]')).toBeTruthy();
     
     rerender(<StatsCard title="Test" value={100} color="red" />);
-    expect(screen.getByText('100').closest('[class*="red"]')).toBeTruthy(); // eslint-disable-line testing-library/no-node-access
+    expect(screen.getByText('100').closest('[class*="red"]')).toBeTruthy();
     
     rerender(<StatsCard title="Test" value={100} color="yellow" />);
-    expect(screen.getByText('100').closest('[class*="yellow"]')).toBeTruthy(); // eslint-disable-line testing-library/no-node-access
+    expect(screen.getByText('100').closest('[class*="yellow"]')).toBeTruthy();
   });
 
   it('should handle string values', () => {
@@ -63,7 +63,7 @@ describe('StatsCard Component', () => {
 
   it('should render loading state', () => {
     render(<StatsCard title="Test" value={100} loading={true} />);
-    expect(document.querySelector('.animate-pulse')).toBeInTheDocument(); // eslint-disable-line testing-library/no-node-access
+    expect(document.querySelector('.animate-pulse')).toBeInTheDocument();
   });
 
   it('should handle all color variants', () => {
@@ -77,6 +77,6 @@ describe('StatsCard Component', () => {
 
   it('should default to blue color when invalid color provided', () => {
     render(<StatsCard title="Test" value={100} color="invalid" />);
-    expect(screen.getByText('100').closest('[class*="blue"]')).toBeTruthy(); // eslint-disable-line testing-library/no-node-access
+    expect(screen.getByText('100').closest('[class*="blue"]')).toBeTruthy();
   });
 });

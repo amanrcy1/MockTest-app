@@ -43,14 +43,14 @@ describe('Timer Component', () => {
   it('should show icon when showIcon is true', () => {
     render(<Timer timeRemaining={3600} showIcon={true} />);
     const timer = screen.getByRole('timer');
-    // eslint-disable-next-line testing-library/no-node-access
+
     expect(timer.querySelector('svg')).toBeInTheDocument();
   });
 
   it('should not show icon by default', () => {
     render(<Timer timeRemaining={3600} />);
     const timer = screen.getByRole('timer');
-    // eslint-disable-next-line testing-library/no-node-access
+
     expect(timer.querySelector('svg')).not.toBeInTheDocument();
   });
 

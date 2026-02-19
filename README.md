@@ -97,7 +97,7 @@
    REACT_APP_FIREBASE_STORAGE_BUCKET=your_project.appspot.com
    REACT_APP_FIREBASE_MESSAGING_SENDER_ID=your_sender_id
    REACT_APP_FIREBASE_APP_ID=your_app_id
-   REACT_APP_API_URL=/api
+   VITE_API_URL=/api
    GROQ_API_KEY=your_groq_api_key
    ```
 

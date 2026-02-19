@@ -8,8 +8,8 @@
  */
 export const logError = (error, context = {}) => {
   // Log to console in development
-  if (process.env.NODE_ENV === 'development') {
-    // eslint-disable-next-line no-console
+  if (import.meta.env.DEV) {
+     
     console.error('Error:', error, 'Context:', context);
   }
   
@@ -20,7 +20,7 @@ export const logError = (error, context = {}) => {
  * Log custom event
  */
 export const logEvent = (eventName, data = {}) => {
-  if (process.env.NODE_ENV === 'development') {
+  if (import.meta.env.DEV) {
     // eslint-disable-next-line no-console
     console.log('Event:', eventName, 'Data:', data);
   }
@@ -44,7 +44,7 @@ export const clearUserContext = () => {
  * Add breadcrumb for debugging
  */
 export const addBreadcrumb = (message, category = 'custom', _level = 'info') => {
-  if (process.env.NODE_ENV === 'development') {
+  if (import.meta.env.DEV) {
     // eslint-disable-next-line no-console
     console.log(`[${category}] ${message}`);
   }

@@ -345,10 +345,10 @@ const Leaderboard = () => {
               >
                 <div className="flex items-center justify-center gap-4">
                   {entries.slice(0, 3).map((entry, idx) => {
-                    const medals = ["🥇", "🥈", "🥉"];
+                    const medals = [<svg className="w-6 h-6 text-yellow-400" fill="currentColor" viewBox="0 0 24 24"><circle cx="12" cy="9" r="6" /><path d="M7 15l-3 7h4l4-4 4 4h4l-3-7" /></svg>, <svg className="w-6 h-6 text-gray-400" fill="currentColor" viewBox="0 0 24 24"><circle cx="12" cy="9" r="6" /><path d="M7 15l-3 7h4l4-4 4 4h4l-3-7" /></svg>, <svg className="w-6 h-6 text-amber-600" fill="currentColor" viewBox="0 0 24 24"><circle cx="12" cy="9" r="6" /><path d="M7 15l-3 7h4l4-4 4 4h4l-3-7" /></svg>];
                     return (
                       <div key={entry.userId} className="text-center">
-                        <div className="text-3xl mb-1">{medals[idx]}</div>
+                        <div className="flex justify-center mb-1">{medals[idx]}</div>
                         <div className={`w-12 h-12 rounded-full mx-auto mb-1 overflow-hidden ${
                           entry.isDeleted 
                             ? "bg-gray-400" 
@@ -408,7 +408,7 @@ const Leaderboard = () => {
                   <div className="hidden sm:grid grid-cols-4 gap-4 px-6 py-4 text-sm text-gray-700 dark:text-gray-300">
                     <span className="font-bold flex items-center gap-2">
                       {entry.rank <= 3 && (
-                        <span className="text-lg">{entry.rank === 1 ? "🥇" : entry.rank === 2 ? "🥈" : "🥉"}</span>
+                        <span className="inline-flex">{entry.rank === 1 ? <svg className="w-6 h-6 text-yellow-400" fill="currentColor" viewBox="0 0 24 24"><circle cx="12" cy="9" r="6" /><path d="M7 15l-3 7h4l4-4 4 4h4l-3-7" /></svg> : entry.rank === 2 ? <svg className="w-6 h-6 text-gray-400" fill="currentColor" viewBox="0 0 24 24"><circle cx="12" cy="9" r="6" /><path d="M7 15l-3 7h4l4-4 4 4h4l-3-7" /></svg> : <svg className="w-6 h-6 text-amber-600" fill="currentColor" viewBox="0 0 24 24"><circle cx="12" cy="9" r="6" /><path d="M7 15l-3 7h4l4-4 4 4h4l-3-7" /></svg>}</span>
                       )}
                       #{entry.rank}
                     </span>
@@ -454,7 +454,7 @@ const Leaderboard = () => {
                           <div className="flex items-center gap-2">
                             <span className="font-bold text-gray-900 dark:text-white">
                               {entry.rank <= 3 && (
-                                <span className="mr-1">{entry.rank === 1 ? "🥇" : entry.rank === 2 ? "🥈" : "🥉"}</span>
+                                <span className="mr-1 inline-flex">{entry.rank === 1 ? <svg className="w-6 h-6 text-yellow-400" fill="currentColor" viewBox="0 0 24 24"><circle cx="12" cy="9" r="6" /><path d="M7 15l-3 7h4l4-4 4 4h4l-3-7" /></svg> : entry.rank === 2 ? <svg className="w-6 h-6 text-gray-400" fill="currentColor" viewBox="0 0 24 24"><circle cx="12" cy="9" r="6" /><path d="M7 15l-3 7h4l4-4 4 4h4l-3-7" /></svg> : <svg className="w-6 h-6 text-amber-600" fill="currentColor" viewBox="0 0 24 24"><circle cx="12" cy="9" r="6" /><path d="M7 15l-3 7h4l4-4 4 4h4l-3-7" /></svg>}</span>
                               )}
                               #{entry.rank}
                             </span>

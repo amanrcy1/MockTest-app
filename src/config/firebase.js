@@ -10,36 +10,36 @@ import { initializeAppCheck, ReCaptchaV3Provider } from "firebase/app-check";
  * Create a .env file in project root with these values
  */
 const requiredEnvVars = [
-  'REACT_APP_FIREBASE_API_KEY',
-  'REACT_APP_FIREBASE_AUTH_DOMAIN',
-  'REACT_APP_FIREBASE_PROJECT_ID',
+  'VITE_FIREBASE_API_KEY',
+  'VITE_FIREBASE_AUTH_DOMAIN',
+  'VITE_FIREBASE_PROJECT_ID',
 ];
 
 // Check for required environment variables
-const missing = requiredEnvVars.filter(key => !process.env[key]);
+const missing = requiredEnvVars.filter(key => !import.meta.env[key]);
 if (missing.length > 0) {
   const errorMsg = `Missing Firebase environment variables: ${missing.join(', ')}`;
   
-  if (process.env.NODE_ENV === 'production') {
+  if (import.meta.env.PROD) {
     // In production, throw error to prevent app from running with missing config
     throw new Error(errorMsg);
   } else {
     // In development, only warn
-    // eslint-disable-next-line no-console
+     
     console.warn(
-      `⚠️ ${errorMsg}\n` +
+      `[WARNING] ${errorMsg}\n` +
       'Create a .env file in your project root. See .env.example for reference.'
     );
   }
 }
 
 const firebaseConfig = {
-  apiKey: process.env.REACT_APP_FIREBASE_API_KEY,
-  authDomain: process.env.REACT_APP_FIREBASE_AUTH_DOMAIN,
-  projectId: process.env.REACT_APP_FIREBASE_PROJECT_ID,
-  storageBucket: process.env.REACT_APP_FIREBASE_STORAGE_BUCKET,
-  messagingSenderId: process.env.REACT_APP_FIREBASE_MESSAGING_SENDER_ID,
-  appId: process.env.REACT_APP_FIREBASE_APP_ID,
+  apiKey: import.meta.env.VITE_FIREBASE_API_KEY,
+  authDomain: import.meta.env.VITE_FIREBASE_AUTH_DOMAIN,
+  projectId: import.meta.env.VITE_FIREBASE_PROJECT_ID,
+  storageBucket: import.meta.env.VITE_FIREBASE_STORAGE_BUCKET,
+  messagingSenderId: import.meta.env.VITE_FIREBASE_MESSAGING_SENDER_ID,
+  appId: import.meta.env.VITE_FIREBASE_APP_ID,
 };
 
 // Initialize Firebase
@@ -58,14 +58,14 @@ try {
   storage = getStorage(app);
   
   // Enable App Check in production
-  if (process.env.NODE_ENV === 'production' && process.env.REACT_APP_RECAPTCHA_SITE_KEY) {
+  if (import.meta.env.PROD && import.meta.env.VITE_RECAPTCHA_SITE_KEY) {
     initializeAppCheck(app, {
-      provider: new ReCaptchaV3Provider(process.env.REACT_APP_RECAPTCHA_SITE_KEY),
+      provider: new ReCaptchaV3Provider(import.meta.env.VITE_RECAPTCHA_SITE_KEY),
       isTokenAutoRefreshEnabled: true
     });
   }
 } catch (error) {
-  if (process.env.NODE_ENV === 'development') {
+  if (import.meta.env.DEV) {
     console.error('Firebase initialization error:', error.message);
   }
 }

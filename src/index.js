@@ -5,7 +5,7 @@ import App from "./App";
 import { initPerformanceMonitoring } from "./utils/performance";
 
 // Initialize performance monitoring
-if (process.env.NODE_ENV === 'production') {
+if (import.meta.env.PROD) {
   initPerformanceMonitoring();
 }
 

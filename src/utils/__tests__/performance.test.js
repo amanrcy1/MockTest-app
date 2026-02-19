@@ -29,7 +29,7 @@ describe('performance utilities', () => {
 
   describe('trackRender', () => {
     it('should create tracker with component name', () => {
-      // eslint-disable-next-line testing-library/render-result-naming-convention
+
       const perfTracker = trackRender('TestComponent');
       expect(perfTracker).toBeInstanceOf(PerformanceTracker);
       expect(perfTracker.name).toBe('render_TestComponent');

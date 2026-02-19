@@ -8,9 +8,9 @@ const LeaderboardPodium = memo(({ topThree = [] }) => {
   if (topThree.length === 0) return null;
 
   const podiumConfig = [
-    { position: 1, height: 120, color: "from-yellow-400 to-yellow-600", medal: "🥇", glow: "shadow-yellow-400/50" },
-    { position: 0, height: 90, color: "from-gray-300 to-gray-500", medal: "🥈", glow: "shadow-gray-400/50" },
-    { position: 2, height: 70, color: "from-amber-600 to-amber-800", medal: "🥉", glow: "shadow-amber-400/50" },
+    { position: 1, height: 120, color: "from-yellow-400 to-yellow-600", medal: <svg className="w-6 h-6 text-yellow-400" fill="currentColor" viewBox="0 0 24 24"><circle cx="12" cy="9" r="6" /><path d="M7 15l-3 7h4l4-4 4 4h4l-3-7" /></svg>, glow: "shadow-yellow-400/50" },
+    { position: 0, height: 90, color: "from-gray-300 to-gray-500", medal: <svg className="w-6 h-6 text-gray-400" fill="currentColor" viewBox="0 0 24 24"><circle cx="12" cy="9" r="6" /><path d="M7 15l-3 7h4l4-4 4 4h4l-3-7" /></svg>, glow: "shadow-gray-400/50" },
+    { position: 2, height: 70, color: "from-amber-600 to-amber-800", medal: <svg className="w-6 h-6 text-amber-600" fill="currentColor" viewBox="0 0 24 24"><circle cx="12" cy="9" r="6" /><path d="M7 15l-3 7h4l4-4 4 4h4l-3-7" /></svg>, glow: "shadow-amber-400/50" },
   ];
 
   const displayOrder = [1, 0, 2];
@@ -38,7 +38,7 @@ const LeaderboardPodium = memo(({ topThree = [] }) => {
                     user.name?.charAt(0)?.toUpperCase() || "?"
                   )}
                 </div>
-                <span className="absolute -top-1 -right-1 text-xl">{config.medal}</span>
+                <span className="absolute -top-1 -right-1">{config.medal}</span>
               </div>
               <p className="mt-2 font-semibold text-gray-800 dark:text-gray-200 text-sm sm:text-base truncate max-w-[80px] sm:max-w-[100px]">
                 {user.name || "User"}

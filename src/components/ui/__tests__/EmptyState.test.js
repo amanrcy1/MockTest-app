@@ -23,7 +23,7 @@ describe('EmptyState Component', () => {
       />
     );
     
-    // eslint-disable-next-line testing-library/no-container, testing-library/no-node-access
+
     expect(container.querySelector('svg')).toBeInTheDocument();
   });
 
@@ -78,7 +78,7 @@ describe('EmptyState Component', () => {
       />
     );
     
-    expect(screen.getByText('Empty').closest('[class]')).toBeTruthy(); // eslint-disable-line testing-library/no-node-access
+    expect(screen.getByText('Empty').closest('[class]')).toBeTruthy();
     
     rerender(
       <EmptyState

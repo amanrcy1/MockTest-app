@@ -24,13 +24,13 @@ export const reportWebVitals = (onPerfEntry) => {
  */
 export const sendToAnalytics = ({ name, delta, value, id }) => {
   // Log to console in development
-  if (process.env.NODE_ENV === 'development') {
+  if (import.meta.env.DEV) {
     // eslint-disable-next-line no-console
     console.log(`[Performance] ${name}:`, { delta, value, id });
   }
   
   // Send to analytics in production
-  if (process.env.NODE_ENV === 'production') {
+  if (import.meta.env.PROD) {
     logEvent('web_vital', {
       metric: name,
       value: Math.round(name === 'CLS' ? delta * 1000 : delta),
@@ -49,6 +49,7 @@ export const sendToAnalytics = ({ name, delta, value, id }) => {
   }
 };
 
+
 /**
  * Measure custom performance metrics
  */
@@ -61,12 +62,12 @@ export class PerformanceTracker {
   end() {
     const duration = performance.now() - this.startTime;
     
-    if (process.env.NODE_ENV === 'development') {
+    if (import.meta.env.DEV) {
       // eslint-disable-next-line no-console
       console.log(`[Performance] ${this.name}: ${duration.toFixed(2)}ms`);
     }
     
-    if (process.env.NODE_ENV === 'production') {
+    if (import.meta.env.PROD) {
       logEvent('custom_metric', {
         name: this.name,
         duration: Math.round(duration),
@@ -138,10 +139,10 @@ export const monitorLongTasks = () => {
     const observer = new PerformanceObserver((list) => {
       for (const entry of list.getEntries()) {
         if (entry.duration > 50) {
-          // eslint-disable-next-line no-console
+           
           console.warn(`Long task detected: ${entry.duration.toFixed(2)}ms`);
           
-          if (process.env.NODE_ENV === 'production') {
+          if (import.meta.env.PROD) {
             logEvent('long_task', {
               duration: Math.round(entry.duration),
               startTime: Math.round(entry.startTime),
@@ -178,7 +179,7 @@ export const initPerformanceMonitoring = () => {
 const logInitialMetrics = () => {
   setTimeout(() => {
     const metrics = getPerformanceMetrics();
-    if (metrics && process.env.NODE_ENV === 'development') {
+    if (metrics && import.meta.env.DEV) {
       // eslint-disable-next-line no-console
       console.table(metrics);
     }

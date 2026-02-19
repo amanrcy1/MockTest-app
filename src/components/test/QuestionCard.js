@@ -119,10 +119,10 @@ const QuestionCard = memo(({
                   </span>
                 </div>
                 {showCorrect && (
-                  <span className="text-green-600 font-semibold ml-2">✓ Correct</span>
+                  <span className="text-green-600 font-semibold ml-2 flex items-center gap-1"><svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}><path strokeLinecap="round" strokeLinejoin="round" d="M4.5 12.75l6 6 9-13.5" /></svg>Correct</span>
                 )}
                 {showWrong && (
-                  <span className="text-red-600 font-semibold ml-2">✗ Wrong</span>
+                  <span className="text-red-600 font-semibold ml-2 flex items-center gap-1"><svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}><path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" /></svg>Wrong</span>
                 )}
               </div>
             </button>

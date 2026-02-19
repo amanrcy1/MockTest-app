@@ -43,7 +43,7 @@ export const generateExplanation = async ({
 
   try {
     // Call Vercel serverless function
-    const apiUrl = process.env.REACT_APP_API_URL || '/api';
+    const apiUrl = import.meta.env.VITE_API_URL || '/api';
     
     // Add timeout to prevent hanging requests
     const controller = new AbortController();
@@ -105,8 +105,8 @@ export const generateExplanation = async ({
     return explanation;
   } catch (error) {
     // Log error in development, track in production
-    if (process.env.NODE_ENV === 'development') {
-      // eslint-disable-next-line no-console
+    if (import.meta.env.DEV) {
+       
       console.error("AI Explanation Error:", error);
     }
     logError(error, { context: 'getAIExplanation' });

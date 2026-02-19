@@ -7,7 +7,7 @@
  * Production: strict policy without unsafe-eval
  * Development: relaxed for React hot-reload / dev tools
  */
-const isProd = typeof process !== 'undefined' && process.env?.NODE_ENV === 'production';
+const isProd = import.meta.env.PROD;
 
 export const CSP_HEADERS = {
   'Content-Security-Policy': [
@@ -101,8 +101,8 @@ export const secureStorage = {
       return true;
     } catch (error) {
       if (error.name === 'QuotaExceededError') {
-        if (process.env.NODE_ENV === 'development') {
-          // eslint-disable-next-line no-console
+        if (import.meta.env.DEV) {
+           
           console.error('localStorage quota exceeded');
         }
         // Clear old data
@@ -118,8 +118,8 @@ export const secureStorage = {
           localStorage.setItem(key, serialized);
           return true;
         } catch (retryError) {
-          if (process.env.NODE_ENV === 'development') {
-            // eslint-disable-next-line no-console
+          if (import.meta.env.DEV) {
+             
             console.error('localStorage still full after cleanup');
           }
         }
@@ -133,8 +133,8 @@ export const secureStorage = {
       const item = localStorage.getItem(key);
       return item ? JSON.parse(item) : defaultValue;
     } catch (error) {
-      if (process.env.NODE_ENV === 'development') {
-        // eslint-disable-next-line no-console
+      if (import.meta.env.DEV) {
+         
         console.error('Error reading from localStorage:', error);
       }
       return defaultValue;
@@ -146,8 +146,8 @@ export const secureStorage = {
       localStorage.removeItem(key);
       return true;
     } catch (error) {
-      if (process.env.NODE_ENV === 'development') {
-        // eslint-disable-next-line no-console
+      if (import.meta.env.DEV) {
+         
         console.error('Error removing from localStorage:', error);
       }
       return false;
@@ -159,8 +159,8 @@ export const secureStorage = {
       localStorage.clear();
       return true;
     } catch (error) {
-      if (process.env.NODE_ENV === 'development') {
-        // eslint-disable-next-line no-console
+      if (import.meta.env.DEV) {
+         
         console.error('Error clearing localStorage:', error);
       }
       return false;

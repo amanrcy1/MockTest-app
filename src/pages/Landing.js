@@ -374,7 +374,7 @@ const DemoQuiz = () => {
               animate={{ opacity: 1, scale: 1 }}
               className="p-6 text-center space-y-4"
             >
-              <div className="text-5xl mb-2">{score >= 4 ? "🏆" : score >= 2 ? "💪" : "📚"}</div>
+              <div className="text-5xl mb-2 flex justify-center">{score >= 4 ? <svg className="w-12 h-12 text-amber-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}><path strokeLinecap="round" strokeLinejoin="round" d="M16.5 18.75h-9m9 0a3 3 0 013 3h-15a3 3 0 013-3m9 0v-3.375c0-.621-.503-1.125-1.125-1.125h-.871M7.5 18.75v-3.375c0-.621.504-1.125 1.125-1.125h.872m5.007 0H9.497m5.007 0a7.454 7.454 0 01-.982-3.172M9.497 14.25a7.454 7.454 0 00.981-3.172M5.25 4.236c-.982.143-1.954.317-2.916.52A6.003 6.003 0 007.73 9.728M5.25 4.236V4.5c0 2.108.966 3.99 2.48 5.228M5.25 4.236V2.721C7.456 2.41 9.71 2.25 12 2.25c2.291 0 4.545.16 6.75.47v1.516M18.75 4.236c.982.143 1.954.317 2.916.52A6.003 6.003 0 0016.27 9.728M18.75 4.236V4.5c0 2.108-.966 3.99-2.48 5.228m0 0a6.023 6.023 0 01-7.54 0" /></svg> : score >= 2 ? <svg className="w-12 h-12 text-blue-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}><path strokeLinecap="round" strokeLinejoin="round" d="M6.633 10.5c.806 0 1.533-.446 2.031-1.08a9.041 9.041 0 012.861-2.4c.723-.384 1.35-.956 1.653-1.715a4.498 4.498 0 00.322-1.672V3.75A.75.75 0 0114.25 3a2.25 2.25 0 012.25 2.25c0 1.152-.26 2.243-.723 3.218-.266.558.107 1.282.725 1.282h3.126c1.026 0 1.945.694 2.054 1.715.045.422.068.85.068 1.285a11.95 11.95 0 01-2.649 7.521c-.388.482-.987.729-1.605.729H14.23c-.483 0-.964-.078-1.423-.23l-3.114-1.04a4.501 4.501 0 00-1.423-.23H3.75" /></svg> : <svg className="w-12 h-12 text-emerald-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}><path strokeLinecap="round" strokeLinejoin="round" d="M12 6.042A8.967 8.967 0 006 3.75c-1.052 0-2.062.18-3 .512v14.25A8.987 8.987 0 016 18c2.305 0 4.408.867 6 2.292m0-14.25a8.966 8.966 0 016-2.292c1.052 0 2.062.18 3 .512v14.25A8.987 8.987 0 0018 18a8.967 8.967 0 00-6 2.292m0-14.25v14.25" /></svg>}</div>
               <div>
                 <p className="text-2xl font-extrabold text-gray-900 dark:text-white">
                   {score} / {DEMO_QUESTIONS.length}
@@ -484,7 +484,7 @@ const DemoQuiz = () => {
                   animate={{ opacity: 1, height: "auto" }}
                   className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-xl p-3"
                 >
-                  <p className="text-xs font-semibold text-blue-700 dark:text-blue-300 mb-1">💡 Explanation</p>
+                  <p className="text-xs font-semibold text-blue-700 dark:text-blue-300 mb-1"><svg className="w-3.5 h-3.5 inline-block mr-1 -mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M12 18v-5.25m0 0a6.01 6.01 0 001.5-.189m-1.5.189a6.01 6.01 0 01-1.5-.189m3.75 7.478a12.06 12.06 0 01-4.5 0m3.75 2.383a14.406 14.406 0 01-3 0M14.25 18v-.192c0-.983.658-1.823 1.508-2.316a7.5 7.5 0 10-7.517 0c.85.493 1.509 1.333 1.509 2.316V18" /></svg>Explanation</p>
                   <p className="text-xs text-blue-600 dark:text-blue-400 leading-relaxed">{q.explanation}</p>
                 </motion.div>
               )}
@@ -548,10 +548,10 @@ const StepCard = ({ step, title, desc, icon, gradient, delay }) => (
           {step}
         </div>
         <motion.div
-          className={`w-16 h-16 mx-auto rounded-2xl bg-gradient-to-br ${gradient} flex items-center justify-center mb-5 shadow-lg relative`}
+          className={`w-16 h-16 mx-auto rounded-2xl bg-gradient-to-br ${gradient} flex items-center justify-center mb-5 shadow-lg relative text-white`}
           whileHover={{ scale: 1.1, rotate: -5 }}
         >
-          <span className="text-2xl">{icon}</span>
+          {icon}
         </motion.div>
         <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-2">{title}</h3>
         <p className="text-sm text-gray-600 dark:text-gray-400 leading-relaxed">{desc}</p>
@@ -609,7 +609,7 @@ const StatCard = ({ value, suffix, label, icon, gradient, delay }) => (
     <TiltCard>
       <div className="relative bg-white dark:bg-gray-800 rounded-2xl p-5 shadow-lg border border-gray-200 dark:border-gray-700 text-center overflow-hidden">
         <div className={`absolute -top-6 -right-6 w-20 h-20 bg-gradient-to-br ${gradient} opacity-10 rounded-full`} />
-        <div className="text-2xl mb-2">{icon}</div>
+        <div className="text-2xl mb-2 flex justify-center">{icon}</div>
         <p className="text-3xl md:text-4xl font-extrabold gradient-text mb-1">
           <AnimatedCounter target={value} suffix={suffix || ""} />
         </p>
@@ -638,37 +638,37 @@ const Landing = () => {
 
   const features = [
     {
-      icon: <span className="text-2xl">📋</span>,
+      icon: <svg className="w-7 h-7 text-blue-600 dark:text-blue-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}><path strokeLinecap="round" strokeLinejoin="round" d="M9 12h3.75M9 15h3.75M9 18h3.75m3 .75H18a2.25 2.25 0 002.25-2.25V6.108c0-1.135-.845-2.098-1.976-2.192a48.424 48.424 0 00-1.123-.08m-5.801 0c-.065.21-.1.433-.1.664 0 .414.336.75.75.75h4.5a.75.75 0 00.75-.75 2.25 2.25 0 00-.1-.664m-5.8 0A2.251 2.251 0 0113.5 2.25H15a2.25 2.25 0 012.15 1.586m-5.8 0c-.376.023-.75.05-1.124.08C9.095 4.01 8.25 4.973 8.25 6.108V8.25m0 0H4.875c-.621 0-1.125.504-1.125 1.125v11.25c0 .621.504 1.125 1.125 1.125h9.75c.621 0 1.125-.504 1.125-1.125V9.375c0-.621-.504-1.125-1.125-1.125H8.25zM6.75 12h.008v.008H6.75V12zm0 3h.008v.008H6.75V15zm0 3h.008v.008H6.75V18z" /></svg>,
       title: "Real Exam Simulation",
       description: "Experience actual UPSC exam conditions with timed tests, negative marking, and section-wise analysis.",
       gradient: "from-blue-500 to-indigo-600",
     },
     {
-      icon: <span className="text-2xl">🤖</span>,
+      icon: <svg className="w-7 h-7 text-purple-600 dark:text-purple-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}><path strokeLinecap="round" strokeLinejoin="round" d="M9.813 15.904L9 18.75l-.813-2.846a4.5 4.5 0 00-3.09-3.09L2.25 12l2.846-.813a4.5 4.5 0 003.09-3.09L9 5.25l.813 2.846a4.5 4.5 0 003.09 3.09L15.75 12l-2.846.813a4.5 4.5 0 00-3.09 3.09zM18.259 8.715L18 9.75l-.259-1.035a3.375 3.375 0 00-2.455-2.456L14.25 6l1.036-.259a3.375 3.375 0 002.455-2.456L18 2.25l.259 1.035a3.375 3.375 0 002.455 2.456L21.75 6l-1.036.259a3.375 3.375 0 00-2.455 2.456zM16.894 20.567L16.5 21.75l-.394-1.183a2.25 2.25 0 00-1.423-1.423L13.5 18.75l1.183-.394a2.25 2.25 0 001.423-1.423l.394-1.183.394 1.183a2.25 2.25 0 001.423 1.423l1.183.394-1.183.394a2.25 2.25 0 00-1.423 1.423z" /></svg>,
       title: "AI-Powered Explanations",
       description: "Get instant, detailed explanations for every question powered by advanced AI to deepen your understanding.",
       gradient: "from-purple-500 to-pink-600",
     },
     {
-      icon: <span className="text-2xl">🏆</span>,
+      icon: <svg className="w-7 h-7 text-amber-600 dark:text-amber-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}><path strokeLinecap="round" strokeLinejoin="round" d="M16.5 18.75h-9m9 0a3 3 0 013 3h-15a3 3 0 013-3m9 0v-3.375c0-.621-.503-1.125-1.125-1.125h-.871M7.5 18.75v-3.375c0-.621.504-1.125 1.125-1.125h.872m5.007 0H9.497m5.007 0a7.454 7.454 0 01-.982-3.172M9.497 14.25a7.454 7.454 0 00.981-3.172M5.25 4.236c-.982.143-1.954.317-2.916.52A6.003 6.003 0 007.73 9.728M5.25 4.236V4.5c0 2.108.966 3.99 2.48 5.228M5.25 4.236V2.721C7.456 2.41 9.71 2.25 12 2.25c2.291 0 4.545.16 6.75.47v1.516M18.75 4.236c.982.143 1.954.317 2.916.52A6.003 6.003 0 0016.27 9.728M18.75 4.236V4.5c0 2.108-.966 3.99-2.48 5.228m0 0a6.023 6.023 0 01-7.54 0" /></svg>,
       title: "Live Leaderboard",
       description: "Compete with aspirants nationwide. Weekly rankings keep you motivated and on track.",
       gradient: "from-emerald-500 to-teal-600",
     },
     {
-      icon: <span className="text-2xl">📚</span>,
+      icon: <svg className="w-7 h-7 text-orange-600 dark:text-orange-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}><path strokeLinecap="round" strokeLinejoin="round" d="M12 6.042A8.967 8.967 0 006 3.75c-1.052 0-2.062.18-3 .512v14.25A8.987 8.987 0 016 18c2.305 0 4.408.867 6 2.292m0-14.25a8.966 8.966 0 016-2.292c1.052 0 2.062.18 3 .512v14.25A8.987 8.987 0 0018 18a8.967 8.967 0 00-6 2.292m0-14.25v14.25" /></svg>,
       title: "Practice Mode",
       description: "Learn at your own pace. No timer, instant answers, and bookmark questions for revision.",
       gradient: "from-orange-500 to-amber-600",
     },
     {
-      icon: <span className="text-2xl">🎯</span>,
+      icon: <svg className="w-7 h-7 text-rose-600 dark:text-rose-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}><path strokeLinecap="round" strokeLinejoin="round" d="M13.5 6H5.25A2.25 2.25 0 003 8.25v10.5A2.25 2.25 0 005.25 21h10.5A2.25 2.25 0 0018 18.75V10.5m-10.5 6L21 3m0 0h-5.25M21 3v5.25" /></svg>,
       title: "Custom Tests",
       description: "Build your own test — pick subjects, topics, difficulty, and question count to target weak areas.",
       gradient: "from-rose-500 to-red-600",
     },
     {
-      icon: <span className="text-2xl">🔒</span>,
+      icon: <svg className="w-7 h-7 text-cyan-600 dark:text-cyan-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}><path strokeLinecap="round" strokeLinejoin="round" d="M9 12.75L11.25 15 15 9.75m-3-7.036A11.959 11.959 0 013.598 6 11.99 11.99 0 003 9.749c0 5.592 3.824 10.29 9 11.623 5.176-1.332 9-6.03 9-11.622 0-1.31-.21-2.571-.598-3.751h-.152c-3.196 0-6.1-1.248-8.25-3.285z" /></svg>,
       title: "Anti-Cheat System",
       description: "Tab-switch detection and copy protection ensure fair practice and build real exam discipline.",
       gradient: "from-cyan-500 to-blue-600",
@@ -831,7 +831,7 @@ const Landing = () => {
             viewport={{ once: true }}
             className="text-sm font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-4 text-center"
           >
-            🎓 Try it now — no sign up needed
+            <svg className="w-5 h-5 inline-block mr-1.5 -mt-0.5 text-gray-500 dark:text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M4.26 10.147a60.436 60.436 0 00-.491 6.347A48.627 48.627 0 0112 20.904a48.627 48.627 0 018.232-4.41 60.46 60.46 0 00-.491-6.347m-15.482 0a50.57 50.57 0 00-2.658-.813A59.905 59.905 0 0112 3.493a59.902 59.902 0 0110.399 5.84c-.896.248-1.783.52-2.658.814m-15.482 0A50.697 50.697 0 0112 13.489a50.702 50.702 0 017.74-3.342M6.75 15a.75.75 0 100-1.5.75.75 0 000 1.5zm0 0v-3.675A55.378 55.378 0 0112 8.443m-7.007 11.55A5.981 5.981 0 006.75 15.75v-1.5" /></svg>Try it now — no sign up needed
           </motion.p>
           <DemoQuiz />
         </div>
@@ -840,10 +840,10 @@ const Landing = () => {
       {/* ========== STATS ========== */}
       <section className="py-12 md:py-16 px-4">
         <div className="max-w-5xl mx-auto grid grid-cols-2 md:grid-cols-4 gap-4">
-          <StatCard value="5000" suffix="+" label="Questions" icon="📖" gradient="from-blue-500 to-indigo-600" delay={0} />
-          <StatCard value="1000" suffix="+" label="Aspirants" icon="👥" gradient="from-purple-500 to-pink-600" delay={0.1} />
-          <StatCard value="4" suffix="" label="Exam Types" icon="📝" gradient="from-emerald-500 to-teal-600" delay={0.2} />
-          <StatCard value="98" suffix="%" label="Satisfaction" icon="⭐" gradient="from-orange-500 to-amber-600" delay={0.3} />
+          <StatCard value="5000" suffix="+" label="Questions" icon={<svg className="w-7 h-7 text-blue-600 dark:text-blue-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}><path strokeLinecap="round" strokeLinejoin="round" d="M12 6.042A8.967 8.967 0 006 3.75c-1.052 0-2.062.18-3 .512v14.25A8.987 8.987 0 016 18c2.305 0 4.408.867 6 2.292m0-14.25a8.966 8.966 0 016-2.292c1.052 0 2.062.18 3 .512v14.25A8.987 8.987 0 0018 18a8.967 8.967 0 00-6 2.292m0-14.25v14.25" /></svg>} gradient="from-blue-500 to-indigo-600" delay={0} />
+          <StatCard value="1000" suffix="+" label="Aspirants" icon={<svg className="w-7 h-7 text-purple-600 dark:text-purple-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}><path strokeLinecap="round" strokeLinejoin="round" d="M15 19.128a9.38 9.38 0 002.625.372 9.337 9.337 0 004.121-.952 4.125 4.125 0 00-7.533-2.493M15 19.128v-.003c0-1.113-.285-2.16-.786-3.07M15 19.128v.106A12.318 12.318 0 018.624 21c-2.331 0-4.512-.645-6.374-1.766l-.001-.109a6.375 6.375 0 0111.964-3.07M12 6.375a3.375 3.375 0 11-6.75 0 3.375 3.375 0 016.75 0zm8.25 2.25a2.625 2.625 0 11-5.25 0 2.625 2.625 0 015.25 0z" /></svg>} gradient="from-purple-500 to-pink-600" delay={0.1} />
+          <StatCard value="4" suffix="" label="Exam Types" icon={<svg className="w-7 h-7 text-emerald-600 dark:text-emerald-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}><path strokeLinecap="round" strokeLinejoin="round" d="M16.862 4.487l1.687-1.688a1.875 1.875 0 112.652 2.652L10.582 16.07a4.5 4.5 0 01-1.897 1.13L6 18l.8-2.685a4.5 4.5 0 011.13-1.897l8.932-8.931zm0 0L19.5 7.125M18 14v4.75A2.25 2.25 0 0115.75 21H5.25A2.25 2.25 0 013 18.75V8.25A2.25 2.25 0 015.25 6H10" /></svg>} gradient="from-emerald-500 to-teal-600" delay={0.2} />
+          <StatCard value="98" suffix="%" label="Satisfaction" icon={<svg className="w-7 h-7 text-orange-600 dark:text-orange-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}><path strokeLinecap="round" strokeLinejoin="round" d="M11.48 3.499a.562.562 0 011.04 0l2.125 5.111a.563.563 0 00.475.345l5.518.442c.499.04.701.663.321.988l-4.204 3.602a.563.563 0 00-.182.557l1.285 5.385a.562.562 0 01-.84.61l-4.725-2.885a.563.563 0 00-.586 0L6.982 20.54a.562.562 0 01-.84-.61l1.285-5.386a.562.562 0 00-.182-.557l-4.204-3.602a.563.563 0 01.321-.988l5.518-.442a.563.563 0 00.475-.345L11.48 3.5z" /></svg>} gradient="from-orange-500 to-amber-600" delay={0.3} />
         </div>
       </section>
 
@@ -891,7 +891,7 @@ const Landing = () => {
               viewport={{ once: true }}
               className="inline-flex items-center gap-2 px-4 py-1.5 bg-purple-50 dark:bg-purple-900/30 rounded-full mb-4 border border-purple-100 dark:border-purple-800"
             >
-              <span className="text-sm font-medium text-purple-700 dark:text-purple-300">⚡ Powerful Features</span>
+              <span className="text-sm font-medium text-purple-700 dark:text-purple-300"><svg className="w-4 h-4 inline-block mr-1 -mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M3.75 13.5l10.5-11.25L12 10.5h8.25L9.75 21.75 12 13.5H3.75z" /></svg>Powerful Features</span>
             </motion.div>
             <h2 className="text-3xl md:text-5xl font-extrabold text-gray-900 dark:text-white mb-4">
               Everything you need to{" "}
@@ -927,9 +927,9 @@ const Landing = () => {
           </motion.div>
 
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-            <StepCard step="01" title="Sign In" desc="Continue with Google — one click and you're in." icon="🔑" gradient="from-blue-500 to-indigo-600" delay={0} />
-            <StepCard step="02" title="Choose Your Exam" desc="Select your target exam — CDS, CSAT, IAS GS, or IAS CSAT." icon="📋" gradient="from-purple-500 to-pink-600" delay={0.15} />
-            <StepCard step="03" title="Start Practicing" desc="Take mock tests, practice by topic, or build custom tests." icon="🚀" gradient="from-emerald-500 to-teal-600" delay={0.3} />
+            <StepCard step="01" title="Sign In" desc="Continue with Google — one click and you're in." icon={<svg className="w-7 h-7" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}><path strokeLinecap="round" strokeLinejoin="round" d="M15.75 5.25a3 3 0 013 3m3 0a6 6 0 01-7.029 5.912c-.563-.097-1.159.026-1.563.43L10.5 17.25H8.25v2.25H6v2.25H2.25v-2.818c0-.597.237-1.17.659-1.591l6.499-6.499c.404-.404.527-1 .43-1.563A6 6 0 1121.75 8.25z" /></svg>} gradient="from-blue-500 to-indigo-600" delay={0} />
+            <StepCard step="02" title="Choose Your Exam" desc="Select your target exam — CDS, CSAT, IAS GS, or IAS CSAT." icon={<svg className="w-7 h-7" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}><path strokeLinecap="round" strokeLinejoin="round" d="M3.75 12h16.5m-16.5 3.75h16.5M3.75 19.5h16.5M5.625 4.5h12.75a1.875 1.875 0 010 3.75H5.625a1.875 1.875 0 010-3.75z" /></svg>} gradient="from-purple-500 to-pink-600" delay={0.15} />
+            <StepCard step="03" title="Start Practicing" desc="Take mock tests, practice by topic, or build custom tests." icon={<svg className="w-7 h-7" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}><path strokeLinecap="round" strokeLinejoin="round" d="M15.59 14.37a6 6 0 01-5.84 7.38v-4.8m5.84-2.58a14.98 14.98 0 006.16-12.12A14.98 14.98 0 009.631 8.41m5.96 5.96a14.926 14.926 0 01-5.841 2.58m-.119-8.54a6 6 0 00-7.381 5.84h4.8m2.581-5.84a14.927 14.927 0 00-2.58 5.84m2.699 2.7c-.103.021-.207.041-.311.06a15.09 15.09 0 01-2.448-2.448 14.9 14.9 0 01.06-.312m-2.24 2.39a4.493 4.493 0 00-1.757 4.306 4.493 4.493 0 004.306-1.758M16.5 9a1.5 1.5 0 11-3 0 1.5 1.5 0 013 0z" /></svg>} gradient="from-emerald-500 to-teal-600" delay={0.3} />
           </div>
 
           {/* Connecting line (desktop) */}
@@ -957,21 +957,21 @@ const Landing = () => {
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
             <TestimonialCard
               quote="The mock tests feel exactly like the real exam. The timer, negative marking, and section-wise analysis helped me identify my weak areas."
-              name="Priya Sharma"
+              name="Ankita Yadav"
               exam="UPSC CSE 2025 Aspirant"
               avatar="from-blue-500 to-indigo-600"
               delay={0}
             />
             <TestimonialCard
               quote="AI explanations are a game-changer. Instead of just knowing the answer, I now understand the concept behind every question."
-              name="Rahul Verma"
+              name="Chirag Mishra"
               exam="CDS Aspirant"
               avatar="from-emerald-500 to-teal-600"
               delay={0.1}
             />
             <TestimonialCard
               quote="The practice mode and bookmarks feature helped me revise efficiently. The leaderboard keeps me motivated every week."
-              name="Ananya Gupta"
+              name="Amit Yadav"
               exam="UPSC Prelims 2025"
               avatar="from-purple-500 to-pink-600"
               delay={0.2}
@@ -1008,7 +1008,7 @@ const Landing = () => {
                     viewport={{ once: true }}
                     className="inline-flex items-center gap-2 px-4 py-1.5 bg-white/10 rounded-full mb-6 border border-white/20"
                   >
-                    <span className="text-sm font-medium text-white/90">🎓 Join the community</span>
+                    <span className="text-sm font-medium text-white/90"><svg className="w-4 h-4 inline-block mr-1 -mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M4.26 10.147a60.436 60.436 0 00-.491 6.347A48.627 48.627 0 0112 20.904a48.627 48.627 0 018.232-4.41 60.46 60.46 0 00-.491-6.347m-15.482 0a50.57 50.57 0 00-2.658-.813A59.905 59.905 0 0112 3.493a59.902 59.902 0 0110.399 5.84c-.896.248-1.783.52-2.658.814m-15.482 0A50.697 50.697 0 0112 13.489a50.702 50.702 0 017.74-3.342M6.75 15a.75.75 0 100-1.5.75.75 0 000 1.5zm0 0v-3.675A55.378 55.378 0 0112 8.443m-7.007 11.55A5.981 5.981 0 006.75 15.75v-1.5" /></svg>Join the community</span>
                   </motion.div>
                   <h2 className="text-3xl md:text-5xl font-extrabold text-white mb-4 leading-tight">
                     Your UPSC journey
@@ -1066,7 +1066,7 @@ const Landing = () => {
           </div>
           <span className="text-gray-300 dark:text-gray-600 hidden md:block">•</span>
           <p className="text-sm text-gray-500 dark:text-gray-400">
-            Made with ❤️ for UPSC Aspirants
+            Made with <svg className="w-4 h-4 inline-block mx-1 text-red-500" fill="currentColor" viewBox="0 0 24 24"><path d="M11.645 20.91l-.007-.003-.022-.012a15.247 15.247 0 01-.383-.218 25.18 25.18 0 01-4.244-3.17C4.688 15.36 2.25 12.174 2.25 8.25 2.25 5.322 4.714 3 7.688 3A5.5 5.5 0 0112 5.052 5.5 5.5 0 0116.313 3c2.973 0 5.437 2.322 5.437 5.25 0 3.925-2.438 7.111-4.739 9.256a25.175 25.175 0 01-4.244 3.17 15.247 15.247 0 01-.383.219l-.022.012-.007.004-.003.001a.752.752 0 01-.704 0l-.003-.001z" /></svg> for UPSC Aspirants
           </p>
         </div>
       </footer>

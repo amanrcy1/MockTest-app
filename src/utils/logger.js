@@ -3,7 +3,7 @@
  * Only logs in development, suppresses in production
  */
 
-const isDev = process.env.NODE_ENV === 'development';
+const isDev = import.meta.env.DEV;
 
 const logger = {
   log: (...args) => {
@@ -15,7 +15,7 @@ const logger = {
   
   error: (message, error = null) => {
     if (isDev) {
-      // eslint-disable-next-line no-console
+       
       console.error(message, error);
     }
     // In production, you could send to error tracking service
@@ -24,7 +24,7 @@ const logger = {
   
   warn: (...args) => {
     if (isDev) {
-      // eslint-disable-next-line no-console
+       
       console.warn(...args);
     }
   },

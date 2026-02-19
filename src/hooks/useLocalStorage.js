@@ -13,8 +13,8 @@ export const useLocalStorage = (key, initialValue) => {
       return item ? JSON.parse(item) : initialValue;
     } catch (error) {
       // Only log in development
-      if (process.env.NODE_ENV === 'development') {
-        // eslint-disable-next-line no-console
+      if (import.meta.env.DEV) {
+         
         console.error(`Error reading localStorage key "${key}":`, error);
       }
       return initialValue;
@@ -28,8 +28,8 @@ export const useLocalStorage = (key, initialValue) => {
       localStorage.setItem(key, JSON.stringify(valueToStore));
     } catch (error) {
       // Only log in development
-      if (process.env.NODE_ENV === 'development') {
-        // eslint-disable-next-line no-console
+      if (import.meta.env.DEV) {
+         
         console.error(`Error setting localStorage key "${key}":`, error);
       }
     }
@@ -41,8 +41,8 @@ export const useLocalStorage = (key, initialValue) => {
       setStoredValue(initialValue);
     } catch (error) {
       // Only log in development
-      if (process.env.NODE_ENV === 'development') {
-        // eslint-disable-next-line no-console
+      if (import.meta.env.DEV) {
+         
         console.error(`Error removing localStorage key "${key}":`, error);
       }
     }

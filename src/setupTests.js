@@ -176,7 +176,7 @@ jest.mock('framer-motion', () => ({
     a: ({ children, ...props }) => <a {...props}>{children}</a>,
     svg: ({ children, ...props }) => <svg {...props}>{children}</svg>,
     path: ({ children, ...props }) => <path {...props}>{children}</path>,
-    img: (props) => <img {...props} alt="" />, // eslint-disable-line jsx-a11y/alt-text
+    img: (props) => <img {...props} alt="" />,
     nav: ({ children, ...props }) => <nav {...props}>{children}</nav>,
     section: ({ children, ...props }) => <section {...props}>{children}</section>,
     header: ({ children, ...props }) => <header {...props}>{children}</header>,
@@ -337,7 +337,7 @@ global.crypto = {
 
 // Mock IntersectionObserver
 global.IntersectionObserver = class IntersectionObserver {
-  // eslint-disable-next-line no-useless-constructor
+   
   constructor() {}
   disconnect() {}
   observe() {}
@@ -349,7 +349,7 @@ global.IntersectionObserver = class IntersectionObserver {
 
 // Mock ResizeObserver
 global.ResizeObserver = class ResizeObserver {
-  // eslint-disable-next-line no-useless-constructor
+   
   constructor() {}
   disconnect() {}
   observe() {}

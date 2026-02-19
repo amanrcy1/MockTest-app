@@ -56,8 +56,8 @@ export const useAntiCheat = (isActive = false, options = {}) => {
       setShowViolationModal(false);
       return true;
     } catch (error) {
-      if (process.env.NODE_ENV === 'development') {
-        // eslint-disable-next-line no-console
+      if (import.meta.env.DEV) {
+         
         console.warn("Fullscreen request failed:", error);
       }
       return false;

@@ -14,8 +14,8 @@ class ErrorBoundary extends React.Component {
   componentDidCatch(error, errorInfo) {
     this.setState({ error, errorInfo });
     // Log error only in development
-    if (process.env.NODE_ENV === 'development') {
-      // eslint-disable-next-line no-console
+    if (import.meta.env.DEV) {
+       
       console.error("ErrorBoundary caught an error:", error, errorInfo);
     }
     // In production, send to error tracking service (e.g., Sentry)
@@ -66,7 +66,7 @@ class ErrorBoundary extends React.Component {
                 Go to Dashboard
               </button>
             </div>
-            {process.env.NODE_ENV === "development" && this.state.error && (
+            {import.meta.env.DEV && this.state.error && (
               <details className="mt-6 text-left">
                 <summary className="cursor-pointer text-sm text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300">
                   Error Details (Development Only)

@@ -349,8 +349,8 @@ export const isValidEmail = (email) => {
   };
   
   if (typos[domain]) {
-    if (process.env.NODE_ENV === 'development') {
-      // eslint-disable-next-line no-console
+    if (import.meta.env.DEV) {
+       
       console.warn(`Did you mean ${typos[domain]}?`);
     }
   }
