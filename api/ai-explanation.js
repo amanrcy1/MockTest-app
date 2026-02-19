@@ -5,7 +5,7 @@ import admin from 'firebase-admin';
 
 // Initialize Firebase Admin (once per cold start)
 if (!admin.apps.length) {
-  const projectId = process.env.FIREBASE_PROJECT_ID || process.env.REACT_APP_FIREBASE_PROJECT_ID;
+  const projectId = process.env.FIREBASE_PROJECT_ID || process.env.VITE_FIREBASE_PROJECT_ID;
   if (projectId) {
     admin.initializeApp({ projectId });
   } else {
@@ -96,6 +96,15 @@ export default async function handler(req, res) {
     return res.status(405).json({
       error: 'Method Not Allowed',
       message: 'Only POST requests are allowed'
+    });
+  }
+
+  // Reject oversized request bodies (10KB limit)
+  const contentLength = parseInt(req.headers['content-length'] || '0', 10);
+  if (contentLength > 10240) {
+    return res.status(413).json({
+      error: 'Payload Too Large',
+      message: 'Request body must be under 10KB'
     });
   }
 
