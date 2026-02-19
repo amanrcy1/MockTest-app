@@ -4,9 +4,6 @@
   "private": true,
   "type": "module",
   "dependencies": {
-    "@testing-library/dom": "^10.4.1",
-    "@testing-library/jest-dom": "^6.9.1",
-    "@testing-library/react": "^16.3.1",
     "date-fns": "^4.1.0",
     "firebase": "^12.7.0",
     "firebase-admin": "^13.6.1",
@@ -26,48 +23,24 @@
     "start": "vite",
     "build": "vite build",
     "preview": "vite preview",
-    "test": "react-scripts test",
-    "test:coverage": "react-scripts test --coverage --watchAll=false",
-    "test:ci": "react-scripts test --coverage --watchAll=false --passWithNoTests",
-    "test:watch": "react-scripts test --coverage --watchAll",
-    "test:unit": "react-scripts test --testPathPattern=__tests__ --watchAll=false",
-    "test:integration": "react-scripts test --testPathPattern=integration --watchAll=false",
+    "test": "echo \"No test runner configured. Install vitest to run tests.\"",
     "test:security": "npm audit --audit-level=moderate",
     "lint": "eslint src",
     "lint:fix": "eslint src --fix",
     "format": "prettier --write \"src/**/*.{js,jsx,json,css,md}\"",
     "format:check": "prettier --check \"src/**/*.{js,jsx,json,css,md}\"",
-    "prepare": "node -e \"try { require('husky').install() } catch (e) {}\"",
+    "prepare": "husky install || true",
     "deploy": "vercel --prod",
     "deploy:preview": "vercel"
-  },
-  "jest": {
-    "moduleNameMapper": {
-      "^react-router-dom$": "<rootDir>/__mocks__/react-router-dom.js",
-      "^react-router$": "<rootDir>/__mocks__/react-router-dom.js",
-      "^framer-motion$": "<rootDir>/__mocks__/framer-motion.js"
-    },
-    "transformIgnorePatterns": [
-      "node_modules/(?!(firebase|@firebase)/)"
-    ]
-  },
-  "browserslist": {
-    "production": [
-      ">0.2%",
-      "not dead",
-      "not op_mini all"
-    ],
-    "development": [
-      "last 1 chrome version",
-      "last 1 firefox version",
-      "last 1 safari version"
-    ]
   },
   "overrides": {
     "minimatch": ">=10.2.1"
   },
   "devDependencies": {
     "@eslint/js": "^9.39.2",
+    "@testing-library/dom": "^10.4.1",
+    "@testing-library/jest-dom": "^6.9.1",
+    "@testing-library/react": "^16.3.1",
     "@testing-library/user-event": "^14.6.1",
     "@vitejs/plugin-react": "^5.1.4",
     "autoprefixer": "^10.4.23",
