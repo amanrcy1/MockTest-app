@@ -2,7 +2,7 @@ import { memo, useCallback } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { useAuth } from "../../context/AuthContext";
 import { toast } from "react-toastify";
-import { ThemeToggle } from "../../components";
+import ThemeToggle from "../ui/ThemeToggle";
 
 const NAV_ITEMS = [
   { path: "/dashboard", label: "Home" },

@@ -764,6 +764,25 @@ const AiChatWidget = memo(({ context = {} }) => {
     return markers.some((m) => lower.includes(m));
   }, []);
 
+  // ── Production-ready STT ──
+  const sttSilenceRef = useRef(null);
+  const sttRestartRef = useRef(false);
+  const sttStoppingRef = useRef(false);
+  const sttLastResultRef = useRef(0);
+
+  const stopListening = useCallback(() => {
+    sttRestartRef.current = false;
+    sttStoppingRef.current = true;
+    if (sttSilenceRef.current) { clearTimeout(sttSilenceRef.current); sttSilenceRef.current = null; }
+    if (recognitionRef.current) {
+      try { recognitionRef.current.stop(); } catch { /* already stopped */ }
+    }
+    recognitionRef.current = null;
+    sttSetterRef.current = null;
+    setListening(false);
+    sttStoppingRef.current = false;
+  }, []);
+
   const handleSend = useCallback(async () => {
     const sanitized = sanitizeInput(input);
     if (!sanitized || loading) return;
@@ -842,24 +861,6 @@ const AiChatWidget = memo(({ context = {} }) => {
     el.style.height = Math.min(el.scrollHeight, 96) + "px";
   }, []);
 
-  // ── Production-ready STT ──
-  const sttSilenceRef = useRef(null);
-  const sttRestartRef = useRef(false);
-  const sttStoppingRef = useRef(false);
-  const sttLastResultRef = useRef(0);
-
-  const stopListening = useCallback(() => {
-    sttRestartRef.current = false;
-    sttStoppingRef.current = true;
-    if (sttSilenceRef.current) { clearTimeout(sttSilenceRef.current); sttSilenceRef.current = null; }
-    if (recognitionRef.current) {
-      try { recognitionRef.current.stop(); } catch { /* already stopped */ }
-    }
-    recognitionRef.current = null;
-    sttSetterRef.current = null;
-    setListening(false);
-    sttStoppingRef.current = false;
-  }, []);
 
   const toggleListening = useCallback((setter, getCurrentValue) => {
     const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
@@ -1423,14 +1424,14 @@ const AiChatWidget = memo(({ context = {} }) => {
               className={`flex-shrink-0 border-t border-gray-200 dark:border-gray-700/80 bg-white dark:bg-gray-900 px-3 transition-all duration-300 ease-out ${keyboardVisible ? "py-1.5" : "py-2.5 pb-[calc(0.625rem+env(safe-area-inset-bottom,0px))] md:pb-2.5"}`}
               style={{ transformStyle: "preserve-3d" }}
             >
-              <div className="flex items-end gap-2">
+              <div className="flex items-center gap-2">
                 <div className="relative flex-1">
                   <textarea
                     ref={inputRef}
                     value={input}
                     onChange={handleInputChange}
                     onKeyDown={handleKeyDown}
-                    placeholder={listening ? "Listening..." : "Type your doubt..."}
+                    placeholder={listening ? "Listening..." : messages.some(m => m.role === "assistant") ? "Reply to MockZam..." : "Ask MockZam..."}
                     rows={1}
                     className={`w-full resize-none border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 text-gray-800 dark:text-gray-200 text-sm leading-snug focus:outline-none focus:ring-2 focus:ring-violet-500/40 focus:border-violet-400 dark:focus:border-violet-500 placeholder:text-gray-400 dark:placeholder:text-gray-500 transition-all duration-300 ${listening ? "border-red-300 dark:border-red-600 ring-2 ring-red-200 dark:ring-red-800/40" : ""} ${keyboardVisible ? "py-2 pl-3.5 pr-9 rounded-lg max-h-20" : "py-2.5 pl-3.5 pr-9 rounded-xl max-h-24"}`}
                     disabled={loading}
