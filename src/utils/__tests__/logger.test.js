@@ -1,3 +1,4 @@
+import { vi } from 'vitest';
 // Logger checks NODE_ENV at module load time, so we test what we can
 import logger from '../logger';
 
@@ -8,10 +9,10 @@ describe('logger', () => {
   let consoleInfoSpy;
 
   beforeEach(() => {
-    consoleLogSpy = jest.spyOn(console, 'log').mockImplementation();
-    consoleErrorSpy = jest.spyOn(console, 'error').mockImplementation();
-    consoleWarnSpy = jest.spyOn(console, 'warn').mockImplementation();
-    consoleInfoSpy = jest.spyOn(console, 'info').mockImplementation();
+    consoleLogSpy = vi.spyOn(console, 'log').mockImplementation();
+    consoleErrorSpy = vi.spyOn(console, 'error').mockImplementation();
+    consoleWarnSpy = vi.spyOn(console, 'warn').mockImplementation();
+    consoleInfoSpy = vi.spyOn(console, 'info').mockImplementation();
   });
 
   afterEach(() => {

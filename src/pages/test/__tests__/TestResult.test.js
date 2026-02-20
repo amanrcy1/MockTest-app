@@ -1,9 +1,10 @@
+import { vi } from 'vitest';
 import { render, screen, waitFor } from '@testing-library/react';
 import TestResult from '../TestResult';
 import { getDocs } from 'firebase/firestore';
+import { __mockNavigate as mockNavigate, __mockLocation } from 'react-router-dom';
 
-const routerMock = require('react-router-dom');
-const mockNavigate = routerMock.__mockNavigate;
+vi.mock('react-router-dom');
 
 const mockQuestions = [
   { id: 'q1', questionText: 'Q1?', options: { A: 'A', B: 'B', C: 'C', D: 'D' }, correctAnswer: 'A', subject: 'English', topic: 'Grammar' },
@@ -16,14 +17,14 @@ const mockResponses = [
 
 describe('TestResult Page', () => {
   beforeEach(() => {
-    jest.clearAllMocks();
-    routerMock.__mockLocation.state = {
+    vi.clearAllMocks();
+    __mockLocation.state = {
       questions: mockQuestions,
       responses: mockResponses,
       examType: 'CDS',
       testMode: 'mock',
     };
-    getDocs.mockResolvedValue({ docs: [], forEach: jest.fn() });
+    getDocs.mockResolvedValue({ docs: [], forEach: vi.fn() });
   });
 
   it('should render results page', async () => {
@@ -35,7 +36,7 @@ describe('TestResult Page', () => {
   });
 
   it('should redirect to dashboard if no test data', async () => {
-    routerMock.__mockLocation.state = {};
+    __mockLocation.state = {};
     render(<TestResult />);
     await waitFor(() => expect(mockNavigate).toHaveBeenCalledWith('/dashboard'));
   });

@@ -1,3 +1,4 @@
+import { vi } from 'vitest';
 import { render, screen } from '@testing-library/react';
 import EmptyState from '../EmptyState';
 
@@ -28,7 +29,7 @@ describe('EmptyState Component', () => {
   });
 
   it('should render action button when provided', () => {
-    const handleClick = jest.fn();
+    const handleClick = vi.fn();
     render(
       <EmptyState
         title="Empty"
@@ -42,7 +43,7 @@ describe('EmptyState Component', () => {
   });
 
   it('should call onAction when button clicked', () => {
-    const handleClick = jest.fn();
+    const handleClick = vi.fn();
     render(
       <EmptyState
         title="Empty"

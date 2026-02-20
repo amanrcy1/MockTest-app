@@ -1,9 +1,11 @@
 /**
- * Mock for react-router-dom in Jest tests
+ * Mock for react-router-dom in Vitest tests
  */
+import { vi } from 'vitest';
+import React from 'react';
 
-const mockNavigate = jest.fn();
-const mockLocation = {
+export const __mockNavigate = vi.fn();
+export const __mockLocation = {
   pathname: '/',
   search: '',
   hash: '',
@@ -11,27 +13,15 @@ const mockLocation = {
   key: 'default',
 };
 
-module.exports = {
-  ...jest.requireActual('react-router-dom'),
-  useNavigate: () => mockNavigate,
-  useLocation: () => mockLocation,
-  useParams: () => ({}),
-  useSearchParams: () => [new URLSearchParams(), jest.fn()],
-  Link: ({ children, to, ...props }) => {
-    const React = require('react');
-    return React.createElement('a', { href: to, ...props }, children);
-  },
-  NavLink: ({ children, to, ...props }) => {
-    const React = require('react');
-    return React.createElement('a', { href: to, ...props }, children);
-  },
-  BrowserRouter: ({ children }) => children,
-  MemoryRouter: ({ children }) => children,
-  Routes: ({ children }) => children,
-  Route: () => null,
-  Navigate: () => null,
-  Outlet: () => null,
-  // Export mocks for test assertions
-  __mockNavigate: mockNavigate,
-  __mockLocation: mockLocation,
-};
+export const useNavigate = () => __mockNavigate;
+export const useLocation = () => __mockLocation;
+export const useParams = () => ({});
+export const useSearchParams = () => [new URLSearchParams(), vi.fn()];
+export const Link = ({ children, to, ...props }) => React.createElement('a', { href: to, ...props }, children);
+export const NavLink = ({ children, to, ...props }) => React.createElement('a', { href: to, ...props }, children);
+export const BrowserRouter = ({ children }) => children;
+export const MemoryRouter = ({ children }) => children;
+export const Routes = ({ children }) => children;
+export const Route = () => null;
+export const Navigate = () => null;
+export const Outlet = () => null;

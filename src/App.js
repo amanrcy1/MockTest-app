@@ -5,12 +5,13 @@ import {
   Routes,
   Route,
   Navigate,
+  useLocation,
 } from "react-router-dom";
 import { AuthProvider, useAuth } from "./context/AuthContext";
 import { ThemeProvider } from "./context/ThemeContext";
 import { ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
-import { ErrorBoundary } from "./components";
+import { ErrorBoundary, AiChatWidget } from "./components";
 import InstallBanner from "./components/ui/InstallBanner";
 
 // Eager load critical pages
@@ -38,6 +39,24 @@ const Profile = lazy(() => import("./pages/user/Profile"));
 const Onboarding = lazy(() => import("./pages/Onboarding"));
 const NotFound = lazy(() => import("./pages/NotFound"));
 const Landing = lazy(() => import("./pages/Landing"));
+
+// Chat widget — hidden during active tests and on public/admin pages
+const ChatWrapper = () => {
+  const { currentUser, userDetails } = useAuth();
+  const location = useLocation();
+  const hiddenPaths = ["/test/mock", "/test/practice", "/test/custom", "/login", "/", "/onboarding"];
+  const isHidden = hiddenPaths.some((p) => location.pathname === p) || location.pathname.startsWith("/admin");
+  if (!currentUser || isHidden) return null;
+
+  // Build rich context so AI knows the user
+  const chatContext = {
+    userName: userDetails?.name || null,
+    examType: userDetails?.targetExam || null,
+    currentPage: location.pathname,
+  };
+
+  return <AiChatWidget context={chatContext} />;
+};
 
 // Loading fallback component
 const PageLoader = () => (
@@ -324,6 +343,9 @@ function App() {
             
             {/* PWA Install Banner */}
             <InstallBanner />
+            
+            {/* AI Chat Widget */}
+            <ChatWrapper />
           </AuthProvider>
         </Router>
       </ThemeProvider>

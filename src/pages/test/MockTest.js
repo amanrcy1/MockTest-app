@@ -48,6 +48,9 @@ const MockTest = () => {
   const timerRef = useRef(null);
   const questionStartRef = useRef(null);
   const lastQuestionIndexRef = useRef(null);
+  const questionCardRef = useRef(null);
+  const [palettePage, setPalettePage] = useState(0);
+  const PALETTE_PAGE_SIZE = 30;
 
   const examPattern = EXAM_PATTERNS[examType];
 
@@ -477,22 +480,24 @@ const MockTest = () => {
     if (index < section.startIndex || index > section.endIndex) {
       return;
     }
+    // Lock current question if answered and not marked (palette click = same as Next)
     setResponses(prev => {
       const newResponses = [...prev];
-      newResponses[index] = {
-        ...newResponses[index],
-        visited: true,
-      };
+      const cur = newResponses[currentQuestionIndex];
+      if (cur?.selectedAnswer && !cur?.locked && !cur?.markedForReview) {
+        newResponses[currentQuestionIndex] = { ...cur, locked: true };
+      }
+      newResponses[index] = { ...newResponses[index], visited: true };
       return newResponses;
     });
     setCurrentQuestionIndex(index);
-  }, [sections, currentSectionIndex]);
+  }, [sections, currentSectionIndex, currentQuestionIndex]);
 
   const handleNext = useCallback(() => {
-    // Lock the current answer if one was selected
+    // Lock the current answer if one was selected (skip if marked for review)
     setResponses(prev => {
       const newResponses = [...prev];
-      if (newResponses[currentQuestionIndex]?.selectedAnswer && !newResponses[currentQuestionIndex]?.locked) {
+      if (newResponses[currentQuestionIndex]?.selectedAnswer && !newResponses[currentQuestionIndex]?.locked && !newResponses[currentQuestionIndex]?.markedForReview) {
         newResponses[currentQuestionIndex] = {
           ...newResponses[currentQuestionIndex],
           locked: true,
@@ -500,7 +505,7 @@ const MockTest = () => {
         toast.info(messages.ANSWER_LOCKED(currentQuestionIndex + 1), { 
           autoClose: 1500, 
           hideProgressBar: true,
-          toastId: `lock-${currentQuestionIndex}` // Prevent duplicate toasts
+          toastId: `lock-${currentQuestionIndex}`
         });
       }
       return newResponses;
@@ -538,10 +543,10 @@ const MockTest = () => {
   }, [currentQuestionIndex, sections, currentSectionIndex, goToQuestion]);
 
   const handlePrevious = useCallback(() => {
-    // Lock the current answer if one was selected before going back
+    // Lock the current answer if one was selected (skip if marked for review)
     setResponses(prev => {
       const newResponses = [...prev];
-      if (newResponses[currentQuestionIndex]?.selectedAnswer && !newResponses[currentQuestionIndex]?.locked) {
+      if (newResponses[currentQuestionIndex]?.selectedAnswer && !newResponses[currentQuestionIndex]?.locked && !newResponses[currentQuestionIndex]?.markedForReview) {
         newResponses[currentQuestionIndex] = {
           ...newResponses[currentQuestionIndex],
           locked: true,
@@ -549,7 +554,7 @@ const MockTest = () => {
         toast.info(messages.ANSWER_LOCKED(currentQuestionIndex + 1), { 
           autoClose: 1500, 
           hideProgressBar: true,
-          toastId: `lock-${currentQuestionIndex}` // Prevent duplicate toasts
+          toastId: `lock-${currentQuestionIndex}`
         });
       }
       return newResponses;
@@ -562,13 +567,37 @@ const MockTest = () => {
   }, [sections, currentSectionIndex, currentQuestionIndex, goToQuestion]);
 
   const handleSaveAndNext = useCallback(() => {
+    // Save & Next: always lock if answered, even if marked for review
     setResponses(prev => {
       const newResponses = [...prev];
-      newResponses[currentQuestionIndex].visited = true;
+      newResponses[currentQuestionIndex] = {
+        ...newResponses[currentQuestionIndex],
+        visited: true,
+      };
+      if (newResponses[currentQuestionIndex]?.selectedAnswer && !newResponses[currentQuestionIndex]?.locked) {
+        newResponses[currentQuestionIndex] = {
+          ...newResponses[currentQuestionIndex],
+          locked: true,
+          markedForReview: false, // Unmark since it's explicitly saved
+        };
+        toast.info(messages.ANSWER_LOCKED(currentQuestionIndex + 1), { 
+          autoClose: 1500, 
+          hideProgressBar: true,
+          toastId: `lock-${currentQuestionIndex}`
+        });
+      }
       return newResponses;
     });
-    handleNext();
-  }, [currentQuestionIndex, handleNext]);
+
+    const section = sections[currentSectionIndex];
+    if (currentQuestionIndex < section.endIndex) {
+      goToQuestion(currentQuestionIndex + 1);
+      return;
+    }
+    if (currentSectionIndex < sections.length - 1) {
+      setCurrentSectionIndex((index) => index + 1);
+    }
+  }, [currentQuestionIndex, sections, currentSectionIndex, goToQuestion]);
 
   const getStatusCounts = () => {
     return {
@@ -863,9 +892,10 @@ const MockTest = () => {
               </div>
               <div className="flex items-center gap-2">
                 <button
-                  onClick={() => setShowMobilePalette(true)}
-                  className="bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 px-3 py-2 rounded-lg text-xs font-semibold"
+                  onClick={() => { setShowMobilePalette(true); setPalettePage(Math.floor(currentQuestionIndex / PALETTE_PAGE_SIZE)); }}
+                  className="bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 px-3 py-2 rounded-lg text-xs font-semibold flex items-center gap-1.5"
                 >
+                  <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zm10 0a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zm10 0a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z" /></svg>
                   {statusCounts.answered}/{questions.length}
                 </button>
                 <button
@@ -902,13 +932,13 @@ const MockTest = () => {
         </div>
       </div>
 
-      <div className="max-w-7xl mx-auto px-4 py-4 md:py-6">
+      <div className="max-w-7xl mx-auto px-4 py-4 md:py-6 pb-20 md:pb-6">
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 md:gap-6">
           {/* Question Area */}
-          <div className="lg:col-span-2 order-1">
+          <div className="lg:col-span-2 order-1" ref={questionCardRef}>
             <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-6 no-select">
-              {/* Question Header */}
-              <div className="flex justify-between items-start mb-6">
+              {/* Question Header — Desktop */}
+              <div className="hidden md:flex justify-between items-start mb-6">
                 <div>
                   <span className="bg-blue-100 dark:bg-blue-900 text-blue-800 dark:text-blue-200 text-sm font-semibold px-3 py-1 rounded">
                     Question {currentQuestionIndex + 1} of {questions.length}
@@ -938,6 +968,39 @@ const MockTest = () => {
                       className="px-3 py-1 rounded text-xs font-semibold bg-red-50 dark:bg-red-900/30 text-red-600 dark:text-red-400 hover:bg-red-100 dark:hover:bg-red-900/50"
                     >
                       Report Error
+                    </button>
+                  </div>
+                </div>
+              </div>
+              {/* Question Header — Mobile: single-line pill */}
+              <div className="md:hidden mb-4">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-1.5 min-w-0">
+                    <span className="bg-blue-100 dark:bg-blue-900 text-blue-800 dark:text-blue-200 text-xs font-semibold px-2 py-0.5 rounded-full whitespace-nowrap">
+                      Q{currentQuestionIndex + 1}/{questions.length}
+                    </span>
+                    <span className="inline-flex items-center bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 text-xs px-2 py-0.5 rounded-full truncate max-w-[55vw]">
+                      {currentQuestion.subject}{currentQuestion.topic ? ` · ${currentQuestion.topic}` : ''}
+                    </span>
+                  </div>
+                  <div className="flex items-center gap-1 flex-shrink-0">
+                    <button
+                      onClick={() => toggleBookmark(currentQuestion.id)}
+                      className={`p-1.5 rounded ${
+                        isBookmarked
+                          ? "text-yellow-600 dark:text-yellow-400"
+                          : "text-gray-400 dark:text-gray-500"
+                      }`}
+                      aria-label={isBookmarked ? "Remove bookmark" : "Bookmark"}
+                    >
+                      <svg className="w-4 h-4" fill={isBookmarked ? "currentColor" : "none"} stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 5a2 2 0 012-2h10a2 2 0 012 2v16l-7-3.5L5 21V5z" /></svg>
+                    </button>
+                    <button
+                      onClick={openReport}
+                      className="p-1.5 rounded text-gray-400 dark:text-gray-500"
+                      aria-label="Report error"
+                    >
+                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 21v-4m0 0V5a2 2 0 012-2h6.5l1 1H21l-3 6 3 6h-8.5l-1-1H5a2 2 0 00-2 2zm9-13.5V9" /></svg>
                     </button>
                   </div>
                 </div>
@@ -989,8 +1052,8 @@ const MockTest = () => {
                 ))}
               </div>
 
-              {/* Action Buttons */}
-              <div className="flex flex-wrap gap-3">
+              {/* Action Buttons — Desktop */}
+              <div className="hidden md:flex flex-wrap gap-3">
                 <button
                   onClick={handleMarkForReview}
                   className={`px-6 py-2 rounded-lg font-semibold transition-colors ${
@@ -1025,9 +1088,39 @@ const MockTest = () => {
                   Save & Next
                 </button>
               </div>
+              {/* Action Buttons — Mobile: compact icon strip */}
+              <div className="md:hidden flex items-center justify-between gap-2 mb-2">
+                <button
+                  onClick={handleMarkForReview}
+                  className={`flex items-center gap-1 px-3 py-2 rounded-lg text-xs font-semibold transition-colors ${
+                    currentResponse.markedForReview
+                      ? "bg-purple-600 text-white"
+                      : "bg-purple-100 dark:bg-purple-900/30 text-purple-700 dark:text-purple-300"
+                  }`}
+                >
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 21v-4m0 0V5a2 2 0 012-2h6.5l1 1H21l-3 6 3 6h-8.5l-1-1H5a2 2 0 00-2 2zm9-13.5V9" /></svg>
+                  {currentResponse.markedForReview ? "Marked" : "Mark"}
+                </button>
+                <button
+                  onClick={handleClearResponse}
+                  disabled={!currentResponse.selectedAnswer || currentResponse.locked}
+                  className="flex items-center gap-1 px-3 py-2 bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-200 rounded-lg text-xs font-semibold disabled:opacity-50"
+                >
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg>
+                  Clear
+                </button>
+                <button
+                  onClick={handleSaveAndNext}
+                  disabled={currentQuestionIndex === currentSection?.endIndex && currentSectionIndex === sections.length - 1}
+                  className="flex items-center gap-1 px-4 py-2 bg-blue-600 text-white rounded-lg text-xs font-semibold disabled:opacity-50 ml-auto"
+                >
+                  Save & Next
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" /></svg>
+                </button>
+              </div>
 
-              {/* Navigation Buttons */}
-              <div className="flex justify-between mt-6 pt-6 border-t dark:border-gray-700">
+              {/* Navigation Buttons — Desktop only */}
+              <div className="hidden md:flex justify-between mt-6 pt-6 border-t dark:border-gray-700">
                 <button
                   onClick={handlePrevious}
                   disabled={currentQuestionIndex === currentSection?.startIndex}
@@ -1053,7 +1146,7 @@ const MockTest = () => {
           </div>
 
           {/* Right Panel */}
-          <div className="space-y-6">
+          <div className="hidden lg:block space-y-6">
             {/* 3D Timer */}
             <div className="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-6">
               <Timer3D
@@ -1284,8 +1377,43 @@ const MockTest = () => {
                 <span className="font-semibold text-gray-900 dark:text-white">{statusCounts.notVisited}</span>
               </div>
             </div>
-            <div className="grid grid-cols-8 gap-2">
-              {questions.map((_, index) => {
+            {/* Marking Scheme */}
+            <div className="flex items-center justify-center gap-4 mb-4 py-2 bg-blue-50 dark:bg-blue-900/20 rounded-lg text-xs">
+              <span className="flex items-center gap-1 text-green-700 dark:text-green-400 font-semibold">
+                <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" /></svg>
+                +{Number(currentResponse?.marksPerQuestion || 0).toFixed(2)} correct
+              </span>
+              <span className="w-px h-4 bg-gray-300 dark:bg-gray-600"></span>
+              <span className="flex items-center gap-1 text-red-600 dark:text-red-400 font-semibold">
+                <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20 12H4" /></svg>
+                {Number(currentResponse?.negativeMarking || 0).toFixed(2)} wrong
+              </span>
+            </div>
+            {/* Pagination Controls */}
+            {questions.length > PALETTE_PAGE_SIZE && (
+              <div className="flex items-center justify-between mb-3">
+                <button
+                  onClick={() => setPalettePage(p => Math.max(0, p - 1))}
+                  disabled={palettePage === 0}
+                  className="px-3 py-1.5 text-xs font-semibold rounded-lg bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-200 disabled:opacity-40 transition-colors"
+                >
+                  ← Prev
+                </button>
+                <span className="text-xs text-gray-500 dark:text-gray-400 font-medium">
+                  {palettePage * PALETTE_PAGE_SIZE + 1}-{Math.min((palettePage + 1) * PALETTE_PAGE_SIZE, questions.length)} of {questions.length}
+                </span>
+                <button
+                  onClick={() => setPalettePage(p => Math.min(Math.ceil(questions.length / PALETTE_PAGE_SIZE) - 1, p + 1))}
+                  disabled={palettePage >= Math.ceil(questions.length / PALETTE_PAGE_SIZE) - 1}
+                  className="px-3 py-1.5 text-xs font-semibold rounded-lg bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-200 disabled:opacity-40 transition-colors"
+                >
+                  Next →
+                </button>
+              </div>
+            )}
+            <div className="grid grid-cols-6 gap-2.5">
+              {questions.slice(palettePage * PALETTE_PAGE_SIZE, (palettePage + 1) * PALETTE_PAGE_SIZE).map((_, i) => {
+                const index = palettePage * PALETTE_PAGE_SIZE + i;
                 const status = getQuestionStatus(responses[index]);
                 const baseStyle = getStatusColor(status);
                 const isActive = index === currentQuestionIndex;
@@ -1293,9 +1421,15 @@ const MockTest = () => {
                 return (
                   <button
                     key={index}
-                    onClick={() => { goToQuestion(index); setShowMobilePalette(false); }}
+                    onClick={() => {
+                      goToQuestion(index);
+                      setShowMobilePalette(false);
+                      setTimeout(() => {
+                        questionCardRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                      }, 100);
+                    }}
                     disabled={!isInSection}
-                    className={`h-9 w-9 rounded text-sm font-semibold ${baseStyle} ${isActive ? "ring-2 ring-blue-600" : ""} ${!isInSection ? "opacity-40 cursor-not-allowed" : ""}`}
+                    className={`h-10 w-10 rounded-lg text-sm font-semibold ${baseStyle} ${isActive ? "ring-2 ring-blue-600" : ""} ${!isInSection ? "opacity-40 cursor-not-allowed" : ""}`}
                   >
                     {index + 1}
                   </button>
@@ -1305,6 +1439,35 @@ const MockTest = () => {
           </div>
         </div>
       )}
+
+      {/* Fixed Bottom Nav Bar — Mobile only */}
+      <div className="md:hidden fixed bottom-0 left-0 right-0 bg-white dark:bg-gray-800 border-t border-gray-200 dark:border-gray-700 z-20 px-4 py-2.5 safe-area-bottom">
+        <div className="flex items-center justify-between gap-3">
+          <button
+            onClick={handlePrevious}
+            disabled={currentQuestionIndex === currentSection?.startIndex}
+            className="flex items-center gap-1 px-4 py-2.5 bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-200 rounded-lg text-sm font-semibold disabled:opacity-40 transition-colors"
+          >
+            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" /></svg>
+            Prev
+          </button>
+          <button
+            onClick={handleSkip}
+            disabled={currentResponse.locked || (currentQuestionIndex === currentSection?.endIndex && currentSectionIndex === sections.length - 1)}
+            className="flex items-center gap-1 px-4 py-2.5 bg-yellow-100 dark:bg-yellow-900/30 text-yellow-700 dark:text-yellow-300 rounded-lg text-sm font-semibold disabled:opacity-40 transition-colors"
+          >
+            Skip
+          </button>
+          <button
+            onClick={handleNext}
+            disabled={currentQuestionIndex === currentSection?.endIndex && currentSectionIndex === sections.length - 1}
+            className="flex items-center gap-1 px-4 py-2.5 bg-blue-600 text-white rounded-lg text-sm font-semibold disabled:opacity-40 transition-colors"
+          >
+            {currentQuestionIndex === currentSection?.endIndex && currentSectionIndex < sections.length - 1 ? "Next Sec" : "Next"}
+            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" /></svg>
+          </button>
+        </div>
+      </div>
     </div>
   );
 };

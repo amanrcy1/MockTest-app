@@ -1,71 +1,177 @@
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
+
+    // ── Helpers ──────────────────────────────────────────────
+
     function isSignedIn() {
       return request.auth != null;
     }
-    
+
     function isOwner(userId) {
       return isSignedIn() && request.auth.uid == userId;
     }
-    
+
     function isAdmin() {
-      return isSignedIn() && 
+      return isSignedIn() &&
              get(/databases/$(database)/documents/users/$(request.auth.uid)).data.isAdmin == true;
     }
-    
+
+    // Incoming data shorthand
+    function incomingData() {
+      return request.resource.data;
+    }
+
+    // ── users ────────────────────────────────────────────────
+    // Users can read any profile (leaderboard, etc.).
+    // Users can only create their own doc (uid must match).
+    // Users can update their own profile but CANNOT promote themselves to admin.
+    // Only admins can delete users or toggle isAdmin.
+
     match /users/{userId} {
       allow read: if isSignedIn();
-      allow create: if isSignedIn() && request.auth.uid == userId;
-      allow update: if isOwner(userId) || isAdmin();
+
+      allow create: if isOwner(userId)
+                    && incomingData().userId == userId
+                    && incomingData().isAdmin == false;
+
+      allow update: if isOwner(userId)
+                    && !("isAdmin" in request.resource.data.diff(resource.data).affectedKeys())
+                    || isAdmin();
+
       allow delete: if isAdmin();
     }
-    
+
+    // ── questions ────────────────────────────────────────────
+    // All signed-in users can read. Only admins can write.
+
     match /questions/{questionId} {
       allow read: if isSignedIn();
-      allow write: if isAdmin();
+      allow create, update, delete: if isAdmin();
     }
-    
+
+    // ── tests ────────────────────────────────────────────────
+    // Users can read their own tests; admins can read all.
+    // Users can create tests only for themselves.
+    // Users can update their own tests (e.g. mark completed).
+    // Only admins can delete tests.
+
     match /tests/{testId} {
-      allow read: if isSignedIn() && (resource.data.userId == request.auth.uid || isAdmin());
-      allow create: if isSignedIn() && request.resource.data.userId == request.auth.uid;
-      allow update: if isSignedIn() && resource.data.userId == request.auth.uid;
+      allow read: if isSignedIn()
+                  && (resource.data.userId == request.auth.uid || isAdmin());
+
+      allow create: if isSignedIn()
+                    && incomingData().userId == request.auth.uid;
+
+      allow update: if isSignedIn()
+                    && resource.data.userId == request.auth.uid;
+
       allow delete: if isAdmin();
     }
-    
+
+    // ── bookmarks ────────────────────────────────────────────
+    // Users can read/create/delete their own bookmarks.
+    // Admins can read all and update (add admin notes, mark reviewed).
+
     match /bookmarks/{bookmarkId} {
-      allow read: if isSignedIn() && (resource.data.userId == request.auth.uid || isAdmin());
-      allow create: if isSignedIn() && request.resource.data.userId == request.auth.uid;
-      allow update, delete: if isAdmin() || (isSignedIn() && resource.data.userId == request.auth.uid);
+      allow read: if isSignedIn()
+                  && (resource.data.userId == request.auth.uid || isAdmin());
+
+      allow create: if isSignedIn()
+                    && incomingData().userId == request.auth.uid;
+
+      allow update: if isAdmin();
+
+      allow delete: if isSignedIn()
+                    && (resource.data.userId == request.auth.uid || isAdmin());
     }
-    
+
+    // ── errorReports ─────────────────────────────────────────
+    // Any signed-in user can create a report.
+    // Only admins can read, update (resolve/add notes), or delete.
+
     match /errorReports/{reportId} {
       allow read: if isAdmin();
-      allow create: if isSignedIn();
+
+      allow create: if isSignedIn()
+                    && incomingData().userId == request.auth.uid;
+
       allow update, delete: if isAdmin();
     }
-    
-    match /emails/{email} {
+
+    // ── emails ───────────────────────────────────────────────
+    // Email-to-uid mapping for Google sign-in dedup.
+    // Public read so sign-in flow can check existence.
+    // Only the owning user can create/update their mapping.
+    // Only admins can delete (user deletion flow).
+
+    match /emails/{emailKey} {
       allow read: if true;
-      allow create: if isSignedIn();
-      allow update: if isSignedIn() && resource.data.userId == request.auth.uid;
+
+      allow create: if isSignedIn()
+                    && incomingData().userId == request.auth.uid;
+
+      allow update: if isSignedIn()
+                    && resource.data.userId == request.auth.uid;
+
       allow delete: if isAdmin();
     }
-    
+
+    // ── questionStats ────────────────────────────────────────
+    // Written by Cloud Functions (admin SDK, bypasses rules).
+    // Client only reads.
+
     match /questionStats/{statId} {
       allow read: if isSignedIn();
-      allow write: if isAdmin();
+      allow write: if false;
     }
-    
-    match /leaderboard/{leaderboardId} {
+
+    // ── leaderboard ──────────────────────────────────────────
+    // Client reads & writes weekly snapshots.
+    // Any signed-in user can read; writes are allowed for
+    // signed-in users (the Leaderboard page caches weekly data).
+
+    match /leaderboard/{docId} {
       allow read: if isSignedIn();
-      allow write: if isAdmin();
+      allow create, update: if isSignedIn();
+      allow delete: if isAdmin();
     }
-    
+
+    // ── leaderboards (plural) ────────────────────────────────
+    // Written by Cloud Functions (admin SDK, bypasses rules).
+    // Lock client-side access.
+
+    match /leaderboards/{docId} {
+      allow read: if isSignedIn();
+      allow write: if false;
+    }
+
+    // ── auditLogs ────────────────────────────────────────────
+    // Only admins can read and create. Never editable or deletable.
+
     match /auditLogs/{logId} {
       allow read: if isAdmin();
       allow create: if isAdmin();
       allow update, delete: if false;
+    }
+
+    // ── aiRateLimits / aiUsage ───────────────────────────────
+    // Written exclusively by Cloud Functions (admin SDK).
+    // No client access needed.
+
+    match /aiRateLimits/{docId} {
+      allow read, write: if false;
+    }
+
+    match /aiUsage/{docId} {
+      allow read, write: if false;
+    }
+
+    // ── Deny-all fallback ────────────────────────────────────
+    // Any collection not explicitly matched above is locked.
+
+    match /{document=**} {
+      allow read, write: if false;
     }
   }
 }

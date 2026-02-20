@@ -1,3 +1,4 @@
+import { vi } from 'vitest';
 // Import first
 import {
   fetchQuestionsByExam,
@@ -7,29 +8,29 @@ import {
 } from '../questionService';
 
 // Mock Firebase
-const mockCollection = jest.fn();
-const mockWhere = jest.fn();
-const mockGet = jest.fn();
-const mockDoc = jest.fn();
-const mockGetDoc = jest.fn();
+const mockCollection = vi.fn();
+const mockWhere = vi.fn();
+const mockGet = vi.fn();
+const mockDoc = vi.fn();
+const mockGetDoc = vi.fn();
 
-jest.mock('../../config/firebase', () => ({
+vi.mock('../../config/firebase', () => ({
   db: {},
 }));
 
-jest.mock('firebase/firestore', () => ({
+vi.mock('firebase/firestore', () => ({
   collection: (...args) => mockCollection(...args),
-  query: jest.fn((...args) => args[0]),
+  query: vi.fn((...args) => args[0]),
   where: (...args) => mockWhere(...args),
   getDocs: (...args) => mockGet(...args),
   getDoc: (...args) => mockGetDoc(...args),
   doc: (...args) => mockDoc(...args),
-  limit: jest.fn((n) => ({ _limit: n })),
+  limit: vi.fn((n) => ({ _limit: n })),
 }));
 
 describe('questionService', () => {
   beforeEach(() => {
-    jest.clearAllMocks();
+    vi.clearAllMocks();
     clearQuestionCache();
     mockCollection.mockReturnValue({});
     mockWhere.mockReturnThis();

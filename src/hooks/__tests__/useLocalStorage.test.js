@@ -1,10 +1,11 @@
+import { vi } from 'vitest';
 import { renderHook, act } from '@testing-library/react';
 import { useLocalStorage } from '../useLocalStorage';
 
 describe('useLocalStorage', () => {
   beforeEach(() => {
     localStorage.clear();
-    jest.clearAllMocks();
+    vi.clearAllMocks();
   });
 
   it('should initialize with default value when localStorage is empty', () => {
@@ -129,7 +130,7 @@ describe('useLocalStorage', () => {
 
   it('should handle localStorage errors gracefully', () => {
     const originalSetItem = Storage.prototype.setItem;
-    Storage.prototype.setItem = jest.fn(() => {
+    Storage.prototype.setItem = vi.fn(() => {
       throw new Error('QuotaExceededError');
     });
 

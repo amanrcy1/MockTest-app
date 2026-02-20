@@ -781,3 +781,12 @@ kbd {
   opacity: 0.3;
   transition: 0s;
 }
+
+/* Hide scrollbar for horizontal scroll containers */
+.scrollbar-none {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+.scrollbar-none::-webkit-scrollbar {
+  display: none;
+}

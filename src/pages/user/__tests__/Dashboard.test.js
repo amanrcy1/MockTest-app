@@ -1,38 +1,39 @@
+import { vi } from 'vitest';
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import Dashboard from '../Dashboard';
 import { useAuth } from '../../../context/AuthContext';
 import { getDocs, getDoc } from 'firebase/firestore';
 
-jest.mock('../../../context/AuthContext');
+vi.mock('../../../context/AuthContext');
 
 // Mock components that use framer-motion or other complex dependencies
-jest.mock('../../../components', () => ({
+vi.mock('../../../components', () => ({
   ThemeToggle: () => <div data-testid="theme-toggle">ThemeToggle</div>,
   BottomNav: () => <nav data-testid="bottom-nav">BottomNav</nav>,
   TopNav: () => <nav data-testid="top-nav">TopNav</nav>,
 }));
 
 // Mock LoadingSkeleton
-jest.mock('../../../components/ui/LoadingSkeleton', () => ({
+vi.mock('../../../components/ui/LoadingSkeleton', () => ({
   DashboardSkeleton: () => <div data-testid="dashboard-skeleton">Loading...</div>,
 }));
 
-const { __mockNavigate: mockNavigate } = require('react-router-dom');
+import { __mockNavigate as mockNavigate, __mockLocation } from 'react-router-dom';
+
+vi.mock('react-router-dom');
 
 describe('Dashboard Page', () => {
-  const mockLogout = jest.fn();
+  const mockLogout = vi.fn();
 
   beforeEach(async () => {
-    jest.clearAllMocks();
-    // Reset module to clear statsCache and fetchingRef between tests
-    jest.resetModules();
+    vi.clearAllMocks();
     
     useAuth.mockReturnValue({
       currentUser: { uid: `user-${Date.now()}`, email: 'test@example.com', emailVerified: true },
       userDetails: { name: 'Test User', targetExam: 'CDS', isAdmin: false },
       logout: mockLogout,
     });
-    getDocs.mockResolvedValue({ docs: [], empty: true, size: 0, forEach: jest.fn() });
+    getDocs.mockResolvedValue({ docs: [], empty: true, size: 0, forEach: vi.fn() });
     getDoc.mockResolvedValue({ exists: () => false, data: () => ({}) });
   });
 
@@ -142,7 +143,7 @@ describe('Dashboard Page', () => {
       ],
       empty: false,
       size: 2,
-      forEach: jest.fn((cb) => {
+      forEach: vi.fn((cb) => {
         [
           { id: 'test1', data: () => ({ accuracy: 80 }) },
           { id: 'test2', data: () => ({ accuracy: 90 }) },

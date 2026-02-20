@@ -1,3 +1,4 @@
+import { vi } from 'vitest';
 import {
   getUserBookmarks,
   getBookmarkMap,
@@ -6,12 +7,13 @@ import {
   toggleBookmark,
   submitErrorReport,
 } from '../bookmarkService';
+import { getDocs, addDoc, deleteDoc } from 'firebase/firestore';
 
-jest.mock('../../config/firebase');
+vi.mock('../../config/firebase');
 
 describe('bookmarkService', () => {
   beforeEach(() => {
-    jest.clearAllMocks();
+    vi.clearAllMocks();
   });
 
   describe('getUserBookmarks', () => {
@@ -21,24 +23,22 @@ describe('bookmarkService', () => {
         { id: 'b2', userId: 'user1', questionId: 'q2' },
       ];
 
-      const mockGetDocs = jest.fn().mockResolvedValue({
+      getDocs.mockResolvedValue({
         docs: mockBookmarks.map(b => ({
           id: b.id,
           data: () => ({ userId: b.userId, questionId: b.questionId }),
         })),
       });
-      require('firebase/firestore').getDocs = mockGetDocs;
 
       const bookmarks = await getUserBookmarks('user1');
       expect(bookmarks).toHaveLength(2);
     });
 
     it('should filter by examType when provided', async () => {
-      const mockGetDocs = jest.fn().mockResolvedValue({ docs: [] });
-      require('firebase/firestore').getDocs = mockGetDocs;
+      getDocs.mockResolvedValue({ docs: [] });
 
       await getUserBookmarks('user1', 'prelims');
-      expect(mockGetDocs).toHaveBeenCalled();
+      expect(getDocs).toHaveBeenCalled();
     });
   });
 
@@ -49,13 +49,12 @@ describe('bookmarkService', () => {
         { id: 'b2', questionId: 'q2' },
       ];
 
-      const mockGetDocs = jest.fn().mockResolvedValue({
+      getDocs.mockResolvedValue({
         docs: mockBookmarks.map(b => ({
           id: b.id,
           data: () => ({ questionId: b.questionId }),
         })),
       });
-      require('firebase/firestore').getDocs = mockGetDocs;
 
       const map = await getBookmarkMap('user1', 'prelims');
       expect(map).toHaveProperty('q1');
@@ -65,29 +64,26 @@ describe('bookmarkService', () => {
 
   describe('addBookmark', () => {
     it('should add bookmark and return id', async () => {
-      const mockAddDoc = jest.fn().mockResolvedValue({ id: 'newBookmark' });
-      require('firebase/firestore').addDoc = mockAddDoc;
+      addDoc.mockResolvedValue({ id: 'newBookmark' });
 
       const id = await addBookmark('user1', 'q1', 'prelims', 'test note');
       expect(id).toBe('newBookmark');
-      expect(mockAddDoc).toHaveBeenCalled();
+      expect(addDoc).toHaveBeenCalled();
     });
   });
 
   describe('removeBookmark', () => {
     it('should delete bookmark', async () => {
-      const mockDeleteDoc = jest.fn().mockResolvedValue(undefined);
-      require('firebase/firestore').deleteDoc = mockDeleteDoc;
+      deleteDoc.mockResolvedValue(undefined);
 
       await removeBookmark('b1');
-      expect(mockDeleteDoc).toHaveBeenCalled();
+      expect(deleteDoc).toHaveBeenCalled();
     });
   });
 
   describe('toggleBookmark', () => {
     it('should remove bookmark when existingId provided', async () => {
-      const mockDeleteDoc = jest.fn().mockResolvedValue(undefined);
-      require('firebase/firestore').deleteDoc = mockDeleteDoc;
+      deleteDoc.mockResolvedValue(undefined);
 
       const result = await toggleBookmark('user1', 'q1', 'prelims', 'b1');
       expect(result.action).toBe('removed');
@@ -95,8 +91,7 @@ describe('bookmarkService', () => {
     });
 
     it('should add bookmark when no existingId', async () => {
-      const mockAddDoc = jest.fn().mockResolvedValue({ id: 'newB' });
-      require('firebase/firestore').addDoc = mockAddDoc;
+      addDoc.mockResolvedValue({ id: 'newB' });
 
       const result = await toggleBookmark('user1', 'q1', 'prelims', null);
       expect(result.action).toBe('added');
@@ -106,20 +101,18 @@ describe('bookmarkService', () => {
 
   describe('submitErrorReport', () => {
     it('should submit error report with correct data', async () => {
-      const mockAddDoc = jest.fn().mockResolvedValue({ id: 'report1' });
-      require('firebase/firestore').addDoc = mockAddDoc;
+      addDoc.mockResolvedValue({ id: 'report1' });
 
       const id = await submitErrorReport('user1', 'q1', 'prelims', 'Wrong answer');
       expect(id).toBe('report1');
-      expect(mockAddDoc).toHaveBeenCalled();
+      expect(addDoc).toHaveBeenCalled();
     });
 
     it('should trim report text', async () => {
-      const mockAddDoc = jest.fn().mockResolvedValue({ id: 'report1' });
-      require('firebase/firestore').addDoc = mockAddDoc;
+      addDoc.mockResolvedValue({ id: 'report1' });
 
       await submitErrorReport('user1', 'q1', 'prelims', '  spaces  ');
-      expect(mockAddDoc).toHaveBeenCalled();
+      expect(addDoc).toHaveBeenCalled();
     });
   });
 });

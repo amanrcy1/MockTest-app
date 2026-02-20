@@ -25,3 +25,6 @@ export { default as AuthAuroraCanvas } from './ui/AuthAuroraCanvas';
 
 // Other
 export { default as ErrorBoundary } from './ErrorBoundary';
+
+// AI
+export { default as AiChatWidget } from './ui/AiChatWidget';

@@ -1,3 +1,4 @@
+import { vi } from 'vitest';
 import { logError, logEvent, setUserContext, clearUserContext, addBreadcrumb } from '../errorTracking';
 
 describe('errorTracking', () => {
@@ -7,8 +8,8 @@ describe('errorTracking', () => {
 
   beforeEach(() => {
     process.env.NODE_ENV = 'development';
-    consoleErrorSpy = jest.spyOn(console, 'error').mockImplementation();
-    consoleLogSpy = jest.spyOn(console, 'log').mockImplementation();
+    consoleErrorSpy = vi.spyOn(console, 'error').mockImplementation();
+    consoleLogSpy = vi.spyOn(console, 'log').mockImplementation();
   });
 
   afterEach(() => {

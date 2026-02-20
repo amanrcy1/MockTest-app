@@ -1,22 +1,23 @@
+import { vi } from 'vitest';
 import {
   saveTestResult,
   getUserStats,
 } from '../testService';
 import { testSubmitLimiter } from '../../utils/securityUtils';
+import { addDoc, getDocs } from 'firebase/firestore';
 
-jest.mock('../../config/firebase');
-jest.mock('../../utils/securityUtils');
+vi.mock('../../config/firebase');
+vi.mock('../../utils/securityUtils');
 
 describe('testService', () => {
   beforeEach(() => {
-    jest.clearAllMocks();
+    vi.clearAllMocks();
   });
 
   describe('saveTestResult', () => {
     it('should save test result when rate limit allows', async () => {
-      testSubmitLimiter.canMakeRequest = jest.fn().mockReturnValue(true);
-      const mockAddDoc = jest.fn().mockResolvedValue({ id: 'test123' });
-      require('firebase/firestore').addDoc = mockAddDoc;
+      testSubmitLimiter.canMakeRequest = vi.fn().mockReturnValue(true);
+      addDoc.mockResolvedValue({ id: 'test123' });
 
       const testData = {
         userId: 'user1',
@@ -30,7 +31,7 @@ describe('testService', () => {
     });
 
     it('should throw error when rate limit exceeded', async () => {
-      testSubmitLimiter.canMakeRequest = jest.fn().mockReturnValue(false);
+      testSubmitLimiter.canMakeRequest = vi.fn().mockReturnValue(false);
 
       const testData = { userId: 'user1', score: 85 };
 
@@ -48,10 +49,9 @@ describe('testService', () => {
         { accuracy: 70, timeTaken: 4000 },
       ];
 
-      const mockGetDocs = jest.fn().mockResolvedValue({
+      getDocs.mockResolvedValue({
         docs: mockTests.map(data => ({ data: () => data })),
       });
-      require('firebase/firestore').getDocs = mockGetDocs;
 
       const stats = await getUserStats('user1');
 
@@ -61,8 +61,7 @@ describe('testService', () => {
     });
 
     it('should handle no tests', async () => {
-      const mockGetDocs = jest.fn().mockResolvedValue({ docs: [] });
-      require('firebase/firestore').getDocs = mockGetDocs;
+      getDocs.mockResolvedValue({ docs: [] });
 
       const stats = await getUserStats('user1');
 

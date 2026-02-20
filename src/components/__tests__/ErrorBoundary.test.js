@@ -1,3 +1,4 @@
+import { vi } from 'vitest';
 import { render, screen, fireEvent } from '@testing-library/react';
 // Import directly, not from the barrel (which is mocked in setupTests)
 import ErrorBoundary from '../ErrorBoundary';
@@ -7,7 +8,7 @@ const WorkingComponent = () => <div>Working</div>;
 
 describe('ErrorBoundary', () => {
   beforeEach(() => {
-    jest.spyOn(console, 'error').mockImplementation();
+    vi.spyOn(console, 'error').mockImplementation();
   });
 
   afterEach(() => {

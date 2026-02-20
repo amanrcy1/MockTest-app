@@ -1,3 +1,4 @@
+import { vi } from 'vitest';
 import { renderHook, act } from '@testing-library/react';
 import { useAntiCheat, shuffleWithSeed, randomizeOptions } from '../useAntiCheat';
 
@@ -8,8 +9,8 @@ describe('useAntiCheat', () => {
       writable: true,
       value: null
     });
-    document.documentElement.requestFullscreen = jest.fn(() => Promise.resolve());
-    document.exitFullscreen = jest.fn(() => Promise.resolve());
+    document.documentElement.requestFullscreen = vi.fn(() => Promise.resolve());
+    document.exitFullscreen = vi.fn(() => Promise.resolve());
   });
 
   describe('hook functionality', () => {

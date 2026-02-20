@@ -1,131 +1,123 @@
-// jest-dom adds custom jest matchers for asserting on DOM nodes.
-// allows you to do things like:
-// expect(element).toHaveTextContent(/react/i)
-// learn more: https://github.com/testing-library/jest-dom
+// Vitest setup — replaces jest globals with vi equivalents
+import { vi } from 'vitest';
 import '@testing-library/jest-dom';
 
 // ============================================
 // FIREBASE MOCKS
 // ============================================
 
-// Mock Firebase config
-jest.mock('./config/firebase', () => ({
+vi.mock('./config/firebase', () => ({
   auth: {
     currentUser: null,
-    onAuthStateChanged: jest.fn(),
-    signInWithEmailAndPassword: jest.fn(),
-    createUserWithEmailAndPassword: jest.fn(),
-    signOut: jest.fn(),
-    sendPasswordResetEmail: jest.fn(),
-    sendEmailVerification: jest.fn(),
+    onAuthStateChanged: vi.fn(),
+    signInWithEmailAndPassword: vi.fn(),
+    createUserWithEmailAndPassword: vi.fn(),
+    signOut: vi.fn(),
+    sendPasswordResetEmail: vi.fn(),
+    sendEmailVerification: vi.fn(),
   },
   db: {},
   storage: {},
 }));
 
-// Mock Firebase Auth
-jest.mock('firebase/auth', () => ({
-  getAuth: jest.fn(() => ({
+vi.mock('firebase/auth', () => ({
+  getAuth: vi.fn(() => ({
     currentUser: null,
-    onAuthStateChanged: jest.fn(),
+    onAuthStateChanged: vi.fn(),
   })),
-  signInWithEmailAndPassword: jest.fn(() => 
+  signInWithEmailAndPassword: vi.fn(() =>
     Promise.resolve({ user: { uid: 'test-uid', email: 'test@example.com' } })
   ),
-  createUserWithEmailAndPassword: jest.fn(() =>
+  createUserWithEmailAndPassword: vi.fn(() =>
     Promise.resolve({ user: { uid: 'test-uid', email: 'test@example.com' } })
   ),
-  signOut: jest.fn(() => Promise.resolve()),
-  sendPasswordResetEmail: jest.fn(() => Promise.resolve()),
-  sendEmailVerification: jest.fn(() => Promise.resolve()),
-  onAuthStateChanged: jest.fn(),
-  updateProfile: jest.fn(() => Promise.resolve()),
-  updateEmail: jest.fn(() => Promise.resolve()),
-  updatePassword: jest.fn(() => Promise.resolve()),
-  reauthenticateWithCredential: jest.fn(() => Promise.resolve()),
+  signOut: vi.fn(() => Promise.resolve()),
+  sendPasswordResetEmail: vi.fn(() => Promise.resolve()),
+  sendEmailVerification: vi.fn(() => Promise.resolve()),
+  onAuthStateChanged: vi.fn(),
+  updateProfile: vi.fn(() => Promise.resolve()),
+  updateEmail: vi.fn(() => Promise.resolve()),
+  updatePassword: vi.fn(() => Promise.resolve()),
+  reauthenticateWithCredential: vi.fn(() => Promise.resolve()),
   EmailAuthProvider: {
-    credential: jest.fn(),
+    credential: vi.fn(),
   },
 }));
 
-// Mock Firestore
-jest.mock('firebase/firestore', () => ({
-  getFirestore: jest.fn(() => ({})),
-  collection: jest.fn((db, collectionName) => ({ _collectionName: collectionName })),
-  doc: jest.fn((db, collectionName, docId) => ({ 
-    _collectionName: collectionName, 
-    _docId: docId 
+vi.mock('firebase/firestore', () => ({
+  getFirestore: vi.fn(() => ({})),
+  collection: vi.fn((_db, collectionName) => ({ _collectionName: collectionName })),
+  doc: vi.fn((_db, collectionName, docId) => ({
+    _collectionName: collectionName,
+    _docId: docId,
   })),
-  getDocs: jest.fn(() => 
+  getDocs: vi.fn(() =>
     Promise.resolve({
       docs: [],
       empty: true,
       size: 0,
-      forEach: jest.fn(),
+      forEach: vi.fn(),
     })
   ),
-  getDoc: jest.fn(() =>
+  getDoc: vi.fn(() =>
     Promise.resolve({
       exists: () => false,
       data: () => ({}),
       id: 'test-id',
     })
   ),
-  addDoc: jest.fn(() => 
-    Promise.resolve({ id: 'new-doc-id' })
-  ),
-  setDoc: jest.fn(() => Promise.resolve()),
-  updateDoc: jest.fn(() => Promise.resolve()),
-  deleteDoc: jest.fn(() => Promise.resolve()),
-  query: jest.fn((...args) => ({ _query: args })),
-  where: jest.fn((field, operator, value) => ({ 
-    _where: { field, operator, value } 
+  addDoc: vi.fn(() => Promise.resolve({ id: 'new-doc-id' })),
+  setDoc: vi.fn(() => Promise.resolve()),
+  updateDoc: vi.fn(() => Promise.resolve()),
+  deleteDoc: vi.fn(() => Promise.resolve()),
+  query: vi.fn((...args) => ({ _query: args })),
+  where: vi.fn((field, operator, value) => ({
+    _where: { field, operator, value },
   })),
-  orderBy: jest.fn((field, direction) => ({ 
-    _orderBy: { field, direction } 
+  orderBy: vi.fn((field, direction) => ({
+    _orderBy: { field, direction },
   })),
-  limit: jest.fn((count) => ({ _limit: count })),
-  startAfter: jest.fn((doc) => ({ _startAfter: doc })),
-  endBefore: jest.fn((doc) => ({ _endBefore: doc })),
-  onSnapshot: jest.fn(() => jest.fn()), // Returns unsubscribe function
-  serverTimestamp: jest.fn(() => new Date()),
+  limit: vi.fn((count) => ({ _limit: count })),
+  startAfter: vi.fn((doc) => ({ _startAfter: doc })),
+  endBefore: vi.fn((doc) => ({ _endBefore: doc })),
+  onSnapshot: vi.fn(() => vi.fn()),
+  serverTimestamp: vi.fn(() => new Date()),
   Timestamp: {
-    now: jest.fn(() => ({ seconds: Date.now() / 1000, nanoseconds: 0 })),
-    fromDate: jest.fn((date) => ({ 
-      seconds: date.getTime() / 1000, 
-      nanoseconds: 0 
+    now: vi.fn(() => ({ seconds: Date.now() / 1000, nanoseconds: 0 })),
+    fromDate: vi.fn((date) => ({
+      seconds: date.getTime() / 1000,
+      nanoseconds: 0,
     })),
   },
   FieldValue: {
-    serverTimestamp: jest.fn(() => new Date()),
-    increment: jest.fn((n) => n),
-    arrayUnion: jest.fn((...elements) => elements),
-    arrayRemove: jest.fn((...elements) => elements),
-    delete: jest.fn(() => null),
+    serverTimestamp: vi.fn(() => new Date()),
+    increment: vi.fn((n) => n),
+    arrayUnion: vi.fn((...elements) => elements),
+    arrayRemove: vi.fn((...elements) => elements),
+    delete: vi.fn(() => null),
   },
 }));
 
-// Mock Firebase Storage
-jest.mock('firebase/storage', () => ({
-  getStorage: jest.fn(() => ({})),
-  ref: jest.fn((storage, path) => ({ _path: path })),
-  uploadBytes: jest.fn(() => 
-    Promise.resolve({ 
+vi.mock('firebase/storage', () => ({
+  getStorage: vi.fn(() => ({})),
+  ref: vi.fn((_storage, path) => ({ _path: path })),
+  uploadBytes: vi.fn(() =>
+    Promise.resolve({
       ref: { fullPath: 'test/path' },
-      metadata: { size: 1024 }
+      metadata: { size: 1024 },
     })
   ),
-  uploadBytesResumable: jest.fn(() => ({
-    on: jest.fn(),
-    pause: jest.fn(),
-    resume: jest.fn(),
-    cancel: jest.fn(),
+  uploadBytesResumable: vi.fn(() => ({
+    on: vi.fn(),
+    pause: vi.fn(),
+    resume: vi.fn(),
+    cancel: vi.fn(),
   })),
-  getDownloadURL: jest.fn(() => 
+  getDownloadURL: vi.fn(() =>
     Promise.resolve('https://example.com/test-image.jpg')
   ),
-  deleteObject: jest.fn(() => Promise.resolve()),
-  listAll: jest.fn(() =>
+  deleteObject: vi.fn(() => Promise.resolve()),
+  listAll: vi.fn(() =>
     Promise.resolve({
       items: [],
       prefixes: [],
@@ -137,92 +129,90 @@ jest.mock('firebase/storage', () => ({
 // COMPONENT MOCKS
 // ============================================
 
-jest.mock('react-markdown', () => {
-  return ({ children }) => <div data-testid="react-markdown">{children}</div>;
+vi.mock('react-markdown', () => ({
+  default: ({ children }) => children,
+}));
+
+vi.mock('./components', () => {
+  const React = require('react');
+  return {
+    ThemeToggle: () => React.createElement('div', { 'data-testid': 'theme-toggle' }, 'ThemeToggle'),
+    BottomNav: () => React.createElement('div', { 'data-testid': 'bottom-nav' }, 'BottomNav'),
+    ErrorBoundary: ({ children }) => children,
+    ViolationModal: () => React.createElement('div', { 'data-testid': 'violation-modal' }, 'ViolationModal'),
+    PageSpinner: ({ message }) => message || '',
+    ResumePrompt: () => React.createElement('div', { 'data-testid': 'resume-prompt' }, 'ResumePrompt'),
+    ReportModal: () => React.createElement('div', { 'data-testid': 'report-modal' }, 'ReportModal'),
+    ConfirmModal: () => React.createElement('div', { 'data-testid': 'confirm-modal' }, 'ConfirmModal'),
+  };
 });
 
-jest.mock('./components', () => ({
-  ThemeToggle: () => <div data-testid="theme-toggle">ThemeToggle</div>,
-  BottomNav: () => <div data-testid="bottom-nav">BottomNav</div>,
-  ErrorBoundary: ({ children }) => <div data-testid="error-boundary">{children}</div>,
-  ViolationModal: () => <div data-testid="violation-modal">ViolationModal</div>,
-  PageSpinner: ({ message }) => <div data-testid="page-spinner">{message}</div>,
-  ResumePrompt: () => <div data-testid="resume-prompt">ResumePrompt</div>,
-  ReportModal: () => <div data-testid="report-modal">ReportModal</div>,
-  ConfirmModal: () => <div data-testid="confirm-modal">ConfirmModal</div>,
-}));
-
-jest.mock('./components/3d', () => ({
-  CelebrationEffect: () => <div data-testid="celebration-effect">CelebrationEffect</div>,
-  LeaderboardPodium: () => <div data-testid="leaderboard-podium">LeaderboardPodium</div>,
-  Timer3D: () => <div data-testid="timer-3d">Timer3D</div>,
-}));
+vi.mock('./components/3d', () => {
+  const React = require('react');
+  return {
+    CelebrationEffect: () => React.createElement('div', { 'data-testid': 'celebration-effect' }, 'CelebrationEffect'),
+    LeaderboardPodium: () => React.createElement('div', { 'data-testid': 'leaderboard-podium' }, 'LeaderboardPodium'),
+    Timer3D: () => React.createElement('div', { 'data-testid': 'timer-3d' }, 'Timer3D'),
+  };
+});
 
 // ============================================
 // FRAMER MOTION MOCK
 // ============================================
 
-jest.mock('framer-motion', () => ({
-  motion: {
-    div: ({ children, ...props }) => <div {...props}>{children}</div>,
-    button: ({ children, ...props }) => <button {...props}>{children}</button>,
-    span: ({ children, ...props }) => <span {...props}>{children}</span>,
-    p: ({ children, ...props }) => <p {...props}>{children}</p>,
-    h1: ({ children, ...props }) => <h1 {...props}>{children}</h1>,
-    h2: ({ children, ...props }) => <h2 {...props}>{children}</h2>,
-    h3: ({ children, ...props }) => <h3 {...props}>{children}</h3>,
-    form: ({ children, ...props }) => <form {...props}>{children}</form>,
-    input: ({ children, ...props }) => <input {...props}>{children}</input>,
-    a: ({ children, ...props }) => <a {...props}>{children}</a>,
-    svg: ({ children, ...props }) => <svg {...props}>{children}</svg>,
-    path: ({ children, ...props }) => <path {...props}>{children}</path>,
-    img: (props) => <img {...props} alt="" />,
-    nav: ({ children, ...props }) => <nav {...props}>{children}</nav>,
-    section: ({ children, ...props }) => <section {...props}>{children}</section>,
-    header: ({ children, ...props }) => <header {...props}>{children}</header>,
-    footer: ({ children, ...props }) => <footer {...props}>{children}</footer>,
-    main: ({ children, ...props }) => <main {...props}>{children}</main>,
-    li: ({ children, ...props }) => <li {...props}>{children}</li>,
-    ul: ({ children, ...props }) => <ul {...props}>{children}</ul>,
-  },
-  AnimatePresence: ({ children }) => <>{children}</>,
-  useAnimation: () => ({
-    start: jest.fn(),
-    stop: jest.fn(),
-    set: jest.fn(),
-  }),
-  useMotionValue: (initial) => ({
-    get: () => initial,
-    set: jest.fn(),
-  }),
-}));
+vi.mock('framer-motion', () => {
+  const React = require('react');
+  return {
+    motion: new Proxy({}, {
+      get: (_target, prop) => {
+        const MotionComponent = React.forwardRef(({ children, initial, animate, exit, transition, whileHover, whileTap, whileFocus, whileDrag, whileInView, variants, layout, layoutId, ...rest }, ref) => {
+          return React.createElement(prop, { ...rest, ref }, children);
+        });
+        MotionComponent.displayName = `motion.${prop}`;
+        return MotionComponent;
+      },
+    }),
+    AnimatePresence: ({ children }) => children,
+    useAnimation: () => ({
+      start: vi.fn(),
+      stop: vi.fn(),
+      set: vi.fn(),
+    }),
+    useMotionValue: (initial) => ({
+      get: () => initial,
+      set: vi.fn(),
+    }),
+  };
+});
 
 // ============================================
 // REACT TOASTIFY MOCK
 // ============================================
 
-jest.mock('react-toastify', () => ({
-  toast: {
-    success: jest.fn(),
-    error: jest.fn(),
-    info: jest.fn(),
-    warning: jest.fn(),
-    warn: jest.fn(),
-  },
-  ToastContainer: () => <div data-testid="toast-container">ToastContainer</div>,
-}));
+vi.mock('react-toastify', () => {
+  const React = require('react');
+  return {
+    toast: {
+      success: vi.fn(),
+      error: vi.fn(),
+      info: vi.fn(),
+      warning: vi.fn(),
+      warn: vi.fn(),
+    },
+    ToastContainer: () => React.createElement('div', { 'data-testid': 'toast-container' }, 'ToastContainer'),
+  };
+});
 
 // ============================================
 // TOAST UTILITY MOCK
 // ============================================
 
-jest.mock('./utils/toast', () => ({
-  __esModule: true,
+vi.mock('./utils/toast', () => ({
   default: {
-    success: jest.fn(),
-    error: jest.fn(),
-    info: jest.fn(),
-    warning: jest.fn(),
+    success: vi.fn(),
+    error: vi.fn(),
+    info: vi.fn(),
+    warning: vi.fn(),
     messages: {
       LOGIN_REQUIRED: "Please log in to continue",
       LOGOUT_SUCCESS: "Logged out successfully",
@@ -245,15 +235,15 @@ jest.mock('./utils/toast', () => ({
       NO_EXAM_SELECTED: "No exam type selected",
       TIME_UP: "Time's up! Auto-submitting test...",
       VIOLATION_AUTO_SUBMIT: "Test auto-submitted due to multiple fullscreen violations",
-      INSUFFICIENT_QUESTIONS: jest.fn((need, have) => `Insufficient questions. Need ${need}, have ${have}`),
+      INSUFFICIENT_QUESTIONS: vi.fn((need, have) => `Insufficient questions. Need ${need}, have ${have}`),
       NO_QUESTIONS_AVAILABLE: "No questions available for this exam type",
       NO_PRACTICE_QUESTIONS: "No practice questions available for this exam type",
-      ANSWER_LOCKED: jest.fn((num) => `Answer locked for Q${num}`),
+      ANSWER_LOCKED: vi.fn((num) => `Answer locked for Q${num}`),
       NO_TEST_DATA: "No test data available",
       TEST_DETAILS_INCOMPLETE: "Test details are incomplete",
       TEST_RESULT_LOAD_FAILED: "Failed to load test result",
       NO_QUESTIONS_WITH_FILTERS: "No questions available with selected filters",
-      REDUCE_QUESTIONS: jest.fn((available) => `Only ${available} questions available. Please reduce the number`),
+      REDUCE_QUESTIONS: vi.fn((available) => `Only ${available} questions available. Please reduce the number`),
       SELECT_SUBJECT: "Please select at least one subject",
       BOOKMARK_ADDED: "Question bookmarked",
       BOOKMARK_REMOVED: "Bookmark removed",
@@ -276,8 +266,8 @@ jest.mock('./utils/toast', () => ({
       CSV_REQUIRED: "Please upload a CSV file",
       CSV_PARSE_FAILED: "Failed to parse CSV file",
       NO_VALID_QUESTIONS: "No valid questions to upload",
-      BULK_UPLOAD_SUCCESS: jest.fn((count) => `Successfully uploaded ${count} questions`),
-      BULK_UPLOAD_PARTIAL: jest.fn((failed) => `Failed to upload ${failed} questions`),
+      BULK_UPLOAD_SUCCESS: vi.fn((count) => `Successfully uploaded ${count} questions`),
+      BULK_UPLOAD_PARTIAL: vi.fn((failed) => `Failed to upload ${failed} questions`),
       BULK_UPLOAD_FAILED: "Failed to upload questions",
       TEMPLATE_DOWNLOADED: "Template downloaded",
       USERS_LOAD_FAILED: "Failed to load users",
@@ -307,16 +297,16 @@ jest.mock('./utils/toast', () => ({
       BOOKMARK_DELETE_FAILED: "Failed to delete bookmark",
     },
   },
-  showSuccess: jest.fn(),
-  showError: jest.fn(),
-  showInfo: jest.fn(),
-  showWarning: jest.fn(),
+  showSuccess: vi.fn(),
+  showError: vi.fn(),
+  showInfo: vi.fn(),
+  showWarning: vi.fn(),
   messages: {},
   toast: {
-    success: jest.fn(),
-    error: jest.fn(),
-    info: jest.fn(),
-    warning: jest.fn(),
+    success: vi.fn(),
+    error: vi.fn(),
+    info: vi.fn(),
+    warning: vi.fn(),
   },
 }));
 
@@ -324,71 +314,76 @@ jest.mock('./utils/toast', () => ({
 // BROWSER APIs
 // ============================================
 
-// Mock crypto for Node environment
-global.crypto = {
-  getRandomValues: (arr) => {
-    for (let i = 0; i < arr.length; i++) {
-      arr[i] = Math.floor(Math.random() * 256);
-    }
-    return arr;
-  },
-  randomUUID: () => 'test-uuid-' + Math.random().toString(36).substr(2, 9),
-};
+// In jsdom, crypto is read-only, so use Object.defineProperty
+if (!global.crypto?.getRandomValues) {
+  Object.defineProperty(global, 'crypto', {
+    value: {
+      getRandomValues: (arr) => {
+        for (let i = 0; i < arr.length; i++) {
+          arr[i] = Math.floor(Math.random() * 256);
+        }
+        return arr;
+      },
+      randomUUID: () => 'test-uuid-' + Math.random().toString(36).substring(2, 11),
+    },
+    writable: true,
+    configurable: true,
+  });
+}
 
-// Mock IntersectionObserver
 global.IntersectionObserver = class IntersectionObserver {
-   
   constructor() {}
   disconnect() {}
   observe() {}
-  takeRecords() {
-    return [];
-  }
+  takeRecords() { return []; }
   unobserve() {}
 };
 
-// Mock ResizeObserver
 global.ResizeObserver = class ResizeObserver {
-   
   constructor() {}
   disconnect() {}
   observe() {}
   unobserve() {}
 };
 
-// Mock matchMedia
 Object.defineProperty(window, 'matchMedia', {
   writable: true,
-  value: jest.fn().mockImplementation(query => ({
+  value: vi.fn().mockImplementation(query => ({
     matches: false,
     media: query,
     onchange: null,
-    addListener: jest.fn(),
-    removeListener: jest.fn(),
-    addEventListener: jest.fn(),
-    removeEventListener: jest.fn(),
-    dispatchEvent: jest.fn(),
+    addListener: vi.fn(),
+    removeListener: vi.fn(),
+    addEventListener: vi.fn(),
+    removeEventListener: vi.fn(),
+    dispatchEvent: vi.fn(),
   })),
 });
 
-// Mock localStorage
-const localStorageMock = {
-  getItem: jest.fn((_key) => null),
-  setItem: jest.fn(),
-  removeItem: jest.fn(),
-  clear: jest.fn(),
-  length: 0,
-  key: jest.fn(),
-};
+const _storage = {};
+const localStorageMock = (() => {
+  const store = _storage;
+  return {
+    getItem: vi.fn((key) => (key in store ? store[key] : null)),
+    setItem: vi.fn((key, value) => { store[key] = String(value); }),
+    removeItem: vi.fn((key) => { delete store[key]; }),
+    clear: vi.fn(() => { Object.keys(store).forEach(k => delete store[k]); }),
+    length: 0,
+    key: vi.fn(),
+  };
+})();
 global.localStorage = localStorageMock;
-
-// Mock sessionStorage
 global.sessionStorage = localStorageMock;
 
-// Mock scrollTo
-global.scrollTo = jest.fn();
+// Re-apply localStorage mock implementations after vi.clearAllMocks()
+afterEach(() => {
+  localStorageMock.getItem.mockImplementation((key) => (key in _storage ? _storage[key] : null));
+  localStorageMock.setItem.mockImplementation((key, value) => { _storage[key] = String(value); });
+  localStorageMock.removeItem.mockImplementation((key) => { delete _storage[key]; });
+  localStorageMock.clear.mockImplementation(() => { Object.keys(_storage).forEach(k => delete _storage[k]); });
+});
 
-// Mock requestAnimationFrame
+global.scrollTo = vi.fn();
 global.requestAnimationFrame = (cb) => setTimeout(cb, 0);
 global.cancelAnimationFrame = (id) => clearTimeout(id);
 
@@ -396,7 +391,6 @@ global.cancelAnimationFrame = (id) => clearTimeout(id);
 // CONSOLE SUPPRESSION
 // ============================================
 
-// Suppress console errors in tests
 const originalError = console.error;
 const originalWarn = console.warn;
 
@@ -415,7 +409,6 @@ beforeAll(() => {
     }
     originalError.call(console, ...args);
   };
-
   console.warn = (...args) => {
     if (
       typeof args[0] === 'string' &&
@@ -437,10 +430,8 @@ afterAll(() => {
 // TEST UTILITIES
 // ============================================
 
-// Helper to wait for async updates
-global.flushPromises = () => new Promise(resolve => setImmediate(resolve));
+global.flushPromises = () => new Promise(resolve => setTimeout(resolve, 0));
 
-// Helper to create mock Firestore docs
 global.createMockFirestoreDoc = (id, data) => ({
   id,
   data: () => data,
@@ -448,12 +439,11 @@ global.createMockFirestoreDoc = (id, data) => ({
   ref: { id },
 });
 
-// Helper to create mock Firestore query snapshot
 global.createMockQuerySnapshot = (docs) => ({
   docs: docs.map(doc => global.createMockFirestoreDoc(doc.id, doc.data)),
   empty: docs.length === 0,
   size: docs.length,
-  forEach: (callback) => docs.forEach((doc, index) => 
+  forEach: (callback) => docs.forEach((doc, index) =>
     callback(global.createMockFirestoreDoc(doc.id, doc.data), index)
   ),
 });

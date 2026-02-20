@@ -1,47 +1,46 @@
+import { vi } from 'vitest';
 import { render, waitFor } from '@testing-library/react';
 import MockTest from '../MockTest';
 import { useAuth } from '../../../context/AuthContext';
 import { getDocs } from 'firebase/firestore';
+import { __mockNavigate as mockNavigate, __mockLocation } from 'react-router-dom';
+import * as hooks from '../../../hooks';
 
-jest.mock('../../../context/AuthContext');
+vi.mock('react-router-dom');
+vi.mock('../../../context/AuthContext');
 
-const routerMock = require('react-router-dom');
-const mockNavigate = routerMock.__mockNavigate;
-
-jest.mock('../../../hooks', () => ({
-  useKeyboardShortcuts: jest.fn(),
-  useNavigationBlock: jest.fn(),
-  useAntiCheat: jest.fn(() => ({
-    enterFullscreen: jest.fn(),
-    exitFullscreen: jest.fn(),
+vi.mock('../../../hooks', () => ({
+  useKeyboardShortcuts: vi.fn(),
+  useNavigationBlock: vi.fn(),
+  useAntiCheat: vi.fn(() => ({
+    enterFullscreen: vi.fn(),
+    exitFullscreen: vi.fn(),
     showViolationModal: false,
-    resumeTest: jest.fn(),
+    resumeTest: vi.fn(),
     violationCount: 0,
     remainingWarnings: 3,
   })),
-  randomizeTest: jest.fn((questions) => questions),
-  useTestSession: jest.fn(() => ({
-    saveSession: jest.fn(),
-    loadSavedSession: jest.fn().mockReturnValue(null),
-    clearSession: jest.fn(),
+  randomizeTest: vi.fn((questions) => questions),
+  useTestSession: vi.fn(() => ({
+    saveSession: vi.fn(),
+    loadSavedSession: vi.fn().mockReturnValue(null),
+    clearSession: vi.fn(),
   })),
-  useBookmarks: jest.fn(() => ({
+  useBookmarks: vi.fn(() => ({
     bookmarkedIds: new Set(),
-    toggleBookmark: jest.fn(),
+    toggleBookmark: vi.fn(),
   })),
-  useErrorReport: jest.fn(() => ({
+  useErrorReport: vi.fn(() => ({
     showReportModal: false,
     reportText: '',
-    setReportText: jest.fn(),
-    openReport: jest.fn(),
-    closeReport: jest.fn(),
-    submitReport: jest.fn(),
+    setReportText: vi.fn(),
+    openReport: vi.fn(),
+    closeReport: vi.fn(),
+    submitReport: vi.fn(),
   })),
 }));
 
-const mockHooks = require('../../../hooks');
-
-jest.mock('../../../utils/examPatterns', () => ({
+vi.mock('../../../utils/examPatterns', () => ({
   EXAM_PATTERNS: {
     CDS: {
       name: 'CDS',
@@ -55,49 +54,48 @@ jest.mock('../../../utils/examPatterns', () => ({
 
 describe('MockTest Page', () => {
   beforeEach(() => {
-    jest.clearAllMocks();
+    vi.clearAllMocks();
     useAuth.mockReturnValue({ currentUser: { uid: 'user123' } });
-    getDocs.mockResolvedValue({ docs: [], empty: true, size: 0, forEach: jest.fn() });
-    routerMock.__mockLocation.state = { examType: 'CDS' };
+    getDocs.mockResolvedValue({ docs: [], empty: true, size: 0, forEach: vi.fn() });
+    __mockLocation.state = { examType: 'CDS' };
 
-    // Re-set mock implementations after clearAllMocks
-    mockHooks.useAntiCheat.mockReturnValue({
-      enterFullscreen: jest.fn(),
-      exitFullscreen: jest.fn(),
+    hooks.useAntiCheat.mockReturnValue({
+      enterFullscreen: vi.fn(),
+      exitFullscreen: vi.fn(),
       showViolationModal: false,
-      resumeTest: jest.fn(),
+      resumeTest: vi.fn(),
       violationCount: 0,
       remainingWarnings: 3,
     });
-    mockHooks.useTestSession.mockReturnValue({
-      saveSession: jest.fn(),
-      loadSavedSession: jest.fn().mockReturnValue(null),
-      clearSession: jest.fn(),
+    hooks.useTestSession.mockReturnValue({
+      saveSession: vi.fn(),
+      loadSavedSession: vi.fn().mockReturnValue(null),
+      clearSession: vi.fn(),
     });
-    mockHooks.useBookmarks.mockReturnValue({
+    hooks.useBookmarks.mockReturnValue({
       bookmarkMap: {},
-      loadBookmarks: jest.fn(),
-      toggleBookmark: jest.fn(),
+      loadBookmarks: vi.fn(),
+      toggleBookmark: vi.fn(),
     });
-    mockHooks.useErrorReport.mockReturnValue({
+    hooks.useErrorReport.mockReturnValue({
       showReportModal: false,
       reportText: '',
-      setReportText: jest.fn(),
-      openReport: jest.fn(),
-      closeReport: jest.fn(),
-      submitReport: jest.fn(),
+      setReportText: vi.fn(),
+      openReport: vi.fn(),
+      closeReport: vi.fn(),
+      submitReport: vi.fn(),
     });
-    mockHooks.randomizeTest.mockImplementation((questions) => questions);
+    hooks.randomizeTest.mockImplementation((questions) => questions);
   });
 
   it('should redirect if no examType', async () => {
-    routerMock.__mockLocation.state = null;
+    __mockLocation.state = null;
     render(<MockTest />);
     await waitFor(() => expect(mockNavigate).toHaveBeenCalledWith('/test-selection'));
   });
 
   it('should redirect if insufficient questions', async () => {
-    getDocs.mockResolvedValue({ docs: [], empty: true, size: 0, forEach: jest.fn() });
+    getDocs.mockResolvedValue({ docs: [], empty: true, size: 0, forEach: vi.fn() });
     render(<MockTest />);
     await waitFor(() => expect(mockNavigate).toHaveBeenCalledWith('/test-selection'));
   });
@@ -108,13 +106,11 @@ describe('MockTest Page', () => {
   });
 
   it('should use anti-cheat measures', () => {
-    const hooks = require('../../../hooks');
     render(<MockTest />);
     expect(hooks.useAntiCheat).toHaveBeenCalled();
   });
 
   it('should use navigation block', () => {
-    const hooks = require('../../../hooks');
     render(<MockTest />);
     expect(hooks.useNavigationBlock).toHaveBeenCalled();
   });

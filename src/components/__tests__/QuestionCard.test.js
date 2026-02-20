@@ -1,3 +1,4 @@
+import { vi } from 'vitest';
 import { render, screen, fireEvent } from '@testing-library/react';
 import QuestionCard from '../test/QuestionCard';
 
@@ -22,18 +23,18 @@ describe('QuestionCard', () => {
     questionNumber: 1,
     totalQuestions: 10,
     selectedAnswer: null,
-    onAnswerSelect: jest.fn(),
+    onAnswerSelect: vi.fn(),
     showFeedback: false,
     isCorrect: false,
     marksPerQuestion: 1,
     negativeMarking: -0.33,
     isBookmarked: false,
-    onBookmark: jest.fn(),
-    onReport: jest.fn(),
+    onBookmark: vi.fn(),
+    onReport: vi.fn(),
   };
 
   beforeEach(() => {
-    jest.clearAllMocks();
+    vi.clearAllMocks();
   });
 
   it('should render question text', () => {

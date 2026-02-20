@@ -1,151 +1,132 @@
+<div align="center">
+
 # 📚 Mockzam
 
-> A comprehensive, feature-rich mock test platform designed for UPSC aspirants to practice and excel in their exam preparation.
+### Smart Mock Test Platform for UPSC Aspirants
 
-[![Live Demo](https://img.shields.io/badge/demo-live-success?style=for-the-badge)](https://amanrcy.vercel.app)
-[![React](https://img.shields.io/badge/React-18-61DAFB?style=for-the-badge&logo=react)](https://reactjs.org/)
-[![Firebase](https://img.shields.io/badge/Firebase-FFCA28?style=for-the-badge&logo=firebase&logoColor=black)](https://firebase.google.com/)
-[![License](https://img.shields.io/badge/license-MIT-blue?style=for-the-badge)](LICENSE)
+Practice smarter. Score higher. Track everything.
 
-## � Live Demo
+[![Live Demo](https://img.shields.io/badge/🚀_Live_Demo-amanrcy.vercel.app-blue?style=for-the-badge)](https://amanrcy.vercel.app)
 
-**[View Live Application →](https://amanrcy.vercel.app)**
+[![React 19](https://img.shields.io/badge/React-19-61DAFB?logo=react&logoColor=white)](https://react.dev)
+[![Vite 7](https://img.shields.io/badge/Vite-7-646CFF?logo=vite&logoColor=white)](https://vite.dev)
+[![Firebase](https://img.shields.io/badge/Firebase-FFCA28?logo=firebase&logoColor=black)](https://firebase.google.com)
+[![Tailwind CSS](https://img.shields.io/badge/Tailwind-3-06B6D4?logo=tailwindcss&logoColor=white)](https://tailwindcss.com)
+[![Vercel](https://img.shields.io/badge/Deployed_on-Vercel-000?logo=vercel)](https://vercel.com)
+[![License: MIT](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
+
+<br />
+
+<img src="public/logo.svg" alt="Mockzam Logo" width="80" />
+
+</div>
+
+---
+
+## ⚡ Quick Start
+
+```bash
+git clone https://github.com/amanrcy1/MockTest-app.git
+cd MockTest-app
+npm install
+cp .env.example .env   # Add your Firebase credentials
+npm run dev             # → http://localhost:3000
+```
+
+> Requires **Node.js 20+** and a [Firebase project](https://console.firebase.google.com).
+
+---
+
+## 🎯 What is Mockzam?
+
+Mockzam is a full-featured exam preparation platform built for UPSC aspirants. It supports multiple exam patterns (CDS, CSAT, IAS-GS, and more) with real exam conditions, AI-powered explanations, and detailed performance analytics.
+
+<details>
+<summary><b>🖼️ Screenshots</b> (click to expand)</summary>
+<br />
+
+| Dashboard | Mock Test | Results |
+|:---------:|:---------:|:-------:|
+| Dark/Light theme, stats overview | Timer, question palette, anti-cheat | Score breakdown, AI explanations |
+
+</details>
 
 ---
 
 ## ✨ Features
 
-### 🎯 Core Functionality
-- **Multiple Test Modes** - Mock tests, Practice mode, and Custom tests
-- **Comprehensive Question Bank** - Prelims, Mains, and Optional subjects
-- **Real-time Scoring** - Instant results with detailed analytics
-- **Performance Tracking** - Track progress over time with visual charts
+<table>
+<tr>
+<td width="50%">
 
-### 👤 User Experience
-- **Secure Authentication** - Email/password with Firebase Auth
-- **Personalized Dashboard** - View stats, history, and bookmarks
-- **Leaderboard System** - Compete with other aspirants
-- **Bookmark Questions** - Save questions for later review
+### 📝 Test Modes
+- **Mock Test** — Real exam conditions with timer & anti-cheat
+- **Practice Mode** — No time pressure, instant answers
+- **Custom Test** — Pick subjects, topics, and question count
 
-### 🎨 Design & Interface
-- **Dark/Light Theme** - Toggle between themes for comfortable studying
-- **Responsive Design** - Seamless experience on desktop, tablet, and mobile
-- **Smooth Animations** - Engaging visual effects using Framer Motion
-- **Intuitive Navigation** - Easy-to-use interface with keyboard shortcuts
+### � Analytics
+- Test history with detailed breakdowns
+- Subject-wise accuracy tracking
+- Time management insights
+- Leaderboard rankings
 
-### 🛡️ Security & Performance
-- **Anti-cheat System** - Tab switching and copy-paste detection
-- **Optimized Performance** - Code splitting and lazy loading
-- **Secure Data** - Firebase security rules and data validation
-- **Error Tracking** - Comprehensive error logging and reporting
+</td>
+<td width="50%">
 
----
+### 🤖 AI-Powered
+- Wrong answer explanations via Groq LLaMA 3.3
+- Secure server-side API calls
+- Per-user rate limiting
 
-## 🛠️ Tech Stack
+### 🛡️ Security
+- Firebase Auth (Google sign-in)
+- Firestore security rules
+- Anti-cheat (fullscreen enforcement, copy/paste blocking)
+- CSP headers, HSTS, rate limiting
 
-### Frontend
-- **React 18** - Modern UI library with hooks
-- **React Router v6** - Client-side routing
-- **Tailwind CSS** - Utility-first CSS framework
-- **Framer Motion** - Animation library for smooth transitions
-- **React Toastify** - Toast notifications
+</td>
+</tr>
+</table>
 
-### Backend & Services
-- **Firebase Authentication** - User management
-- **Cloud Firestore** - NoSQL database
-- **Vercel** - Hosting and serverless functions
-- **Groq API** - AI-powered explanations (via serverless function)
+<details>
+<summary><b>👑 Admin Panel</b></summary>
 
-### Development Tools
-- **Jest** - Unit testing framework
-- **React Testing Library** - Component testing
-- **ESLint** - Code linting
-- **Prettier** - Code formatting
+- Add / edit / delete questions
+- Bulk upload via CSV
+- User management (promote/demote admins)
+- Error report dashboard
+- Bookmark review system
+- Audit logging
 
----
+</details>
 
-## 📦 Installation
+<details>
+<summary><b>🎨 UI/UX</b></summary>
 
-### Prerequisites
-- Node.js 16+ and npm
-- Firebase account
-- Git
+- Dark / Light theme with system preference detection
+- Fully responsive (mobile, tablet, desktop)
+- Smooth animations (Framer Motion)
+- Keyboard shortcuts for navigation
+- PWA-ready with install banner
+- Bottom navigation on mobile
 
-### Setup
-
-1. **Clone the repository**
-   ```bash
-   git clone https://github.com/amanrcy1/mockzam.git
-   cd mockzam
-   ```
-
-2. **Install dependencies**
-   ```bash
-   npm install
-   ```
-
-3. **Configure environment variables**
-   ```bash
-   cp .env.example .env
-   ```
-   
-   Update `.env` with your Firebase credentials and API settings:
-   ```env
-   REACT_APP_FIREBASE_API_KEY=your_api_key
-   REACT_APP_FIREBASE_AUTH_DOMAIN=your_project.firebaseapp.com
-   REACT_APP_FIREBASE_PROJECT_ID=your_project_id
-   REACT_APP_FIREBASE_STORAGE_BUCKET=your_project.appspot.com
-   REACT_APP_FIREBASE_MESSAGING_SENDER_ID=your_sender_id
-   REACT_APP_FIREBASE_APP_ID=your_app_id
-   VITE_API_URL=/api
-   GROQ_API_KEY=your_groq_api_key
-   ```
-
-4. **Start development server**
-   ```bash
-   npm start
-   ```
-   
-   Open [http://localhost:3000](http://localhost:3000) in your browser.
+</details>
 
 ---
 
-## 🧪 Testing
+## 🏗️ Tech Stack
 
-```bash
-# Run all tests
-npm test
-
-# Run tests with coverage
-npm test -- --coverage
-
-# Run tests in watch mode
-npm test -- --watch
-```
-
----
-
-## 🚢 Deployment
-
-### Build for Production
-```bash
-npm run build
-```
-
-### Deploy to Vercel (Recommended)
-```bash
-vercel
-```
-
-The platform is optimized for Vercel deployment with serverless functions in the `/api` directory for AI-powered explanations.
-
-### Alternative: Deploy to Firebase
-```bash
-firebase login
-firebase deploy --only hosting
-```
-
-Note: If deploying to Firebase, you'll need to migrate the `/api/ai-explanation.js` serverless function to Firebase Cloud Functions.
+| Layer | Technology |
+|-------|-----------|
+| **Framework** | React 19 + Vite 7 |
+| **Styling** | Tailwind CSS 3 |
+| **Animations** | Framer Motion |
+| **Auth & DB** | Firebase Auth + Cloud Firestore |
+| **Storage** | Firebase Storage (profile images) |
+| **AI** | Groq API (LLaMA 3.3 70B) |
+| **Hosting** | Vercel (app + serverless functions) |
+| **Linting** | ESLint 9 (flat config) + Prettier |
+| **CI/CD** | GitHub Actions |
 
 ---
 
@@ -153,154 +134,184 @@ Note: If deploying to Firebase, you'll need to migrate the `/api/ai-explanation.
 
 ```
 mockzam/
-├── api/                   # Vercel serverless functions
-├── public/                # Static files
+├── api/                    # Vercel serverless functions
+│   └── ai-explanation.js   # AI explanation endpoint
+├── public/                 # Static assets & security headers
 ├── src/
-│   ├── components/        # Reusable UI components
-│   │   ├── 3d/           # Animated components (Framer Motion)
-│   │   ├── layout/       # Layout components
-│   │   ├── test/         # Test-related components
-│   │   └── ui/           # UI components
-│   ├── pages/            # Page components
-│   │   ├── admin/        # Admin pages
-│   │   ├── auth/         # Authentication pages
-│   │   ├── test/         # Test pages
-│   │   └── user/         # User pages
-│   ├── context/          # React Context providers
-│   ├── hooks/            # Custom React hooks
-│   ├── services/         # API services
-│   ├── utils/            # Utility functions
-│   ├── config/           # Configuration files
-│   └── constants/        # Constants and enums
-├── functions/            # Firebase Cloud Functions (optional)
-└── scripts/              # Utility scripts
+│   ├── components/         # Reusable components
+│   │   ├── 3d/            #   Celebration effects, 3D timer
+│   │   ├── layout/        #   TopNav, BottomNav
+│   │   ├── test/          #   QuestionCard, Timer, Palette
+│   │   └── ui/            #   Modal, EmptyState, Skeleton
+│   ├── pages/
+│   │   ├── admin/         # Admin dashboard, question management
+│   │   ├── auth/          # Login / signup
+│   │   ├── test/          # Mock, Practice, Custom, Results
+│   │   └── user/          # Dashboard, Profile, Bookmarks
+│   ├── context/           # AuthContext, ThemeContext
+│   ├── hooks/             # useAntiCheat, useTimer, useOptimizedFetch...
+│   ├── services/          # Firebase CRUD, AI service
+│   ├── utils/             # Security, performance, logging
+│   ├── config/            # Firebase initialization
+│   └── constants/         # App-wide constants
+├── functions/             # Firebase Cloud Functions (optional)
+├── firestore.rules        # Firestore security rules
+├── storage.rules          # Storage security rules
+├── vite.config.js         # Vite + JSX plugin config
+├── eslint.config.js       # ESLint 9 flat config
+├── tailwind.config.cjs    # Tailwind configuration
+└── postcss.config.cjs     # PostCSS configuration
 ```
 
 ---
 
-## 🎯 Key Features Explained
+## ⚙️ Environment Variables
 
-### Test Modes
+Copy `.env.example` to `.env` and fill in your values:
 
-1. **Mock Test** - Simulate real UPSC exam conditions with time limits
-2. **Practice Mode** - Practice without time pressure, see answers immediately
-3. **Custom Test** - Create personalized tests by selecting subjects and topics
+```env
+# Firebase (required)
+VITE_FIREBASE_API_KEY=your_api_key
+VITE_FIREBASE_AUTH_DOMAIN=your_project.firebaseapp.com
+VITE_FIREBASE_PROJECT_ID=your_project_id
+VITE_FIREBASE_STORAGE_BUCKET=your_project.appspot.com
+VITE_FIREBASE_MESSAGING_SENDER_ID=your_sender_id
+VITE_FIREBASE_APP_ID=your_app_id
 
-### Admin Panel
+# AI Explanations (optional)
+GROQ_API_KEY=your_groq_key          # Server-side only
+FIREBASE_PROJECT_ID=your_project_id  # For serverless auth
 
-- Add/Edit/Delete questions
-- Bulk upload via CSV
-- View user statistics
-- Manage error reports
-- Monitor system health
+# Security (optional, production)
+VITE_RECAPTCHA_SITE_KEY=your_key     # Enables Firebase App Check
+```
 
-### Analytics Dashboard
+> `VITE_` prefixed vars are exposed to the client. `GROQ_API_KEY` stays server-side only.
 
-- Test history with detailed breakdowns
-- Subject-wise performance analysis
-- Time management insights
-- Accuracy trends over time
+---
+
+## 📜 Available Scripts
+
+| Command | Description |
+|---------|-------------|
+| `npm run dev` | Start dev server on port 3000 |
+| `npm run build` | Production build to `dist/` |
+| `npm run preview` | Preview production build locally |
+| `npm run lint` | Run ESLint on `src/` |
+| `npm run lint:fix` | Auto-fix lint issues |
+| `npm run format` | Format code with Prettier |
+| `npm run deploy` | Deploy to Vercel (production) |
+| `npm run deploy:preview` | Deploy preview to Vercel |
+
+---
+
+## 🚀 Deployment
+
+### Vercel (Recommended)
+
+1. Push to GitHub
+2. Import repo on [vercel.com](https://vercel.com)
+3. Set environment variables (see above)
+4. Build settings are auto-detected:
+   - Framework: **Vite**
+   - Build Command: `vite build`
+   - Output Directory: `dist`
+5. The `api/` folder automatically deploys as serverless functions
+
+### Firebase Hosting (Alternative)
+
+```bash
+firebase login
+firebase deploy --only hosting
+```
+
+> Note: Update `firebase.json` if switching — the AI serverless function would need to move to Firebase Cloud Functions.
 
 ---
 
 ## 🗺️ Roadmap
 
-- [x] Core test functionality
-- [x] User authentication and profiles
+- [x] Multiple test modes (Mock, Practice, Custom)
+- [x] Google authentication & user profiles
 - [x] Leaderboard system
-- [x] Dark/light theme
+- [x] Dark / Light theme
 - [x] Mobile responsive design
-- [x] AI-powered explanations (Groq API integration)
-- [ ] Offline mode support
+- [x] AI-powered explanations (Groq)
+- [x] Admin panel with bulk upload
+- [x] Anti-cheat system
+- [x] Migrated from CRA to Vite
+- [ ] Offline mode (service worker)
+- [ ] Vitest test suite
 - [ ] Mobile app (React Native)
-- [ ] Video solutions for questions
 - [ ] Discussion forum
-- [ ] Study planner and reminders
+- [ ] Study planner & reminders
+
+---
 
 ## ❓ FAQ
 
 <details>
-<summary><b>Is this platform free to use?</b></summary>
-<br>
-Yes, the platform is completely free for all users.
+<summary><b>Is Mockzam free?</b></summary>
+<br />
+Yes, completely free and open source.
 </details>
 
 <details>
-<summary><b>How do I become an admin?</b></summary>
-<br>
-Contact the repository owner or check the documentation for admin setup instructions.
+<summary><b>Which exams are supported?</b></summary>
+<br />
+CDS, CSAT, IAS-GS, and more. The platform is configurable for any competitive exam by modifying the question bank and exam patterns.
 </details>
 
 <details>
-<summary><b>Can I contribute questions?</b></summary>
-<br>
-Yes! You can contribute questions through pull requests or contact the admin.
+<summary><b>How does the AI explanation work?</b></summary>
+<br />
+When you get a question wrong, you can request an AI explanation. The request goes to a Vercel serverless function that securely calls the Groq API (LLaMA 3.3 70B) — your API key never touches the browser.
 </details>
 
 <details>
 <summary><b>Is my data secure?</b></summary>
-<br>
-Yes, all data is stored securely in Firebase with proper security rules and encryption.
+<br />
+Yes. Firebase security rules restrict data access per user. The app uses HSTS, CSP headers, and Firebase App Check in production. Test data is only readable by the test owner and admins.
 </details>
 
 <details>
-<summary><b>Can I use this for other competitive exams?</b></summary>
-<br>
-Yes, the platform can be customized for any competitive exam by modifying the question bank.
+<summary><b>Can I self-host this?</b></summary>
+<br />
+Yes. Clone the repo, set up a Firebase project, add your env vars, and deploy to Vercel (or any static host + serverless platform).
+</details>
+
+<details>
+<summary><b>How do I become an admin?</b></summary>
+<br />
+Set <code>isAdmin: true</code> on your user document in Firestore. The first admin must be set manually; after that, admins can promote other users from the admin panel.
 </details>
 
 ---
 
 ## 🤝 Contributing
 
-Contributions are welcome! Please feel free to submit a Pull Request.
+Contributions are welcome! 
 
-1. Fork the repository
-2. Create your feature branch (`git checkout -b feature/AmazingFeature`)
-3. Commit your changes (`git commit -m 'Add some AmazingFeature'`)
-4. Push to the branch (`git push origin feature/AmazingFeature`)
-5. Open a Pull Request
+1. Fork the repo
+2. Create a feature branch (`git checkout -b feature/cool-thing`)
+3. Commit your changes (`git commit -m 'add cool thing'`)
+4. Push and open a PR
 
 ---
 
 ## 📝 License
 
-This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
-
----
-
-## 👨‍💻 Author
-
-**Aman Yadav**
-
-- Website: [amanrcy.vercel.app](https://amanrcy.vercel.app)
-- GitHub: [@amanrcy1](https://github.com/amanrcy1)
-- LinkedIn: [amanrcy](https://linkedin.com/in/amanrcy)
-
----
-
-## 🙏 Acknowledgments
-
-- UPSC aspirants community for feedback and suggestions
-- Firebase for backend infrastructure
-- React community for excellent documentation
-- All contributors who helped improve this project
-
----
-
-## 📧 Support
-
-For support, open an issue in the repository or reach out via:
-- 📧 Email: amanrcy1@gmail.com
-- 💬 GitHub Issues: [Report a bug](https://github.com/amanrcy1/mockzam/issues)
-- 🌐 Website: [amanrcy.vercel.app](https://amanrcy.vercel.app)
+MIT — see [LICENSE](LICENSE) for details.
 
 ---
 
 <div align="center">
 
-**⭐ Star this repo if you find it helpful!**
+### 👨‍💻 Built by [Aman Yadav](https://github.com/amanrcy1)
 
-Made with ❤️ for UPSC Aspirants
+[![GitHub](https://img.shields.io/badge/GitHub-amanrcy1-181717?logo=github)](https://github.com/amanrcy1)
+[![LinkedIn](https://img.shields.io/badge/LinkedIn-amanrcy-0A66C2?logo=linkedin)](https://linkedin.com/in/amanrcy)
+
+⭐ Star this repo if you find it useful!
 
 </div>

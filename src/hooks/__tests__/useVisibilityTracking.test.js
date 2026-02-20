@@ -1,3 +1,4 @@
+import { vi } from 'vitest';
 import { renderHook, act } from '@testing-library/react';
 import { useVisibilityTracking } from '../useVisibilityTracking';
 
@@ -10,7 +11,7 @@ describe('useVisibilityTracking', () => {
   });
 
   it('should not track when inactive', () => {
-    const onTabSwitch = jest.fn();
+    const onTabSwitch = vi.fn();
     renderHook(() => useVisibilityTracking(false, { onTabSwitch }));
     act(() => {
       document.dispatchEvent(new Event('visibilitychange'));
@@ -20,7 +21,7 @@ describe('useVisibilityTracking', () => {
 
   it('should track violations when active', () => {
     Object.defineProperty(document, 'hidden', { value: true, configurable: true });
-    const onTabSwitch = jest.fn();
+    const onTabSwitch = vi.fn();
     const { result } = renderHook(() => useVisibilityTracking(true, { onTabSwitch }));
     act(() => {
       document.dispatchEvent(new Event('visibilitychange'));
@@ -41,7 +42,7 @@ describe('useVisibilityTracking', () => {
   });
 
   it('should cleanup listeners on unmount', () => {
-    const removeSpy = jest.spyOn(document, 'removeEventListener');
+    const removeSpy = vi.spyOn(document, 'removeEventListener');
     const { unmount } = renderHook(() => useVisibilityTracking(true));
     unmount();
     expect(removeSpy).toHaveBeenCalledWith('visibilitychange', expect.any(Function));

@@ -1,16 +1,17 @@
+import { vi } from 'vitest';
 import { renderHook, act } from '@testing-library/react';
 import { useTimer } from '../useTimer';
 
 describe('useTimer', () => {
   beforeEach(() => {
-    jest.useFakeTimers();
+    vi.useFakeTimers();
   });
 
   afterEach(() => {
     act(() => {
-      jest.runOnlyPendingTimers();
+      vi.runOnlyPendingTimers();
     });
-    jest.useRealTimers();
+    vi.useRealTimers();
   });
 
   it('should initialize with correct time', () => {

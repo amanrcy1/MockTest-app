@@ -1,16 +1,17 @@
+import { vi } from 'vitest';
 import { render, screen, fireEvent } from '@testing-library/react';
 import Modal, { ConfirmModal } from '../ui/Modal';
 
 describe('Modal', () => {
   const defaultProps = {
     isOpen: true,
-    onClose: jest.fn(),
+    onClose: vi.fn(),
     title: 'Test Modal',
     children: <div>Modal Content</div>,
   };
 
   beforeEach(() => {
-    jest.clearAllMocks();
+    vi.clearAllMocks();
   });
 
   it('should render when isOpen is true', () => {
@@ -36,7 +37,7 @@ describe('Modal', () => {
   });
 
   it('should call onClose when overlay is clicked with closeOnOverlayClick', () => {
-    const onClose = jest.fn();
+    const onClose = vi.fn();
     render(<Modal {...defaultProps} onClose={onClose} closeOnOverlayClick={true} />);
 
     // Click outside the modal content
@@ -46,7 +47,7 @@ describe('Modal', () => {
   });
 
   it('should not close when overlay is clicked with closeOnOverlayClick=false', () => {
-    const onClose = jest.fn();
+    const onClose = vi.fn();
     render(<Modal {...defaultProps} onClose={onClose} closeOnOverlayClick={false} />);
 
     // Try to click outside
@@ -114,14 +115,14 @@ describe('Modal', () => {
 describe('ConfirmModal', () => {
   const defaultProps = {
     isOpen: true,
-    onClose: jest.fn(),
-    onConfirm: jest.fn(),
+    onClose: vi.fn(),
+    onConfirm: vi.fn(),
     title: 'Confirm Action',
     message: 'Are you sure?',
   };
 
   beforeEach(() => {
-    jest.clearAllMocks();
+    vi.clearAllMocks();
   });
 
   it('should render confirm modal with message', () => {

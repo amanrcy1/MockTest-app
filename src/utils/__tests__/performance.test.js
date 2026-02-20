@@ -1,3 +1,4 @@
+import { vi } from 'vitest';
 import {
   PerformanceTracker,
   trackRender,
@@ -58,7 +59,7 @@ describe('performance utilities', () => {
     it('should return metrics object when available', () => {
       // Mock performance API
       global.performance = {
-        getEntriesByType: jest.fn((type) => {
+        getEntriesByType: vi.fn((type) => {
           if (type === 'navigation') {
             return [{
               domainLookupStart: 0,

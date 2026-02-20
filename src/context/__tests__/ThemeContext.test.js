@@ -1,15 +1,16 @@
+import { vi } from 'vitest';
 import { renderHook, act, waitFor } from '@testing-library/react';
 import { ThemeProvider, useTheme } from '../ThemeContext';
 
 // ThemeContext uses localStorage directly, so we need a real-ish mock
 const storage = {};
 const localStorageMock = {
-  getItem: jest.fn((key) => storage[key] || null),
-  setItem: jest.fn((key, value) => { storage[key] = value; }),
-  removeItem: jest.fn((key) => { delete storage[key]; }),
-  clear: jest.fn(() => { Object.keys(storage).forEach(k => delete storage[k]); }),
+  getItem: vi.fn((key) => storage[key] || null),
+  setItem: vi.fn((key, value) => { storage[key] = value; }),
+  removeItem: vi.fn((key) => { delete storage[key]; }),
+  clear: vi.fn(() => { Object.keys(storage).forEach(k => delete storage[k]); }),
   length: 0,
-  key: jest.fn(),
+  key: vi.fn(),
 };
 Object.defineProperty(window, 'localStorage', { value: localStorageMock, writable: true });
 
@@ -18,7 +19,7 @@ const wrapper = ({ children }) => <ThemeProvider>{children}</ThemeProvider>;
 describe('ThemeContext', () => {
   beforeEach(() => {
     Object.keys(storage).forEach(k => delete storage[k]);
-    jest.clearAllMocks();
+    vi.clearAllMocks();
     document.documentElement.classList.remove('dark');
     // Re-set mock implementations after clearAllMocks
     localStorageMock.getItem.mockImplementation((key) => storage[key] || null);
@@ -26,15 +27,15 @@ describe('ThemeContext', () => {
     localStorageMock.removeItem.mockImplementation((key) => { delete storage[key]; });
     localStorageMock.clear.mockImplementation(() => { Object.keys(storage).forEach(k => delete storage[k]); });
     // Ensure matchMedia is properly mocked
-    window.matchMedia = jest.fn().mockImplementation(q => ({
+    window.matchMedia = vi.fn().mockImplementation(q => ({
       matches: false,
       media: q,
       onchange: null,
-      addListener: jest.fn(),
-      removeListener: jest.fn(),
-      addEventListener: jest.fn(),
-      removeEventListener: jest.fn(),
-      dispatchEvent: jest.fn(),
+      addListener: vi.fn(),
+      removeListener: vi.fn(),
+      addEventListener: vi.fn(),
+      removeEventListener: vi.fn(),
+      dispatchEvent: vi.fn(),
     }));
   });
 
@@ -71,7 +72,7 @@ describe('ThemeContext', () => {
   });
 
   it('should throw when used outside provider', () => {
-    const spy = jest.spyOn(console, 'error').mockImplementation();
+    const spy = vi.spyOn(console, 'error').mockImplementation();
     expect(() => {
       renderHook(() => useTheme());
     }).toThrow('useTheme must be used within a ThemeProvider');
