@@ -636,9 +636,10 @@ const AiChatWidget = memo(({ context = {} }) => {
     return () => {
       vv.removeEventListener("resize", syncPanel);
       vv.removeEventListener("scroll", syncPanel);
-      if (panelRef.current) {
-        panelRef.current.style.height = "";
-        panelRef.current.style.top = "";
+      const panel = panelRef.current;
+      if (panel) {
+        panel.style.height = "";
+        panel.style.top = "";
       }
       setKeyboardVisible(false);
     };
@@ -808,7 +809,7 @@ const AiChatWidget = memo(({ context = {} }) => {
       setLoading(false);
       if (window.innerWidth >= 768) setTimeout(() => inputRef.current?.focus(), 100);
     }
-  }, [input, loading, messages, enrichedContext, isBoundaryResponse, stopListening]);
+  }, [input, loading, messages, enrichedContext, isBoundaryResponse, stopListening, scrollToBottom]);
 
   const handleKeyDown = useCallback((e) => {
     const isMobile = window.innerWidth < 768;
@@ -969,7 +970,7 @@ const AiChatWidget = memo(({ context = {} }) => {
       sttRestartRef.current = true;
       try {
         rec.start();
-      } catch (e) {
+      } catch (_e) {
         recognitionRef.current = null;
         setListening(false);
         setError("Could not start voice input. Try again.");

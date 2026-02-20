@@ -165,7 +165,7 @@ vi.mock('framer-motion', () => {
   return {
     motion: new Proxy({}, {
       get: (_target, prop) => {
-        const MotionComponent = React.forwardRef(({ children, initial, animate, exit, transition, whileHover, whileTap, whileFocus, whileDrag, whileInView, variants, layout, layoutId, ...rest }, ref) => {
+        const MotionComponent = React.forwardRef(({ children, initial: _initial, animate: _animate, exit: _exit, transition: _transition, whileHover: _whileHover, whileTap: _whileTap, whileFocus: _whileFocus, whileDrag: _whileDrag, whileInView: _whileInView, variants: _variants, layout: _layout, layoutId: _layoutId, ...rest }, ref) => {
           return React.createElement(prop, { ...rest, ref }, children);
         });
         MotionComponent.displayName = `motion.${prop}`;
