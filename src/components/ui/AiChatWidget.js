@@ -615,14 +615,15 @@ const AiChatWidget = memo(({ context = {} }) => {
     if (!isOpen) return;
     const vv = window.visualViewport;
     if (!vv) return;
+    const panel = panelRef.current;
 
     const syncPanel = () => {
       const isMobile = window.innerWidth < 768;
-      if (!isMobile || !panelRef.current) return;
+      if (!isMobile || !panel) return;
 
       // Always pin panel to visual viewport — handles keyboard, address bar, everything
-      panelRef.current.style.height = `${vv.height}px`;
-      panelRef.current.style.top = `${vv.offsetTop}px`;
+      panel.style.height = `${vv.height}px`;
+      panel.style.top = `${vv.offsetTop}px`;
 
       // Compare against screen height — reliable across all devices
       const kbOpen = window.screen.height - vv.height > 150;
@@ -636,7 +637,6 @@ const AiChatWidget = memo(({ context = {} }) => {
     return () => {
       vv.removeEventListener("resize", syncPanel);
       vv.removeEventListener("scroll", syncPanel);
-      const panel = panelRef.current;
       if (panel) {
         panel.style.height = "";
         panel.style.top = "";
