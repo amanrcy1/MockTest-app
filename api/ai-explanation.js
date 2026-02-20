@@ -1,9 +1,6 @@
 // Vercel Serverless Function for AI Explanations
-// This endpoint calls Groq API server-side to keep API keys secure
-
 import admin from 'firebase-admin';
 
-// Initialize Firebase Admin (once per cold start)
 if (!admin.apps.length) {
   const projectId = process.env.FIREBASE_PROJECT_ID || process.env.VITE_FIREBASE_PROJECT_ID;
   if (projectId) {
@@ -13,262 +10,226 @@ if (!admin.apps.length) {
   }
 }
 
-// Simple in-memory rate limiter (per serverless instance)
 const rateLimitMap = new Map();
-const RATE_LIMIT_WINDOW = 60_000; // 1 minute
-const RATE_LIMIT_MAX = 15; // max requests per IP per window
+const RATE_LIMIT_WINDOW = 60_000;
+const RATE_LIMIT_MAX = 15;
 
-function isRateLimited(ip) {
+function isRateLimited(key) {
   const now = Date.now();
-  const entry = rateLimitMap.get(ip);
-
+  const entry = rateLimitMap.get(key);
   if (!entry || now - entry.windowStart > RATE_LIMIT_WINDOW) {
-    rateLimitMap.set(ip, { windowStart: now, count: 1 });
+    rateLimitMap.set(key, { windowStart: now, count: 1 });
     return false;
   }
-
   entry.count++;
-  if (entry.count > RATE_LIMIT_MAX) return true;
-  return false;
+  return entry.count > RATE_LIMIT_MAX;
 }
 
-// Cleanup stale entries periodically (prevent memory leak)
 setInterval(() => {
   const now = Date.now();
-  for (const [ip, entry] of rateLimitMap) {
-    if (now - entry.windowStart > RATE_LIMIT_WINDOW * 2) {
-      rateLimitMap.delete(ip);
-    }
+  for (const [key, entry] of rateLimitMap) {
+    if (now - entry.windowStart > RATE_LIMIT_WINDOW * 2) rateLimitMap.delete(key);
   }
 }, RATE_LIMIT_WINDOW * 5);
 
-/**
- * Truncate a string to a safe maximum length
- */
 function truncate(str, maxLen) {
   if (typeof str !== 'string') return '';
   return str.length > maxLen ? str.slice(0, maxLen) : str;
 }
 
-/**
- * Validate that options is a plain object with A/B/C/D string keys
- */
 function validateOptions(options) {
   if (!options || typeof options !== 'object' || Array.isArray(options)) return false;
-  const keys = ['A', 'B', 'C', 'D'];
-  return keys.every(k => typeof options[k] === 'string' && options[k].length > 0);
+  return ['A', 'B', 'C', 'D'].every(k => typeof options[k] === 'string' && options[k].length > 0);
 }
 
-/**
- * Verify Firebase ID token from Authorization header
- */
 async function verifyAuth(req) {
   const authHeader = req.headers.authorization;
   if (!authHeader?.startsWith('Bearer ')) return null;
-  try {
-    const token = authHeader.split('Bearer ')[1];
-    return await admin.auth().verifyIdToken(token);
-  } catch {
-    return null;
-  }
+  try { return await admin.auth().verifyIdToken(authHeader.split('Bearer ')[1]); }
+  catch { return null; }
 }
 
-// CORS origins — configurable via env, with sensible defaults
 const ALLOWED_ORIGINS = (process.env.ALLOWED_ORIGINS || 'https://amanrcy.vercel.app,http://localhost:3000')
-  .split(',')
-  .map(o => o.trim());
+  .split(',').map(o => o.trim());
+
+// Detect if question involves math/calculation
+function isMathQuestion(subject, topic, questionText) {
+  const lower = `${subject} ${topic} ${questionText}`.toLowerCase();
+  return /\b(math|arithmetic|algebra|geometry|trigonometry|mensuration|calculus|percentage|ratio|profit|loss|interest|speed|distance|time|probability|number system|average|simplif)/i.test(lower) ||
+    /\d+\s*[+\-*/÷×%^]\s*\d+/.test(lower);
+}
+
+function stripThinking(text) {
+  return text.replace(/<think>[\s\S]*?<\/think>/g, '').trim();
+}
+
+function postProcess(reply) {
+  let cleaned = stripThinking(reply);
+  cleaned = cleaned.replace(/\n{3,}/g, '\n\n').trim();
+  if (!cleaned || cleaned.length < 10) {
+    return "Could not generate explanation. Please try again.";
+  }
+  return cleaned;
+}
+
+async function callGroq(messages, models, groqApiKey) {
+  let lastError = null;
+  for (const model of models) {
+    try {
+      const body = {
+        model: model.id,
+        messages,
+        temperature: model.temperature ?? 0.2,
+        max_tokens: model.maxTokens ?? 600,
+        top_p: 1,
+      };
+      if (model.useThinking) {
+        body.chat_template_kwargs = { enable_thinking: true };
+      }
+
+      const response = await fetch('https://api.groq.com/openai/v1/chat/completions', {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${groqApiKey}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(body),
+      });
+
+      if (response.status === 429 || response.status === 503) {
+        lastError = new Error(`${model.id} unavailable`);
+        continue;
+      }
+      if (!response.ok) {
+        const errData = await response.json().catch(() => ({}));
+        lastError = new Error(errData.error?.message || `${model.id} failed`);
+        continue;
+      }
+
+      const data = await response.json();
+      const content = data.choices?.[0]?.message?.content;
+      if (!content) { lastError = new Error('Empty response'); continue; }
+      return postProcess(content);
+    } catch (err) { lastError = err; continue; }
+  }
+  throw lastError || new Error('All models failed');
+}
 
 export default async function handler(req, res) {
-  // CORS — restrict to known origins
   const origin = req.headers.origin || '';
   const allowedOrigin = ALLOWED_ORIGINS.includes(origin) ? origin : ALLOWED_ORIGINS[0];
   res.setHeader('Access-Control-Allow-Origin', allowedOrigin);
   res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
   res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
 
-  // Handle preflight
-  if (req.method === 'OPTIONS') {
-    return res.status(200).end();
+  if (req.method === 'OPTIONS') return res.status(200).end();
+  if (req.method !== 'POST') return res.status(405).json({ error: 'Method Not Allowed' });
+  if (parseInt(req.headers['content-length'] || '0', 10) > 10240) {
+    return res.status(413).json({ error: 'Payload Too Large' });
   }
 
-  // Only allow POST requests
-  if (req.method !== 'POST') {
-    return res.status(405).json({
-      error: 'Method Not Allowed',
-      message: 'Only POST requests are allowed'
-    });
-  }
-
-  // Reject oversized request bodies (10KB limit)
-  const contentLength = parseInt(req.headers['content-length'] || '0', 10);
-  if (contentLength > 10240) {
-    return res.status(413).json({
-      error: 'Payload Too Large',
-      message: 'Request body must be under 10KB'
-    });
-  }
-
-  // Authenticate — require a valid Firebase ID token
   const decodedToken = await verifyAuth(req);
-  if (!decodedToken) {
-    return res.status(401).json({
-      error: 'Unauthorized',
-      message: 'A valid Firebase authentication token is required.'
-    });
-  }
-
-  // Server-side rate limiting by authenticated UID (more reliable than IP)
-  const rateLimitKey = decodedToken.uid;
-  if (isRateLimited(rateLimitKey)) {
-    return res.status(429).json({
-      error: 'Rate Limit',
-      message: 'Too many requests. Please wait a moment before trying again.'
-    });
-  }
+  if (!decodedToken) return res.status(401).json({ error: 'Unauthorized' });
+  if (isRateLimited(decodedToken.uid)) return res.status(429).json({ error: 'Too many requests.' });
 
   try {
     const {
-      questionText,
-      options,
-      correctAnswer,
-      userAnswer,
-      subject,
-      topic
+      questionText, options, correctAnswer, userAnswer,
+      subject, topic, learningProfile,
     } = req.body || {};
 
-    // Validate required fields
     if (!questionText || !options || !correctAnswer || !userAnswer) {
-      return res.status(400).json({
-        error: 'Bad Request',
-        message: 'Missing required fields'
-      });
+      return res.status(400).json({ error: 'Missing required fields' });
     }
-
-    // Type and length validation
     if (typeof questionText !== 'string' || questionText.length > 2000) {
-      return res.status(400).json({
-        error: 'Bad Request',
-        message: 'questionText must be a string under 2000 characters'
-      });
+      return res.status(400).json({ error: 'questionText must be under 2000 characters' });
     }
-
     if (!validateOptions(options)) {
-      return res.status(400).json({
-        error: 'Bad Request',
-        message: 'options must be an object with non-empty A, B, C, D string values'
-      });
+      return res.status(400).json({ error: 'options must have non-empty A, B, C, D values' });
+    }
+    if (!['A','B','C','D'].includes(correctAnswer) || !['A','B','C','D'].includes(userAnswer)) {
+      return res.status(400).json({ error: 'Answers must be A, B, C, or D' });
     }
 
-    const validAnswers = ['A', 'B', 'C', 'D'];
-    if (!validAnswers.includes(correctAnswer) || !validAnswers.includes(userAnswer)) {
-      return res.status(400).json({
-        error: 'Bad Request',
-        message: 'correctAnswer and userAnswer must be one of A, B, C, D'
-      });
-    }
-
-    // Get Groq API key from environment
     const groqApiKey = process.env.GROQ_API_KEY;
-    if (!groqApiKey) {
-      return res.status(500).json({
-        error: 'Configuration Error',
-        message: 'AI service not configured. Please contact administrator.'
-      });
-    }
+    if (!groqApiKey) return res.status(500).json({ error: 'AI service not configured.' });
 
-    // Sanitize all text inputs — truncate to safe lengths
-    const safeQuestion = truncate(questionText, 2000);
-    const safeOptions = {
-      A: truncate(options.A, 500),
-      B: truncate(options.B, 500),
-      C: truncate(options.C, 500),
-      D: truncate(options.D, 500),
+    const safeQ = truncate(questionText, 2000);
+    const safeOpts = {
+      A: truncate(options.A, 500), B: truncate(options.B, 500),
+      C: truncate(options.C, 500), D: truncate(options.D, 500),
     };
     const safeSubject = truncate(subject || 'General', 100);
     const safeTopic = truncate(topic || 'General', 100);
+    const useMath = isMathQuestion(safeSubject, safeTopic, safeQ);
 
-    // Build the prompt
-    const prompt = `You are an expert tutor. Provide a SHORT explanation (3-4 sentences max).
+    // Build system prompt with few-shot example
+    let systemContent = `You are an expert exam tutor. Explain why the student's answer is wrong and why the correct answer is right.
 
-Question: ${safeQuestion}
+RULES:
+• Be factually accurate. Double-check every fact, date, formula.
+• Use **bold** for key terms. Use numbered steps for math.
+• Include a memory tip or mnemonic at the end.
+• Keep it under 150 words unless the topic needs more.`;
 
-Options:
-A) ${safeOptions.A}
-B) ${safeOptions.B}
-C) ${safeOptions.C}
-D) ${safeOptions.D}
+    if (useMath) {
+      systemContent += `
+• This is a MATH question. Show step-by-step solution. Verify your arithmetic.
+• After solving, do a quick sanity check on the answer.`;
+    }
 
-Student's Answer: ${userAnswer}
-Correct Answer: ${correctAnswer}
-
-Subject: ${safeSubject}
-Topic: ${safeTopic}
-
-Explain in 3-4 sentences ONLY:
-1. Why the correct answer (${correctAnswer}) is right
-2. Why ${userAnswer} is wrong
-3. One quick tip to remember
-
-Be concise and direct. No fluff.`;
-
-    // Call Groq API
-    const response = await fetch('https://api.groq.com/openai/v1/chat/completions', {
-      method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${groqApiKey}`,
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        model: 'llama-3.3-70b-versatile',
-        messages: [
-          {
-            role: 'system',
-            content: 'You are a concise tutor. Keep explanations under 100 words. Be direct and clear.'
-          },
-          {
-            role: 'user',
-            content: prompt
-          }
-        ],
-        temperature: 0.7,
-        max_tokens: 200,
-      }),
-    });
-
-    if (!response.ok) {
-      const errorData = await response.json().catch(() => ({}));
-      console.error('Groq API Error:', errorData);
-
-      if (response.status === 429) {
-        return res.status(429).json({
-          error: 'Rate Limit',
-          message: 'Too many AI requests. Please try again in a moment.'
-        });
+    // Adapt based on learning profile
+    try {
+      if (learningProfile) {
+        const lp = typeof learningProfile === 'string' ? JSON.parse(learningProfile) : learningProfile;
+        const isWeak = lp.weakTopics?.some(t => t.name?.toLowerCase() === safeTopic.toLowerCase());
+        if (isWeak) systemContent += '\nThis is a WEAK topic for the student. Use simple language, add an analogy and a mnemonic.';
+        if (lp.trend === 'declining') systemContent += '\nStudent is struggling. Be encouraging.';
       }
+    } catch { /* ignore */ }
 
-      return res.status(500).json({
-        error: 'AI Service Error',
-        message: 'Failed to generate explanation. Please try again.'
-      });
-    }
+    const userPrompt = `**Question:** ${safeQ}
 
-    const data = await response.json();
-    const explanation = data.choices?.[0]?.message?.content;
+**Options:**
+A) ${safeOpts.A}
+B) ${safeOpts.B}
+C) ${safeOpts.C}
+D) ${safeOpts.D}
 
-    if (!explanation) {
-      return res.status(500).json({
-        error: 'Invalid Response',
-        message: 'AI service returned an invalid response.'
-      });
-    }
+**Student chose:** ${userAnswer}) ${safeOpts[userAnswer]}
+**Correct answer:** ${correctAnswer}) ${safeOpts[correctAnswer]}
+**Subject:** ${safeSubject} | **Topic:** ${safeTopic}
+
+Explain:
+1. Why **${correctAnswer}** is correct
+2. Why **${userAnswer}** is wrong
+3. A memory tip to remember this`;
+
+    // Route to best model
+    const models = useMath
+      ? [
+          { id: 'qwen/qwen3-32b', maxTokens: 600, temperature: 0.15, useThinking: true },
+          { id: 'llama-3.3-70b-versatile', maxTokens: 600, temperature: 0.15 },
+          { id: 'llama-3.1-8b-instant', maxTokens: 600, temperature: 0.15 },
+        ]
+      : [
+          { id: 'llama-3.3-70b-versatile', maxTokens: 600, temperature: 0.2 },
+          { id: 'qwen/qwen3-32b', maxTokens: 600, temperature: 0.2 },
+          { id: 'llama-3.1-8b-instant', maxTokens: 600, temperature: 0.2 },
+        ];
+
+    const explanation = await callGroq(
+      [{ role: 'system', content: systemContent }, { role: 'user', content: userPrompt }],
+      models,
+      groqApiKey,
+    );
 
     return res.status(200).json({ explanation });
-
   } catch (error) {
-    console.error('Server Error:', error);
-    return res.status(500).json({
-      error: 'Internal Server Error',
-      message: 'An unexpected error occurred. Please try again.'
-    });
+    console.error('Explanation API Error:', error);
+    if (error.message?.includes('429') || error.message?.includes('unavailable')) {
+      return res.status(429).json({ error: 'AI service busy. Try again.' });
+    }
+    return res.status(500).json({ error: 'Failed to generate explanation. Try again.' });
   }
 }

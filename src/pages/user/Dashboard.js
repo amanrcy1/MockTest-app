@@ -1,8 +1,7 @@
-import { useEffect, useState, useCallback, useRef } from "react";
+import { useEffect, useState, useRef } from "react";
 import PropTypes from "prop-types";
 import { useAuth } from "../../context/AuthContext";
 import { useNavigate } from "react-router-dom";
-import toast, { messages } from "../../utils/toast";
 import { motion, AnimatePresence } from "framer-motion";
 import { collection, getDocs, query, where, doc, getDoc } from "firebase/firestore";
 import { startOfWeek, endOfWeek, getISOWeek, getISOWeekYear } from "date-fns";
@@ -191,7 +190,7 @@ QuickLinkItem.propTypes = {
 
 
 const Dashboard = () => {
-  const { userDetails, logout, currentUser } = useAuth();
+  const { userDetails, currentUser } = useAuth();
   const navigate = useNavigate();
   const [loading, setLoading] = useState(true);
   const [stats, setStats] = useState({
@@ -201,16 +200,6 @@ const Dashboard = () => {
   });
   const [activeSession, setActiveSession] = useState(null);
   const fetchingRef = useRef(false);
-
-  const handleLogout = useCallback(async () => {
-    const result = await logout();
-    if (result?.success) {
-      toast.success(messages.LOGOUT_SUCCESS);
-      navigate("/", { replace: true });
-    } else {
-      toast.error(result?.error || messages.LOGOUT_FAILED);
-    }
-  }, [logout, navigate]);
 
   useEffect(() => {
     const fetchStats = async () => {
@@ -377,10 +366,7 @@ const Dashboard = () => {
             <div className="flex items-center gap-3">
               <div className="relative">
                 <motion.div 
-                  className="w-11 h-11 rounded-full bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center text-white font-bold text-lg shadow-lg overflow-hidden cursor-pointer"
-                  whileHover={{ scale: 1.05 }}
-                  whileTap={{ scale: 0.95 }}
-                  onClick={() => navigate("/profile")}
+                  className="w-11 h-11 rounded-full bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center text-white font-bold text-lg shadow-lg overflow-hidden"
                 >
                   {userDetails?.photoURL ? (
                     <img src={userDetails.photoURL} alt="Profile" className="w-full h-full object-cover" />
@@ -605,29 +591,20 @@ const Dashboard = () => {
           </div>
         </motion.div>
 
-        {/* Admin & Logout for mobile */}
-        <div className="md:hidden flex gap-3">
-          {userDetails?.isAdmin && (
+        {/* Admin for mobile */}
+        {userDetails?.isAdmin && (
+          <div className="md:hidden">
             <motion.button
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               transition={{ delay: 0.7 }}
               onClick={() => navigate("/admin/dashboard")}
-              className="flex-1 py-3 text-purple-600 dark:text-purple-400 text-sm font-medium hover:bg-purple-50 dark:hover:bg-purple-900/20 rounded-xl transition-colors"
+              className="w-full py-3 text-purple-600 dark:text-purple-400 text-sm font-medium hover:bg-purple-50 dark:hover:bg-purple-900/20 rounded-xl transition-colors"
             >
               Admin Panel
             </motion.button>
-          )}
-          <motion.button
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            transition={{ delay: 0.7 }}
-            onClick={handleLogout}
-            className={`${userDetails?.isAdmin ? 'flex-1' : 'w-full'} py-3 text-red-600 dark:text-red-400 text-sm font-medium hover:bg-red-50 dark:hover:bg-red-900/20 rounded-xl transition-colors`}
-          >
-            Sign Out
-          </motion.button>
-        </div>
+          </div>
+        )}
       </main>
 
       {/* Bottom Navigation - Mobile Only */}

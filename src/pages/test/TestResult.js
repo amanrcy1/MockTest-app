@@ -89,6 +89,16 @@ const TestResult = () => {
 
     setLoadingAi((prev) => ({ ...prev, [index]: true }));
 
+    // Retrieve cached learning profile for adaptive explanations
+    let learningProfile = null;
+    try {
+      const cached = sessionStorage.getItem("ai_chat_stats");
+      if (cached) {
+        const parsed = JSON.parse(cached);
+        learningProfile = parsed?.data?.learningProfile || null;
+      }
+    } catch { /* ignore */ }
+
     try {
       const explanation = await generateExplanation({
         questionText: question.questionText,
@@ -98,6 +108,7 @@ const TestResult = () => {
         subject: question.subject,
         topic: question.topic,
         existingSolution: question.solution,
+        learningProfile,
       });
 
       setAiExplanations((prev) => ({ ...prev, [index]: explanation }));

@@ -23,9 +23,8 @@ if (missing.length > 0) {
   if (import.meta.env.PROD) {
     // In production, throw error to prevent app from running with missing config
     throw new Error(errorMsg);
-  } else {
+  } else if (import.meta.env.DEV) {
     // In development, only warn
-     
     console.warn(
       `[WARNING] ${errorMsg}\n` +
       'Create a .env file in your project root. See .env.example for reference.'

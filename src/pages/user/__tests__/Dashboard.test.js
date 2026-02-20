@@ -84,12 +84,9 @@ describe('Dashboard Page', () => {
     expect(screen.getByText('CDS')).toBeInTheDocument();
   });
 
-  it('should call logout', async () => {
-    mockLogout.mockResolvedValue({ success: true });
+  it('should not have logout button (moved to Profile page)', async () => {
     await renderAndWait();
-    const signOutBtn = screen.getByText('Sign Out');
-    fireEvent.click(signOutBtn);
-    await waitFor(() => expect(mockLogout).toHaveBeenCalled());
+    expect(screen.queryByText('Sign Out')).not.toBeInTheDocument();
   });
 
   it('should show admin panel for admins', async () => {

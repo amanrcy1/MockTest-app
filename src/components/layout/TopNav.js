@@ -1,7 +1,6 @@
-import { memo, useCallback } from "react";
+import { memo } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { useAuth } from "../../context/AuthContext";
-import { toast } from "react-toastify";
 import ThemeToggle from "../ui/ThemeToggle";
 
 const NAV_ITEMS = [
@@ -15,17 +14,7 @@ const NAV_ITEMS = [
 const TopNav = memo(() => {
   const navigate = useNavigate();
   const location = useLocation();
-  const { logout, userDetails } = useAuth();
-
-  const handleLogout = useCallback(async () => {
-    const result = await logout();
-    if (result?.success) {
-      toast.success("Logged out");
-      navigate("/", { replace: true });
-    } else {
-      toast.error(result?.error || "Failed to logout");
-    }
-  }, [logout, navigate]);
+  const { userDetails } = useAuth();
 
   return (
     <nav className="hidden md:block sticky top-0 z-40 backdrop-blur-xl bg-white/80 dark:bg-gray-900/80 border-b border-gray-200/50 dark:border-gray-700/50">
@@ -58,12 +47,6 @@ const TopNav = memo(() => {
                 Admin
               </button>
             )}
-            <button
-              onClick={handleLogout}
-              className="px-4 py-2 text-sm font-medium text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition-colors"
-            >
-              Logout
-            </button>
             <ThemeToggle />
           </div>
         </div>

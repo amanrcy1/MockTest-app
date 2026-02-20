@@ -98,7 +98,9 @@ const usePWAInstall = () => {
       }
       return false;
     } catch (error) {
-      console.error('Install prompt error:', error);
+      if (import.meta.env.DEV) {
+        console.error('Install prompt error:', error);
+      }
       return false;
     }
   }, [installPrompt]);

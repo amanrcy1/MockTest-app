@@ -712,6 +712,7 @@ const AiChatWidget = memo(({ context = {} }) => {
         const attempted = tests.length;
         const avgAccuracy = tests.reduce((s, t) => s + Number(t.accuracy || 0), 0) / attempted;
         const subjectMap = {};
+        const topicMap = {};
         for (const t of tests) {
           if (t.subjectWise) {
             for (const [subj, d] of Object.entries(t.subjectWise)) {
@@ -720,13 +721,57 @@ const AiChatWidget = memo(({ context = {} }) => {
               subjectMap[subj].total += d.total || 0;
             }
           }
+          if (t.topicWise) {
+            for (const [topic, d] of Object.entries(t.topicWise)) {
+              if (!topicMap[topic]) topicMap[topic] = { correct: 0, total: 0 };
+              topicMap[topic].correct += d.correct || 0;
+              topicMap[topic].total += d.total || 0;
+            }
+          }
         }
         const subjects = Object.entries(subjectMap).filter(([, d]) => d.total >= 3)
           .map(([name, d]) => ({ name, accuracy: d.total > 0 ? (d.correct / d.total) * 100 : 0 }))
           .sort((a, b) => a.accuracy - b.accuracy);
         const weakSubjects = subjects.filter((s) => s.accuracy < 50).slice(0, 3).map((s) => s.name);
         const strongSubjects = subjects.filter((s) => s.accuracy >= 70).slice(-3).map((s) => s.name);
-        const statsData = { attempted, avgAccuracy, weakSubjects, strongSubjects };
+
+        // ML-style learning profile
+        const recentTests = tests.slice(0, 5);
+        const olderTests = tests.slice(5, 15);
+        const recentAvg = recentTests.length > 0 ? recentTests.reduce((s, t) => s + Number(t.accuracy || 0), 0) / recentTests.length : 0;
+        const olderAvg = olderTests.length > 0 ? olderTests.reduce((s, t) => s + Number(t.accuracy || 0), 0) / olderTests.length : 0;
+        const trend = recentTests.length >= 2 && olderTests.length >= 2 ? recentAvg - olderAvg : 0;
+
+        // Topic-level weaknesses (more granular than subject)
+        const weakTopics = Object.entries(topicMap)
+          .filter(([, d]) => d.total >= 2 && (d.correct / d.total) < 0.5)
+          .sort((a, b) => (a[1].correct / a[1].total) - (b[1].correct / b[1].total))
+          .slice(0, 5)
+          .map(([name, d]) => ({ name, accuracy: Math.round((d.correct / d.total) * 100) }));
+
+        const strongTopics = Object.entries(topicMap)
+          .filter(([, d]) => d.total >= 2 && (d.correct / d.total) >= 0.75)
+          .sort((a, b) => (b[1].correct / b[1].total) - (a[1].correct / a[1].total))
+          .slice(0, 5)
+          .map(([name, d]) => ({ name, accuracy: Math.round((d.correct / d.total) * 100) }));
+
+        // Consistency score: std deviation of recent accuracies
+        const accuracies = recentTests.map((t) => Number(t.accuracy || 0));
+        const mean = accuracies.length > 0 ? accuracies.reduce((a, b) => a + b, 0) / accuracies.length : 0;
+        const variance = accuracies.length > 1 ? accuracies.reduce((s, v) => s + (v - mean) ** 2, 0) / accuracies.length : 0;
+        const consistency = Math.max(0, 100 - Math.sqrt(variance));
+
+        const learningProfile = {
+          trend: trend > 5 ? "improving" : trend < -5 ? "declining" : "stable",
+          trendDelta: Math.round(trend),
+          recentAccuracy: Math.round(recentAvg),
+          consistency: Math.round(consistency),
+          weakTopics,
+          strongTopics,
+          totalTests: attempted,
+        };
+
+        const statsData = { attempted, avgAccuracy, weakSubjects, strongSubjects, learningProfile };
         setUserStats(statsData);
         try { sessionStorage.setItem(STATS_CACHE_KEY, JSON.stringify({ data: statsData, ts: Date.now(), uid: currentUser.uid })); } catch { /* quota */ }
       } catch { setUserStats({ attempted: 0 }); }
@@ -741,6 +786,9 @@ const AiChatWidget = memo(({ context = {} }) => {
       if (userStats.weakSubjects?.length) parts.push(`Weak in: ${userStats.weakSubjects.join(", ")}`);
       if (userStats.strongSubjects?.length) parts.push(`Strong in: ${userStats.strongSubjects.join(", ")}`);
       ctx.performanceSummary = parts.join(". ");
+      if (userStats.learningProfile) {
+        ctx.learningProfile = JSON.stringify(userStats.learningProfile);
+      }
     }
     return ctx;
   }, [context, userDetails, userStats]);

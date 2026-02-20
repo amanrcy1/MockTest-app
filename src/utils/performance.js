@@ -139,8 +139,9 @@ export const monitorLongTasks = () => {
     const observer = new PerformanceObserver((list) => {
       for (const entry of list.getEntries()) {
         if (entry.duration > 50) {
-           
-          console.warn(`Long task detected: ${entry.duration.toFixed(2)}ms`);
+          if (import.meta.env.DEV) {
+            console.warn(`Long task detected: ${entry.duration.toFixed(2)}ms`);
+          }
           
           if (import.meta.env.PROD) {
             logEvent('long_task', {

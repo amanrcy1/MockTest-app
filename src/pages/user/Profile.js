@@ -39,7 +39,7 @@ const fadeUp = { hidden: { opacity: 0, y: 20 }, visible: { opacity: 1, y: 0, tra
 
 const Profile = () => {
   const navigate = useNavigate();
-  const { currentUser, userDetails, refreshUserDetails } = useAuth();
+  const { currentUser, userDetails, refreshUserDetails, logout } = useAuth();
   const fileInputRef = useRef(null);
   const [formData, setFormData] = useState({ name: "", targetExam: "CDS" });
   const [saving, setSaving] = useState(false);
@@ -109,6 +109,16 @@ const Profile = () => {
     } catch (err) { logger.error("Save error:", err); toast.error(messages.PROFILE_UPDATE_FAILED); }
     finally { setSaving(false); }
   };
+
+  const handleLogout = useCallback(async () => {
+    const result = await logout();
+    if (result?.success) {
+      toast.success(messages.LOGOUT_SUCCESS);
+      navigate("/", { replace: true });
+    } else {
+      toast.error(result?.error || messages.LOGOUT_FAILED);
+    }
+  }, [logout, navigate]);
 
   const initial = userDetails?.name?.charAt(0)?.toUpperCase() || "U";
   const memberSince = userDetails?.createdAt ? new Date(userDetails.createdAt).toLocaleDateString("en-IN", { month: "short", year: "numeric" }) : null;
@@ -332,6 +342,13 @@ const Profile = () => {
             <motion.button whileHover={{ scale: 1.01 }} whileTap={{ scale: 0.98 }} onClick={() => navigate("/dashboard")}
               className="w-full py-3.5 bg-white/60 dark:bg-gray-800/60 backdrop-blur-sm text-gray-600 dark:text-gray-300 rounded-2xl font-semibold hover:bg-white/80 dark:hover:bg-gray-700/60 transition-all border border-gray-200/50 dark:border-gray-700/40">
               Cancel
+            </motion.button>
+            <motion.button whileHover={{ scale: 1.01 }} whileTap={{ scale: 0.98 }} onClick={handleLogout}
+              className="w-full py-3.5 bg-red-50/60 dark:bg-red-900/20 backdrop-blur-sm text-red-600 dark:text-red-400 rounded-2xl font-semibold hover:bg-red-100/80 dark:hover:bg-red-900/30 transition-all border border-red-200/50 dark:border-red-700/40 flex items-center justify-center gap-2">
+              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
+              </svg>
+              Sign Out
             </motion.button>
           </motion.div>
 

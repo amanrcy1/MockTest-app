@@ -25,7 +25,7 @@ export const sendChatMessage = async (message, conversationHistory = [], context
 
   // Strip any fields from context that shouldn't be sent
   const safeContext = {};
-  const allowedKeys = ["userName", "examType", "currentQuestion", "performanceSummary", "currentPage"];
+  const allowedKeys = ["userName", "examType", "currentQuestion", "performanceSummary", "currentPage", "learningProfile"];
   for (const key of allowedKeys) {
     if (context[key] !== undefined && context[key] !== null) {
       safeContext[key] = typeof context[key] === "string" ? context[key].slice(0, 500) : context[key];
@@ -34,7 +34,7 @@ export const sendChatMessage = async (message, conversationHistory = [], context
 
   const apiUrl = import.meta.env.VITE_API_URL || "/api";
   const controller = new AbortController();
-  const timeoutId = setTimeout(() => controller.abort(), 25000); // 25s timeout
+  const timeoutId = setTimeout(() => controller.abort(), 35000); // 35s timeout for 70B model
 
   inflight = true;
 

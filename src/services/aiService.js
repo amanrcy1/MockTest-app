@@ -27,6 +27,7 @@ export const generateExplanation = async ({
   subject,
   topic,
   existingSolution,
+  learningProfile,
 }) => {
   // Rate limiting (client-side check)
   if (!aiRequestLimiter.canMakeRequest('ai-explanation')) {
@@ -47,7 +48,7 @@ export const generateExplanation = async ({
     
     // Add timeout to prevent hanging requests
     const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 30000); // 30 second timeout
+    const timeoutId = setTimeout(() => controller.abort(), 35000); // 35s timeout for 70B model
     
     // Get Firebase auth token for server-side verification
     const idToken = auth.currentUser ? await auth.currentUser.getIdToken() : null;
@@ -65,6 +66,7 @@ export const generateExplanation = async ({
         userAnswer,
         subject,
         topic,
+        learningProfile,
       }),
       signal: controller.signal,
     });
