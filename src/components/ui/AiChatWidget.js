@@ -69,7 +69,7 @@ const TypingIndicator = memo(() => (
       <AiIcon size={14} className="text-white" />
     </motion.div>
     <div className="bg-gray-100 dark:bg-gray-700/80 px-4 py-3 rounded-2xl rounded-tl-md shadow-sm">
-      <div className="flex gap-1.5 items-center h-4">
+      <div className="flex gap-1.5 items-center h-5">
         {[0, 150, 300].map((d) => (
           <motion.span
             key={d}
@@ -389,7 +389,7 @@ const ChatMessage = memo(({ msg, index, onEdit, loading, listening, toggleListen
                   className="md:hidden mt-1 mr-1 bg-white dark:bg-gray-800 rounded-xl shadow-lg border border-gray-200 dark:border-gray-700 overflow-hidden z-20"
                   onClick={(e) => e.stopPropagation()}
                 >
-                  <button onClick={handleCopy} className="flex items-center gap-2.5 w-full px-3.5 py-2.5 text-sm text-gray-700 dark:text-gray-200 active:bg-gray-100 dark:active:bg-gray-700 transition-colors">
+                  <button onClick={handleCopy} className="flex items-center gap-2.5 w-full px-3.5 py-2.5 text-sm text-gray-700 dark:text-gray-200 active:bg-gray-100 dark:active:bg-gray-700 transition-colors leading-none">
                     {copied
                       ? <svg className="w-4 h-4 text-green-500 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" /></svg>
                       : <svg className="w-4 h-4 text-gray-400 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" /></svg>
@@ -452,11 +452,11 @@ const ChatMessage = memo(({ msg, index, onEdit, loading, listening, toggleListen
             </Suspense>
           )}
         </motion.div>
-        <div className="flex items-center gap-1 px-1 mt-0.5">
-          {msg.timestamp && <span className="text-[10px] text-gray-400 dark:text-gray-600 select-none">{formatTime(msg.timestamp)}</span>}
-          {msg.elapsed && !speaking && <span className="text-[10px] text-gray-400 dark:text-gray-500 select-none">· {msg.elapsed}s</span>}
-          {speaking && <span className="text-[10px] text-violet-500 dark:text-violet-400 select-none font-medium">{Math.floor(speakElapsed / 60)}:{String(speakElapsed % 60).padStart(2, "0")}</span>}
-          <span className="mr-auto" />
+        <div className="flex items-center gap-1 px-1 mt-0.5 min-h-[24px]">
+          {msg.timestamp && <span className="text-[10px] text-gray-400 dark:text-gray-600 select-none leading-none">{formatTime(msg.timestamp)}</span>}
+          {msg.elapsed && !speaking && <span className="text-[10px] text-gray-400 dark:text-gray-500 select-none leading-none">· {msg.elapsed}s</span>}
+          {speaking && <span className="text-[10px] text-violet-500 dark:text-violet-400 select-none font-medium leading-none">{Math.floor(speakElapsed / 60)}:{String(speakElapsed % 60).padStart(2, "0")}</span>}
+          <span className="flex-1" />
           <button
             onClick={handleCopy}
             className="p-1 text-gray-400 hover:text-blue-500 dark:hover:text-blue-400 rounded-md hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
@@ -1207,7 +1207,7 @@ const AiChatWidget = memo(({ context = {} }) => {
                 {keyboardVisible ? (
                   <div className="flex items-center gap-1.5">
                     <h3 className="text-xs font-semibold text-white leading-none">Mockzam AI</h3>
-                    <span className="w-1.5 h-1.5 bg-green-400 rounded-full flex-shrink-0" />
+                    <span className="w-1.5 h-1.5 bg-green-400 rounded-full flex-shrink-0 mt-px" />
                   </div>
                 ) : (
                   <div>
@@ -1329,7 +1329,7 @@ const AiChatWidget = memo(({ context = {} }) => {
                       initial={{ opacity: 0, scale: 0.8 }}
                       animate={{ opacity: 1, scale: 1 }}
                       transition={{ delay: 0.4, type: "spring" }}
-                      className="mt-2 inline-flex items-center gap-1 text-[11px] font-medium text-violet-600 dark:text-violet-400 bg-violet-50 dark:bg-violet-900/20 px-2.5 py-1 rounded-full shadow-sm"
+                      className="mt-2 inline-flex items-center gap-1.5 text-[11px] font-medium text-violet-600 dark:text-violet-400 bg-violet-50 dark:bg-violet-900/20 px-2.5 py-1 rounded-full shadow-sm"
                     >
                       <svg className="w-3 h-3 text-violet-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" /></svg>
                       {enrichedContext.examType}
@@ -1347,7 +1347,7 @@ const AiChatWidget = memo(({ context = {} }) => {
                         whileHover={{ scale: 1.04, rotateY: 5, y: -2, boxShadow: "0 8px 20px -4px rgba(139, 92, 246, 0.2)" }}
                         whileTap={{ scale: 0.96 }}
                         onClick={() => { setInput(s.text); setTimeout(() => inputRef.current?.focus(), 50); }}
-                        className="flex items-center gap-2 text-left text-xs px-3 py-2.5 bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 rounded-xl border border-gray-200 dark:border-gray-700 shadow-sm"
+                        className="flex items-center gap-2 text-left text-xs px-3 py-2.5 bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 rounded-xl border border-gray-200 dark:border-gray-700 shadow-sm leading-snug"
                         style={{ transformStyle: "preserve-3d" }}
                       >
                         <span className="flex-shrink-0" style={{ transform: "translateZ(6px)" }}>{s.icon}</span>
@@ -1406,10 +1406,10 @@ const AiChatWidget = memo(({ context = {} }) => {
                   >
                     <button
                       onClick={() => setError(null)}
-                      className="text-xs text-red-600 dark:text-red-400 bg-red-50 dark:bg-red-900/20 px-3 py-2 rounded-xl border border-red-200 dark:border-red-800/50 hover:bg-red-100 dark:hover:bg-red-900/30 transition-colors"
+                      className="text-xs text-red-600 dark:text-red-400 bg-red-50 dark:bg-red-900/20 px-3 py-2 rounded-xl border border-red-200 dark:border-red-800/50 hover:bg-red-100 dark:hover:bg-red-900/30 transition-colors inline-flex items-center gap-1.5"
                     >
-                      <svg className="w-3.5 h-3.5 inline mr-1 -mt-0.5 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" /></svg>
-                      {error} — Tap to dismiss
+                      <svg className="w-3.5 h-3.5 flex-shrink-0 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" /></svg>
+                      <span>{error} — Tap to dismiss</span>
                     </button>
                   </motion.div>
                 )}
@@ -1440,7 +1440,7 @@ const AiChatWidget = memo(({ context = {} }) => {
                   {hasStt && (
                     <button
                       onClick={() => toggleListening(setInput, () => input)}
-                      className={`absolute right-2 bottom-2 p-1 rounded-md transition-all ${listening ? "text-red-500 animate-pulse" : "text-gray-400 hover:text-violet-500 dark:hover:text-violet-400 active:text-violet-500"}`}
+                      className={`absolute right-2 top-1/2 -translate-y-1/2 p-1 rounded-md transition-all ${listening ? "text-red-500 animate-pulse" : "text-gray-400 hover:text-violet-500 dark:hover:text-violet-400 active:text-violet-500"}`}
                       aria-label={listening ? "Stop recording" : "Voice input"}
                       title={listening ? "Tap to stop" : "Voice input"}
                       type="button"
@@ -1454,7 +1454,7 @@ const AiChatWidget = memo(({ context = {} }) => {
                   whileTap={{ scale: 0.88, rotateZ: 15 }}
                   onClick={handleSend}
                   disabled={!input.trim() || loading}
-                  className={`flex items-center justify-center bg-gradient-to-r from-violet-600 to-blue-600 text-white disabled:opacity-30 disabled:cursor-not-allowed shadow-lg shadow-blue-500/25 transition-all duration-300 ${keyboardVisible ? "p-2 rounded-lg" : "p-2.5 rounded-xl"}`}
+                  className={`flex-shrink-0 flex items-center justify-center bg-gradient-to-r from-violet-600 to-blue-600 text-white disabled:opacity-30 disabled:cursor-not-allowed shadow-lg shadow-blue-500/25 transition-all duration-300 ${keyboardVisible ? "p-2 rounded-lg" : "p-2.5 rounded-xl"}`}
                   style={{ transformStyle: "preserve-3d" }}
                   aria-label="Send message"
                 >
@@ -1474,7 +1474,7 @@ const AiChatWidget = memo(({ context = {} }) => {
                     animate={{ opacity: 1, height: "auto" }}
                     exit={{ opacity: 0, height: 0 }}
                     transition={{ duration: 0.2 }}
-                    className="flex items-center justify-between mt-1.5 px-0.5 overflow-hidden"
+                    className="flex items-center justify-between mt-1.5 px-0.5 overflow-hidden min-h-[16px]"
                   >
                     <span className="text-[10px] text-gray-400 dark:text-gray-600 select-none">
                       {input.length > 0 && <span className={input.length > 900 ? "text-orange-400" : ""}>{input.length}/1000</span>}
