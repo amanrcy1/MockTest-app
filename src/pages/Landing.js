@@ -395,7 +395,7 @@ const DemoQuiz = () => {
                 <motion.button
                   whileHover={{ scale: 1.05 }}
                   whileTap={{ scale: 0.95 }}
-                  onClick={() => navigate("/register")}
+                  onClick={() => navigate("/login")}
                   className="px-4 py-2.5 bg-gradient-to-r from-blue-500 to-indigo-600 text-white text-sm font-semibold rounded-xl shadow-lg shadow-blue-500/25"
                 >
                   Sign Up for Full Access
@@ -731,7 +731,7 @@ const Landing = () => {
             <motion.button
               whileHover={{ scale: 1.05 }}
               whileTap={{ scale: 0.95 }}
-              onClick={() => navigate("/register")}
+              onClick={() => navigate("/login")}
               className="px-5 py-2.5 text-sm font-semibold text-white bg-gradient-to-r from-blue-500 to-indigo-600 rounded-xl shadow-lg shadow-blue-500/25 hover:shadow-blue-500/40 transition-all"
             >
               Get Started
@@ -803,7 +803,7 @@ const Landing = () => {
                   <motion.button
                     whileHover={{ scale: 1.05, boxShadow: "0 20px 40px rgba(59,130,246,0.4)" }}
                     whileTap={{ scale: 0.95 }}
-                    onClick={() => navigate("/register")}
+                    onClick={() => navigate("/login")}
                     className="w-full sm:w-auto px-8 py-4 bg-gradient-to-r from-blue-500 via-blue-600 to-indigo-600 text-white font-bold text-lg rounded-2xl shadow-xl shadow-blue-500/30 transition-all relative overflow-hidden group"
                   >
                     <span className="relative z-10">Start Practicing — It&apos;s Free</span>
@@ -1021,7 +1021,7 @@ const Landing = () => {
                   <motion.button
                     whileHover={{ scale: 1.05, boxShadow: "0 25px 50px rgba(0,0,0,0.3)" }}
                     whileTap={{ scale: 0.95 }}
-                    onClick={() => navigate("/register")}
+                    onClick={() => navigate("/login")}
                     className="px-10 py-4 bg-white text-indigo-600 font-bold text-lg rounded-2xl shadow-2xl hover:shadow-3xl transition-all relative overflow-hidden group"
                   >
                     <span className="relative z-10">Create Free Account</span>

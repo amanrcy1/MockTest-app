@@ -39,6 +39,8 @@ const Profile = lazy(() => import("./pages/user/Profile"));
 const Onboarding = lazy(() => import("./pages/Onboarding"));
 const NotFound = lazy(() => import("./pages/NotFound"));
 const Landing = lazy(() => import("./pages/Landing"));
+const TermsOfService = lazy(() => import("./pages/legal/TermsOfService"));
+const PrivacyPolicy = lazy(() => import("./pages/legal/PrivacyPolicy"));
 
 // Chat widget — hidden during active tests and on public/admin pages
 const ChatWrapper = () => {
@@ -162,6 +164,10 @@ function App() {
             <main id="main-content">
               <Suspense fallback={<PageLoader />}>
                 <Routes>
+                  {/* Legal Routes (accessible to everyone) */}
+                  <Route path="/terms" element={<TermsOfService />} />
+                  <Route path="/privacy" element={<PrivacyPolicy />} />
+
                   {/* Public Routes */}
                   <Route
                     path="/login"

@@ -1,5 +1,5 @@
 import { memo } from "react";
-import { useNavigate, useLocation } from "react-router-dom";
+import { NavLink, useNavigate } from "react-router-dom";
 import { useAuth } from "../../context/AuthContext";
 import ThemeToggle from "../ui/ThemeToggle";
 
@@ -13,7 +13,6 @@ const NAV_ITEMS = [
 
 const TopNav = memo(() => {
   const navigate = useNavigate();
-  const location = useLocation();
   const { userDetails } = useAuth();
 
   return (
@@ -21,22 +20,21 @@ const TopNav = memo(() => {
       <div className="max-w-7xl mx-auto px-4">
         <div className="flex items-center justify-between h-14">
           <div className="flex items-center gap-1">
-            {NAV_ITEMS.map((item) => {
-              const active = location.pathname === item.path;
-              return (
-                <button
-                  key={item.path}
-                  onClick={() => navigate(item.path)}
-                  className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
-                    active
+            {NAV_ITEMS.map((item) => (
+              <NavLink
+                key={item.path}
+                to={item.path}
+                className={({ isActive }) =>
+                  `px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
+                    isActive
                       ? "bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400"
                       : "text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800 hover:text-gray-900 dark:hover:text-white"
-                  }`}
-                >
-                  {item.label}
-                </button>
-              );
-            })}
+                  }`
+                }
+              >
+                {item.label}
+              </NavLink>
+            ))}
           </div>
           <div className="flex items-center gap-2">
             {userDetails?.isAdmin && (

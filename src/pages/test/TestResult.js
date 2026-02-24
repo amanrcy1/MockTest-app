@@ -144,7 +144,7 @@ const TestResult = () => {
 
   const topicPerformance = {};
   questions.forEach((question, index) => {
-    const topic = question.topic;
+    const topic = question.topic || "General";
     if (!topicPerformance[topic]) {
       topicPerformance[topic] = { correct: 0, total: 0 };
     }

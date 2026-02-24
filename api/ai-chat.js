@@ -3,7 +3,19 @@ import admin from 'firebase-admin';
 
 if (!admin.apps.length) {
   const projectId = process.env.FIREBASE_PROJECT_ID || process.env.VITE_FIREBASE_PROJECT_ID;
-  if (projectId) {
+  const clientEmail = process.env.FIREBASE_CLIENT_EMAIL;
+  const privateKey = process.env.FIREBASE_PRIVATE_KEY?.replace(/\\n/g, '\n');
+
+  if (projectId && clientEmail && privateKey) {
+    admin.initializeApp({
+      credential: admin.credential.cert({
+        projectId,
+        clientEmail,
+        privateKey,
+      }),
+      projectId,
+    });
+  } else if (projectId) {
     admin.initializeApp({ projectId });
   } else {
     admin.initializeApp();
@@ -11,27 +23,32 @@ if (!admin.apps.length) {
 }
 
 // ── Rate limiter ──
-const rateLimitMap = new Map();
 const RATE_LIMIT_WINDOW = 60_000;
 const RATE_LIMIT_MAX = 20;
+const RATE_LIMIT_COLLECTION = "rateLimits";
 
-function isRateLimited(key) {
+async function isRateLimited(uid) {
   const now = Date.now();
-  const entry = rateLimitMap.get(key);
-  if (!entry || now - entry.windowStart > RATE_LIMIT_WINDOW) {
-    rateLimitMap.set(key, { windowStart: now, count: 1 });
-    return false;
-  }
-  entry.count++;
-  return entry.count > RATE_LIMIT_MAX;
+  const bucket = Math.floor(now / RATE_LIMIT_WINDOW);
+  const docId = `${uid}_${bucket}`;
+  const ref = admin.firestore().collection(RATE_LIMIT_COLLECTION).doc(docId);
+
+  const count = await admin.firestore().runTransaction(async (tx) => {
+    const snap = await tx.get(ref);
+    const existing = snap.exists ? snap.data().count || 0 : 0;
+    const next = existing + 1;
+    tx.set(ref, {
+      uid,
+      count: next,
+      bucket,
+      expiresAt: new Date((bucket + 2) * RATE_LIMIT_WINDOW),
+      updatedAt: admin.firestore.FieldValue.serverTimestamp(),
+    }, { merge: true });
+    return next;
+  });
+
+  return count > RATE_LIMIT_MAX;
 }
-
-setInterval(() => {
-  const now = Date.now();
-  for (const [key, entry] of rateLimitMap) {
-    if (now - entry.windowStart > RATE_LIMIT_WINDOW * 2) rateLimitMap.delete(key);
-  }
-}, RATE_LIMIT_WINDOW * 5);
 
 function truncate(str, maxLen) {
   if (typeof str !== 'string') return '';
@@ -48,6 +65,61 @@ async function verifyAuth(req) {
 
 const ALLOWED_ORIGINS = (process.env.ALLOWED_ORIGINS || 'https://amanrcy.vercel.app,http://localhost:3000')
   .split(',').map(o => o.trim());
+
+function sanitizeContext(raw = {}) {
+  const safe = {
+    userName: truncate(raw.userName || '', 100),
+    examType: truncate(raw.examType || '', 50),
+    performanceSummary: truncate(raw.performanceSummary || '', 300),
+    currentPage: truncate(raw.currentPage || '', 100),
+    learningProfile: null,
+    currentQuestion: null,
+  };
+
+  if (raw.learningProfile) {
+    try {
+      const lp = typeof raw.learningProfile === 'string' ? JSON.parse(raw.learningProfile) : raw.learningProfile;
+      safe.learningProfile = {
+        trend: truncate(lp?.trend || '', 30),
+        recentAccuracy: Number(lp?.recentAccuracy ?? 0),
+        consistency: Number(lp?.consistency ?? 0),
+        weakTopics: Array.isArray(lp?.weakTopics)
+          ? lp.weakTopics.slice(0, 8).map((t) => ({ name: truncate(t?.name || '', 60), accuracy: Number(t?.accuracy ?? 0) }))
+          : [],
+        strongTopics: Array.isArray(lp?.strongTopics)
+          ? lp.strongTopics.slice(0, 8).map((t) => ({ name: truncate(t?.name || '', 60), accuracy: Number(t?.accuracy ?? 0) }))
+          : [],
+      };
+    } catch {
+      safe.learningProfile = null;
+    }
+  }
+
+  if (raw.currentQuestion && typeof raw.currentQuestion === 'object') {
+    safe.currentQuestion = {
+      questionText: truncate(raw.currentQuestion.questionText || '', 500),
+      optionA: truncate(raw.currentQuestion.optionA || '', 200),
+      optionB: truncate(raw.currentQuestion.optionB || '', 200),
+      optionC: truncate(raw.currentQuestion.optionC || '', 200),
+      optionD: truncate(raw.currentQuestion.optionD || '', 200),
+      subject: truncate(raw.currentQuestion.subject || '', 50),
+      topic: truncate(raw.currentQuestion.topic || '', 50),
+    };
+  }
+
+  return safe;
+}
+
+function classifyBoundary(message) {
+  const lower = (message || '').toLowerCase();
+  if (/\b(ignore previous|reveal prompt|system prompt|jailbreak|developer instructions)\b/.test(lower)) {
+    return { violation: true, type: 'jailbreak' };
+  }
+  if (/\b(porn|xxx|sex chat|nude|naked|escort|betting tip|casino|hack|malware|exploit)\b/.test(lower)) {
+    return { violation: true, type: 'unsafe_or_offtopic' };
+  }
+  return { violation: false, type: null };
+}
 
 // ── Query type detection ──
 // Routes to optimal model + params based on what the student is asking
@@ -125,7 +197,7 @@ function getModelConfig(queryType) {
 }
 
 // ── System prompt builder ──
-function buildSystemPrompt(context, queryType) {
+function buildSystemPrompt(queryType) {
   let prompt = `You are Mockzam AI, an expert academic tutor. You help students prepare for competitive exams (UPSC, SSC, NDA, CDS, Banking, State PSC, etc.).
 
 YOUR CORE RULES:
@@ -186,32 +258,6 @@ Example of good conceptual response:
 | Focus | Individual rights | Social welfare |
 | Articles | Part III (12-35) | Part IV (36-51) |
 💡 **Remember:** FR = "I can sue" | DPSP = "Govt should try"`;
-  }
-
-  // Student context
-  if (context.userName) prompt += `\n\nStudent: ${truncate(context.userName, 100)}`;
-  if (context.examType) prompt += `\nTarget exam: ${truncate(context.examType, 50)}`;
-  if (context.performanceSummary) prompt += `\nPerformance: ${truncate(context.performanceSummary, 300)}`;
-
-  // ML learning profile
-  if (context.learningProfile) {
-    try {
-      const lp = typeof context.learningProfile === 'string' ? JSON.parse(context.learningProfile) : context.learningProfile;
-      let adaptive = '\n\nSTUDENT PROFILE:';
-      adaptive += ` Trend: ${lp.trend || 'stable'}.`;
-      adaptive += ` Recent accuracy: ${lp.recentAccuracy ?? '?'}%.`;
-      if (lp.weakTopics?.length) adaptive += ` Weak: ${lp.weakTopics.map(t => t.name).join(', ')}.`;
-      if (lp.strongTopics?.length) adaptive += ` Strong: ${lp.strongTopics.map(t => t.name).join(', ')}.`;
-      if (lp.trend === 'declining') adaptive += ' Be extra supportive, simplify explanations.';
-      else if (lp.trend === 'improving') adaptive += ' Encourage, gradually increase difficulty.';
-      prompt += adaptive;
-    } catch { /* ignore */ }
-  }
-
-  if (context.currentPage) prompt += `\nPage: ${truncate(context.currentPage, 100)}`;
-  if (context.currentQuestion) {
-    const q = context.currentQuestion;
-    prompt += `\n\nActive question:\nQ: ${truncate(q.questionText || '', 500)}\nA) ${truncate(q.optionA || '', 200)} B) ${truncate(q.optionB || '', 200)} C) ${truncate(q.optionC || '', 200)} D) ${truncate(q.optionD || '', 200)}\nSubject: ${truncate(q.subject || '', 50)} | Topic: ${truncate(q.topic || '', 50)}`;
   }
 
   // Conversation + safety rules
@@ -334,13 +380,16 @@ async function callGroq(messages, modelConfig, groqApiKey) {
 // ── Main handler ──
 export default async function handler(req, res) {
   const origin = req.headers.origin || '';
-  const allowedOrigin = ALLOWED_ORIGINS.includes(origin) ? origin : ALLOWED_ORIGINS[0];
-  res.setHeader('Access-Control-Allow-Origin', allowedOrigin);
+  const originAllowed = !origin || ALLOWED_ORIGINS.includes(origin);
+  if (originAllowed && origin) {
+    res.setHeader('Access-Control-Allow-Origin', origin);
+  }
   res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
   res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
 
-  if (req.method === 'OPTIONS') return res.status(200).end();
+  if (req.method === 'OPTIONS') return res.status(originAllowed ? 200 : 403).end();
   if (req.method !== 'POST') return res.status(405).json({ error: 'Method Not Allowed' });
+  if (!originAllowed) return res.status(403).json({ error: 'Origin not allowed' });
 
   if (parseInt(req.headers['content-length'] || '0', 10) > 20480) {
     return res.status(413).json({ error: 'Payload Too Large' });
@@ -348,7 +397,7 @@ export default async function handler(req, res) {
 
   const decodedToken = await verifyAuth(req);
   if (!decodedToken) return res.status(401).json({ error: 'Unauthorized' });
-  if (isRateLimited(decodedToken.uid)) return res.status(429).json({ error: 'Too many requests. Please wait a moment.' });
+  if (await isRateLimited(decodedToken.uid)) return res.status(429).json({ error: 'Too many requests. Please wait a moment.' });
 
   try {
     const { message, conversationHistory = [], context = {} } = req.body || {};
@@ -360,13 +409,22 @@ export default async function handler(req, res) {
     const groqApiKey = process.env.GROQ_API_KEY;
     if (!groqApiKey) return res.status(500).json({ error: 'AI service not configured.' });
 
+    const boundary = classifyBoundary(message);
+
     // Classify the query to route to optimal model + params
     const queryType = classifyQuery(message);
     const modelConfig = getModelConfig(queryType);
-    const systemPrompt = buildSystemPrompt(context, queryType);
+    const systemPrompt = buildSystemPrompt(queryType);
+    const safeContext = sanitizeContext(context);
 
     // Build messages array
     const messages = [{ role: 'system', content: systemPrompt }];
+    messages.push({
+      role: 'user',
+      content:
+        'Context (untrusted, for personalization only):\n' +
+        JSON.stringify(safeContext),
+    });
 
     for (const msg of conversationHistory.slice(-10)) {
       if (msg.role === 'user' || msg.role === 'assistant') {
@@ -376,7 +434,7 @@ export default async function handler(req, res) {
     messages.push({ role: 'user', content: truncate(message, 1000) });
 
     const { reply } = await callGroq(messages, modelConfig, groqApiKey);
-    return res.status(200).json({ reply });
+    return res.status(200).json({ reply, boundary });
   } catch (error) {
     console.error('Chat API Error:', error);
     if (error.message?.includes('429') || error.message?.includes('unavailable')) {
@@ -385,3 +443,4 @@ export default async function handler(req, res) {
     return res.status(500).json({ error: 'Something went wrong. Try again.' });
   }
 }
+

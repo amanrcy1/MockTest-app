@@ -1,5 +1,5 @@
-import { memo, useCallback } from "react";
-import { useNavigate, useLocation } from "react-router-dom";
+import { memo } from "react";
+import { NavLink } from "react-router-dom";
 import PropTypes from "prop-types";
 
 // Static nav items - defined outside component to prevent recreation
@@ -55,30 +55,39 @@ const ProfileIcon = memo(function ProfileIcon() {
 const ICONS = { "/dashboard": HomeIcon, "/test-selection": TestsIcon, "/leaderboard": RankIcon, "/bookmarks": SavedIcon, "/profile": ProfileIcon };
 
 // Individual nav item - memoized
-const NavItem = memo(({ item, active, onClick }) => {
+const NavItem = memo(({ item }) => {
   const Icon = ICONS[item.path];
   
   return (
-    <button
-      onClick={onClick}
-      className="relative flex flex-col items-center justify-center flex-1 h-full py-1 active:scale-90 transition-transform"
+    <NavLink
+      to={item.path}
+      className={({ isActive }) =>
+        `relative flex flex-col items-center justify-center flex-1 h-full py-1 active:scale-90 transition-transform ${
+          isActive ? "text-gray-900 dark:text-white" : "text-gray-500 dark:text-gray-400"
+        }`
+      }
+      aria-label={item.label}
     >
-      {active && (
-        <div className={`absolute -top-1 w-10 h-1 rounded-full bg-gradient-to-r ${item.gradient}`} />
+      {({ isActive }) => (
+        <>
+          {isActive && (
+            <div className={`absolute -top-1 w-10 h-1 rounded-full bg-gradient-to-r ${item.gradient}`} />
+          )}
+          <div className={`relative p-2 rounded-xl transition-all duration-200 ${
+            isActive 
+              ? `bg-gradient-to-br ${item.gradient} text-white shadow-lg -translate-y-1` 
+              : "text-gray-500 dark:text-gray-400"
+          }`}>
+            <Icon />
+          </div>
+          <span className={`text-[10px] mt-1 font-medium ${
+            isActive ? "text-gray-900 dark:text-white" : "text-gray-500 dark:text-gray-400"
+          }`}>
+            {item.label}
+          </span>
+        </>
       )}
-      <div className={`relative p-2 rounded-xl transition-all duration-200 ${
-        active 
-          ? `bg-gradient-to-br ${item.gradient} text-white shadow-lg -translate-y-1` 
-          : "text-gray-500 dark:text-gray-400"
-      }`}>
-        <Icon />
-      </div>
-      <span className={`text-[10px] mt-1 font-medium ${
-        active ? "text-gray-900 dark:text-white" : "text-gray-500 dark:text-gray-400"
-      }`}>
-        {item.label}
-      </span>
-    </button>
+    </NavLink>
   );
 });
 
@@ -89,34 +98,18 @@ NavItem.propTypes = {
     label: PropTypes.string.isRequired,
     gradient: PropTypes.string.isRequired,
   }).isRequired,
-  active: PropTypes.bool.isRequired,
-  onClick: PropTypes.func.isRequired,
 };
 
 /**
  * Optimized Mobile Bottom Navigation
  */
 const BottomNav = memo(() => {
-  const navigate = useNavigate();
-  const location = useLocation();
-  
-  const currentPath = location.pathname;
-  
-  const handleNavClick = useCallback((path) => {
-    navigate(path);
-  }, [navigate]);
-
   return (
     <nav className="md:hidden fixed bottom-0 left-0 right-0 z-50 safe-area-bottom">
       <div className="absolute inset-0 bg-white/80 dark:bg-gray-900/80 backdrop-blur-xl border-t border-gray-200/50 dark:border-gray-700/50" />
       <div className="relative flex justify-around items-center h-16 px-2">
         {NAV_ITEMS.map((item) => (
-          <NavItem
-            key={item.path}
-            item={item}
-            active={currentPath === item.path}
-            onClick={() => handleNavClick(item.path)}
-          />
+          <NavItem key={item.path} item={item} />
         ))}
       </div>
     </nav>

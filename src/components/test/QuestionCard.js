@@ -1,4 +1,4 @@
-import { memo } from "react";
+import { memo, useCallback, useMemo, useRef } from "react";
 import PropTypes from "prop-types";
 
 /**
@@ -19,7 +19,47 @@ const QuestionCard = memo(({
   onReport,
   disabled = false,
 }) => {
-  const options = ["A", "B", "C", "D"];
+  const options = useMemo(() => ["A", "B", "C", "D"], []);
+  const optionRefs = useRef({});
+
+  const moveSelection = useCallback((offset) => {
+    if (disabled) return;
+    const currentIndex = Math.max(options.indexOf(selectedAnswer), 0);
+    const nextIndex = (currentIndex + offset + options.length) % options.length;
+    const nextOption = options[nextIndex];
+    onAnswerSelect(nextOption);
+    optionRefs.current[nextOption]?.focus();
+  }, [disabled, onAnswerSelect, options, selectedAnswer]);
+
+  const handleOptionKeyDown = useCallback((event, option) => {
+    if (disabled) return;
+    if (event.key === "ArrowDown" || event.key === "ArrowRight") {
+      event.preventDefault();
+      moveSelection(1);
+      return;
+    }
+    if (event.key === "ArrowUp" || event.key === "ArrowLeft") {
+      event.preventDefault();
+      moveSelection(-1);
+      return;
+    }
+    if (event.key === "Home") {
+      event.preventDefault();
+      onAnswerSelect(options[0]);
+      optionRefs.current[options[0]]?.focus();
+      return;
+    }
+    if (event.key === "End") {
+      event.preventDefault();
+      onAnswerSelect(options[options.length - 1]);
+      optionRefs.current[options[options.length - 1]]?.focus();
+      return;
+    }
+    if ((event.key === " " || event.key === "Enter") && option !== selectedAnswer) {
+      event.preventDefault();
+      onAnswerSelect(option);
+    }
+  }, [disabled, moveSelection, onAnswerSelect, options, selectedAnswer]);
 
   return (
     <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-6">
@@ -96,8 +136,17 @@ const QuestionCard = memo(({
           return (
             <button
               key={option}
+              ref={(node) => {
+                optionRefs.current[option] = node;
+              }}
               onClick={() => !disabled && onAnswerSelect(option)}
+              onKeyDown={(event) => handleOptionKeyDown(event, option)}
               disabled={disabled}
+              tabIndex={
+                selectedAnswer
+                  ? isSelected ? 0 : -1
+                  : option === options[0] ? 0 : -1
+              }
               className={`w-full p-4 rounded-lg border-2 text-left transition-all ${
                 showCorrect
                   ? "border-green-500 bg-green-50 dark:bg-green-900/30"

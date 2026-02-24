@@ -131,7 +131,14 @@ const Auth = () => {
 
           {/* Info text */}
           <p className="mt-6 text-center text-xs text-gray-400 dark:text-gray-500">
-            By continuing, you agree to our Terms of Service and Privacy Policy
+            By continuing, you agree to our{" "}
+            <a href="/terms" className="underline hover:text-gray-500 dark:hover:text-gray-400">
+              Terms of Service
+            </a>{" "}
+            and{" "}
+            <a href="/privacy" className="underline hover:text-gray-500 dark:hover:text-gray-400">
+              Privacy Policy
+            </a>
           </p>
 
           {/* Features hint */}

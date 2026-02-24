@@ -49,6 +49,10 @@ const MockTest = () => {
   const questionStartRef = useRef(null);
   const lastQuestionIndexRef = useRef(null);
   const questionCardRef = useRef(null);
+  const submitModalRef = useRef(null);
+  const shortcutsModalRef = useRef(null);
+  const mobilePaletteRef = useRef(null);
+  const lastFocusedElementRef = useRef(null);
   const [palettePage, setPalettePage] = useState(0);
   const PALETTE_PAGE_SIZE = 30;
 
@@ -92,6 +96,38 @@ const MockTest = () => {
     onAutoSubmit: handleViolationAutoSubmit,
     maxFullscreenExits: 2,
   });
+
+  const closeSubmitModal = useCallback(() => setShowSubmitModal(false), []);
+  const closeShortcutsHelp = useCallback(() => setShowShortcutsHelp(false), []);
+  const closeMobilePalette = useCallback(() => setShowMobilePalette(false), []);
+
+  const focusFirstInteractive = useCallback((container) => {
+    if (!container) return;
+    const focusable = container.querySelector(
+      'button:not([disabled]), [href], input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])',
+    );
+    (focusable || container).focus();
+  }, []);
+
+  const trapFocus = useCallback((event, container) => {
+    if (!container || event.key !== "Tab") return;
+    const focusable = Array.from(container.querySelectorAll(
+      'button:not([disabled]), [href], input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])',
+    ));
+    if (focusable.length === 0) {
+      event.preventDefault();
+      return;
+    }
+    const first = focusable[0];
+    const last = focusable[focusable.length - 1];
+    if (event.shiftKey && document.activeElement === first) {
+      event.preventDefault();
+      last.focus();
+    } else if (!event.shiftKey && document.activeElement === last) {
+      event.preventDefault();
+      first.focus();
+    }
+  }, []);
 
   const buildSectionedQuestions = useCallback(
     (allQuestions) => {
@@ -634,12 +670,69 @@ const MockTest = () => {
     'r': handleClearResponse,
     '?': () => setShowShortcutsHelp(true),
     'Escape': () => {
-      setShowShortcutsHelp(false);
+      closeShortcutsHelp();
       closeReport();
     },
-  }), [handleAnswerSelect, handleClearResponse, handleMarkForReview, handleNext, handlePrevious, handleSkip, closeReport]);
+  }), [handleAnswerSelect, handleClearResponse, handleMarkForReview, handleNext, handlePrevious, handleSkip, closeReport, closeShortcutsHelp]);
 
   useKeyboardShortcuts(keyboardShortcuts, isTestInProgress && !showSubmitModal && !showReportModal);
+
+  useEffect(() => {
+    if (!showSubmitModal) return undefined;
+    lastFocusedElementRef.current = document.activeElement;
+    focusFirstInteractive(submitModalRef.current);
+    const onKeyDown = (event) => {
+      if (event.key === "Escape") {
+        event.preventDefault();
+        closeSubmitModal();
+        return;
+      }
+      trapFocus(event, submitModalRef.current);
+    };
+    document.addEventListener("keydown", onKeyDown);
+    return () => {
+      document.removeEventListener("keydown", onKeyDown);
+      lastFocusedElementRef.current?.focus?.();
+    };
+  }, [showSubmitModal, closeSubmitModal, focusFirstInteractive, trapFocus]);
+
+  useEffect(() => {
+    if (!showShortcutsHelp) return undefined;
+    lastFocusedElementRef.current = document.activeElement;
+    focusFirstInteractive(shortcutsModalRef.current);
+    const onKeyDown = (event) => {
+      if (event.key === "Escape") {
+        event.preventDefault();
+        closeShortcutsHelp();
+        return;
+      }
+      trapFocus(event, shortcutsModalRef.current);
+    };
+    document.addEventListener("keydown", onKeyDown);
+    return () => {
+      document.removeEventListener("keydown", onKeyDown);
+      lastFocusedElementRef.current?.focus?.();
+    };
+  }, [showShortcutsHelp, closeShortcutsHelp, focusFirstInteractive, trapFocus]);
+
+  useEffect(() => {
+    if (!showMobilePalette) return undefined;
+    lastFocusedElementRef.current = document.activeElement;
+    focusFirstInteractive(mobilePaletteRef.current);
+    const onKeyDown = (event) => {
+      if (event.key === "Escape") {
+        event.preventDefault();
+        closeMobilePalette();
+        return;
+      }
+      trapFocus(event, mobilePaletteRef.current);
+    };
+    document.addEventListener("keydown", onKeyDown);
+    return () => {
+      document.removeEventListener("keydown", onKeyDown);
+      lastFocusedElementRef.current?.focus?.();
+    };
+  }, [showMobilePalette, closeMobilePalette, focusFirstInteractive, trapFocus]);
 
   if (loading) {
     return <PageSpinner message="Loading test..." />;
@@ -1219,9 +1312,21 @@ const MockTest = () => {
       </div>
 
       {showSubmitModal && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-20">
-          <div className="bg-white dark:bg-gray-800 rounded-lg shadow-xl p-6 max-w-md w-full">
-            <h2 className="text-xl font-bold text-gray-800 dark:text-white mb-4">
+        <div
+          className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-20"
+          onClick={closeSubmitModal}
+          aria-hidden="true"
+        >
+          <div
+            ref={submitModalRef}
+            tabIndex={-1}
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="submit-test-title"
+            className="bg-white dark:bg-gray-800 rounded-lg shadow-xl p-6 max-w-md w-full"
+            onClick={(event) => event.stopPropagation()}
+          >
+            <h2 id="submit-test-title" className="text-xl font-bold text-gray-800 dark:text-white mb-4">
               Submit Test?
             </h2>
             <p className="text-sm text-gray-600 dark:text-gray-400 mb-4">
@@ -1257,7 +1362,7 @@ const MockTest = () => {
 
             <div className="flex gap-3">
               <button
-                onClick={() => setShowSubmitModal(false)}
+                onClick={closeSubmitModal}
                 className="flex-1 bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-200 py-2 rounded-lg font-semibold hover:bg-gray-300 dark:hover:bg-gray-600 transition-colors"
               >
                 Cancel
@@ -1283,14 +1388,27 @@ const MockTest = () => {
       />
 
       {showShortcutsHelp && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-20">
-          <div className="bg-white dark:bg-gray-800 rounded-lg shadow-xl p-6 max-w-md w-full">
+        <div
+          className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-20"
+          onClick={closeShortcutsHelp}
+          aria-hidden="true"
+        >
+          <div
+            ref={shortcutsModalRef}
+            tabIndex={-1}
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="keyboard-shortcuts-title"
+            className="bg-white dark:bg-gray-800 rounded-lg shadow-xl p-6 max-w-md w-full"
+            onClick={(event) => event.stopPropagation()}
+          >
             <div className="flex justify-between items-center mb-4">
-              <h2 className="text-xl font-bold text-gray-800 dark:text-white">
+              <h2 id="keyboard-shortcuts-title" className="text-xl font-bold text-gray-800 dark:text-white">
                 Keyboard Shortcuts
               </h2>
               <button
-                onClick={() => setShowShortcutsHelp(false)}
+                onClick={closeShortcutsHelp}
+                aria-label="Close shortcuts help"
                 className="text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200"
               >
                 <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -1335,7 +1453,7 @@ const MockTest = () => {
               </div>
             </div>
             <button
-              onClick={() => setShowShortcutsHelp(false)}
+              onClick={closeShortcutsHelp}
               className="w-full mt-4 bg-blue-600 text-white py-2 rounded-lg font-semibold hover:bg-blue-700 transition-colors"
             >
               Got it
@@ -1346,14 +1464,19 @@ const MockTest = () => {
 
       {/* Mobile Question Palette Drawer */}
       {showMobilePalette && (
-        <div className="fixed inset-0 bg-black/50 z-30 md:hidden" onClick={() => setShowMobilePalette(false)}>
+        <div className="fixed inset-0 bg-black/50 z-30 md:hidden" onClick={closeMobilePalette}>
           <div
+            ref={mobilePaletteRef}
+            tabIndex={-1}
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="mobile-palette-title"
             className="absolute bottom-0 left-0 right-0 bg-white dark:bg-gray-800 rounded-t-2xl p-5 max-h-[70vh] overflow-y-auto"
             onClick={(e) => e.stopPropagation()}
           >
             <div className="flex justify-between items-center mb-4">
-              <h3 className="font-bold text-gray-800 dark:text-white">Question Palette</h3>
-              <button onClick={() => setShowMobilePalette(false)} className="text-gray-500 dark:text-gray-400 p-1">
+              <h3 id="mobile-palette-title" className="font-bold text-gray-800 dark:text-white">Question Palette</h3>
+              <button onClick={closeMobilePalette} aria-label="Close question palette" className="text-gray-500 dark:text-gray-400 p-1">
                 <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
                 </svg>
@@ -1423,7 +1546,7 @@ const MockTest = () => {
                     key={index}
                     onClick={() => {
                       goToQuestion(index);
-                      setShowMobilePalette(false);
+                      closeMobilePalette();
                       setTimeout(() => {
                         questionCardRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
                       }, 100);

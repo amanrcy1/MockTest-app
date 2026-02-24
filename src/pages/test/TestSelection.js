@@ -76,15 +76,17 @@ const ExamCard = ({ examKey, exam, questionCount, isSelected, onSelect, testMode
   const hasEnough = questionCount >= requiredQuestions;
   
   return (
-    <motion.div
+    <motion.button
+      type="button"
       whileHover={{ y: -2 }}
       whileTap={{ scale: 0.99 }}
       onClick={() => onSelect(examKey)}
-      className={`relative cursor-pointer rounded-2xl p-5 transition-all duration-300 overflow-hidden
+      className={`relative w-full text-left rounded-2xl p-5 transition-all duration-300 overflow-hidden
         ${isSelected 
           ? "bg-gradient-to-br from-blue-50 to-indigo-50 dark:from-blue-900/20 dark:to-indigo-900/20 ring-2 ring-blue-500" 
           : "bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 hover:border-blue-300 dark:hover:border-blue-700"
         }`}
+      aria-pressed={isSelected}
     >
       <div className="flex justify-between items-start mb-4">
         <div>
@@ -154,7 +156,7 @@ const ExamCard = ({ examKey, exam, questionCount, isSelected, onSelect, testMode
           No questions available
         </p>
       )}
-    </motion.div>
+    </motion.button>
   );
 };
 

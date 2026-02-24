@@ -699,13 +699,26 @@ const AiChatWidget = memo(({ context = {} }) => {
 
     (async () => {
       try {
-        const snap = await getDocs(query(
-          collection(db, "tests"),
-          where("userId", "==", currentUser.uid),
-          where("completed", "==", true),
-          orderBy("endTime", "desc"),
-          limit(20)
-        ));
+        let snap;
+        try {
+          snap = await getDocs(query(
+            collection(db, "tests"),
+            where("userId", "==", currentUser.uid),
+            where("completed", "==", true),
+            orderBy("endTime", "desc"),
+            limit(20)
+          ));
+        } catch (indexedQueryError) {
+          if (import.meta.env.DEV) {
+            console.warn("AI chat stats query fallback (likely missing index):", indexedQueryError);
+          }
+          snap = await getDocs(query(
+            collection(db, "tests"),
+            where("userId", "==", currentUser.uid),
+            where("completed", "==", true),
+            limit(20)
+          ));
+        }
         const tests = snap.docs.map((d) => d.data());
         if (!tests.length) { setUserStats({ attempted: 0 }); return; }
 
@@ -796,18 +809,13 @@ const AiChatWidget = memo(({ context = {} }) => {
   // ── Boundary violation detection ──
   const violationCountRef = useRef(0);
 
-  const isBoundaryResponse = useCallback((reply) => {
-    const lower = (reply || "").toLowerCase();
+  const isBoundaryViolation = useCallback((payload) => {
+    if (payload?.boundary?.violation) return true;
+    const lower = (payload?.reply || "").toLowerCase();
     const markers = [
-      "i'm here to help with your exam prep",
+      "i'm here for exam prep",
       "outside what i can help with",
-      "let's focus on your prep",
-      "nice try",
-      "i stick to exam prep",
-      "let's keep it respectful",
-      "i'm just here to help you crack",
-      "help you succeed",
-      "ask me a study question",
+      "nice try! i'm mockzam ai",
     ];
     return markers.some((m) => lower.includes(m));
   }, []);
@@ -846,12 +854,12 @@ const AiChatWidget = memo(({ context = {} }) => {
     const sendStart = Date.now();
     try {
       const history = messages.slice(-10).map((m) => ({ role: m.role, content: m.content }));
-      const reply = await sendChatMessage(sanitized, history, enrichedContext);
+      const aiResult = await sendChatMessage(sanitized, history, enrichedContext);
       const elapsed = ((Date.now() - sendStart) / 1000).toFixed(1);
-      setMessages((prev) => [...prev.slice(-(MAX_MESSAGES - 1)), { role: "assistant", content: reply, timestamp: Date.now(), elapsed }]);
+      setMessages((prev) => [...prev.slice(-(MAX_MESSAGES - 1)), { role: "assistant", content: aiResult.reply, timestamp: Date.now(), elapsed }]);
 
       // Check if AI flagged this as off-topic/harmful
-      if (isBoundaryResponse(reply)) {
+      if (isBoundaryViolation(aiResult)) {
         violationCountRef.current += 1;
         if (violationCountRef.current >= 2) {
           // Auto-close and clear after a short delay so user sees the warning
@@ -876,7 +884,7 @@ const AiChatWidget = memo(({ context = {} }) => {
       setLoading(false);
       if (window.innerWidth >= 768) setTimeout(() => inputRef.current?.focus(), 100);
     }
-  }, [input, loading, messages, enrichedContext, isBoundaryResponse, stopListening, scrollToBottom]);
+  }, [input, loading, messages, enrichedContext, isBoundaryViolation, stopListening, scrollToBottom]);
 
   const handleKeyDown = useCallback((e) => {
     const isMobile = window.innerWidth < 768;
@@ -1089,9 +1097,9 @@ const AiChatWidget = memo(({ context = {} }) => {
 
     try {
       const history = messages.slice(0, msgIndex).slice(-10).map((m) => ({ role: m.role, content: m.content }));
-      const reply = await sendChatMessage(sanitized, history, enrichedContext);
+      const aiResult = await sendChatMessage(sanitized, history, enrichedContext);
       const elapsed = ((Date.now() - editStart) / 1000).toFixed(1);
-      setMessages((prev) => [...prev, { role: "assistant", content: reply, timestamp: Date.now(), elapsed }]);
+      setMessages((prev) => [...prev, { role: "assistant", content: aiResult.reply, timestamp: Date.now(), elapsed }]);
     } catch (err) {
       const msg = err.message || "";
       if (msg.includes("Rate") || msg.includes("Too many")) setError("Too many requests. Wait a moment.");
@@ -1541,3 +1549,4 @@ const AiChatWidget = memo(({ context = {} }) => {
 
 AiChatWidget.displayName = "AiChatWidget";
 export default AiChatWidget;
+

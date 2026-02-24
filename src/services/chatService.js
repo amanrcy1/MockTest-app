@@ -1,16 +1,12 @@
 import { aiRequestLimiter } from "../utils/securityUtils";
 import { auth } from "../config/firebase";
 
-// Prevent sending while a request is in-flight (double-tap guard)
-let inflight = false;
-
 /**
  * Send a message to the AI chat endpoint.
  * Includes client-side rate limiting, auth token, abort timeout, and input validation.
  */
 export const sendChatMessage = async (message, conversationHistory = [], context = {}) => {
-  // ── Guards ──
-  if (inflight) throw new Error("Request already in progress.");
+  // Guards
   if (!aiRequestLimiter.canMakeRequest("ai-chat")) throw new Error("Too many requests. Wait a moment.");
   if (!message || typeof message !== "string") throw new Error("Invalid message.");
   if (!auth.currentUser) throw new Error("Not authenticated.");
@@ -35,8 +31,6 @@ export const sendChatMessage = async (message, conversationHistory = [], context
   const apiUrl = import.meta.env.VITE_API_URL || "/api";
   const controller = new AbortController();
   const timeoutId = setTimeout(() => controller.abort(), 35000); // 35s timeout for 70B model
-
-  inflight = true;
 
   try {
     const idToken = await auth.currentUser.getIdToken();
@@ -66,12 +60,13 @@ export const sendChatMessage = async (message, conversationHistory = [], context
 
     const data = await response.json();
     if (!data.reply || typeof data.reply !== "string") throw new Error("Invalid AI response.");
-    return data.reply;
+    return {
+      reply: data.reply,
+      boundary: data.boundary || null,
+    };
   } catch (error) {
     clearTimeout(timeoutId);
     if (error.name === "AbortError") throw new Error("Request timed out. Try again.");
     throw error;
-  } finally {
-    inflight = false;
   }
 };
