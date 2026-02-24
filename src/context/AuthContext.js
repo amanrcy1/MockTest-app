@@ -7,6 +7,9 @@ import {
   signInWithPopup,
   signInWithRedirect,
   getRedirectResult,
+  setPersistence,
+  browserLocalPersistence,
+  browserSessionPersistence,
 } from "firebase/auth";
 import {
   doc,
@@ -62,10 +65,9 @@ const isPermissionDenied = (error) =>
 const shouldPreferRedirectAuth = () => {
   if (typeof window === "undefined") return false;
   const ua = navigator.userAgent || "";
-  const isMobile = /Android|iPhone|iPad|iPod|Mobile/i.test(ua);
   const isInAppBrowser = /FBAN|FBAV|Instagram|Line|wv\)/i.test(ua);
   const isStandalonePwa = window.matchMedia?.("(display-mode: standalone)")?.matches || window.navigator.standalone === true;
-  return isMobile || isInAppBrowser || isStandalonePwa;
+  return isInAppBrowser || isStandalonePwa;
 };
 
 // ============================================
@@ -213,7 +215,8 @@ export const AuthProvider = ({ children }) => {
         if (error.code === "auth/cancelled-popup-request") {
           return { success: false, error: "Sign-in cancelled." };
         }
-        return { success: false, error: getErrorMessage(error) };
+        const code = error?.code ? ` [${error.code}]` : "";
+        return { success: false, error: `${getErrorMessage(error)}${code}` };
       }
     }, [ensureGoogleUserProfile]);
 
@@ -255,10 +258,24 @@ export const AuthProvider = ({ children }) => {
   useSessionTimeout(handleSessionTimeout, !!currentUser);
 
   useEffect(() => {
-    const processRedirectResult = async () => {
-      const hadIntent = sessionStorage.getItem(AUTH_REDIRECT_INTENT_KEY) === "1";
-      if (!hadIntent) return;
+    const setupPersistence = async () => {
+      try {
+        await setPersistence(auth, browserLocalPersistence);
+      } catch (localErr) {
+        logger.warn("Local auth persistence unavailable, falling back to session persistence.", localErr);
+        try {
+          await setPersistence(auth, browserSessionPersistence);
+        } catch (sessionErr) {
+          logger.error("Failed to configure Firebase auth persistence.", sessionErr);
+        }
+      }
+    };
 
+    setupPersistence();
+  }, []);
+
+  useEffect(() => {
+    const processRedirectResult = async () => {
       try {
         const result = await getRedirectResult(auth);
         if (result?.user) {
@@ -266,6 +283,13 @@ export const AuthProvider = ({ children }) => {
         }
       } catch (error) {
         logger.error("Google redirect result error:", error);
+        try {
+          const { toast } = await import("react-toastify");
+          const code = error?.code ? ` [${error.code}]` : "";
+          toast.error(`${getErrorMessage(error)}${code}`);
+        } catch {
+          // noop
+        }
       } finally {
         sessionStorage.removeItem(AUTH_REDIRECT_INTENT_KEY);
       }
