@@ -179,6 +179,24 @@ const TestResult = () => {
       }
     : null;
 
+  const weakestTopic = Object.entries(topicPerformance)
+    .map(([topic, data]) => ({ topic, accuracy: (data.correct / data.total) * 100 }))
+    .sort((a, b) => a.accuracy - b.accuracy)[0];
+
+  const nextAction = weakestTopic && weakestTopic.accuracy < 65
+    ? {
+        title: `Retry weakest topic: ${weakestTopic.topic}`,
+        subtitle: `Current accuracy ${weakestTopic.accuracy.toFixed(0)}%. Improve this first.`,
+        cta: "Start Practice",
+        onClick: () => navigate("/test-selection", { state: { mode: "practice", topic: weakestTopic.topic, examType } }),
+      }
+    : {
+        title: "You are doing well. Build consistency.",
+        subtitle: "Take one more timed mock to stabilize rank and accuracy.",
+        cta: "Take Mock Test",
+        onClick: () => navigate("/test-selection", { state: { mode: "mock", examType } }),
+      };
+
   return (
     <div className="min-h-screen bg-gray-100 dark:bg-gray-950">
       {/* Celebration Effect */}
@@ -190,14 +208,14 @@ const TestResult = () => {
 
       {/* Header */}
       <nav className="bg-white dark:bg-gray-800 shadow-md">
-        <div className="max-w-7xl mx-auto px-4 py-3 flex justify-between items-center">
+        <div className="max-w-7xl mx-auto px-4 py-3 flex flex-col sm:flex-row sm:justify-between sm:items-center gap-3">
           <div>
             <h1 className="text-xl font-bold text-blue-600 dark:text-blue-400">Test Results</h1>
             <p className="text-xs text-gray-600 dark:text-gray-400">
               {examType} • {testMode || "mock"}
             </p>
           </div>
-          <div className="flex gap-3">
+          <div className="w-full sm:w-auto flex gap-2 flex-wrap sm:flex-nowrap sm:justify-end">
             <div className="relative">
               {/* Pointing finger hint */}
               {showViewSolutionsHint && !showSolutions && (
@@ -208,7 +226,7 @@ const TestResult = () => {
               )}
               <button
                 onClick={handleViewSolutions}
-                className={`relative px-4 py-2 rounded-lg text-sm font-semibold transition-all ${
+                className={`relative px-4 py-2 min-h-11 rounded-lg text-sm font-semibold transition-all ${
                   showViewSolutionsHint && !showSolutions
                     ? "bg-gradient-to-r from-blue-600 via-purple-600 to-blue-600 bg-[length:200%_100%] animate-gradient-x text-white shadow-lg shadow-blue-500/50 scale-105"
                     : "bg-blue-600 text-white hover:bg-blue-700"
@@ -225,7 +243,7 @@ const TestResult = () => {
             </div>
             <button
               onClick={() => navigate("/dashboard")}
-              className="bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-200 px-4 py-2 rounded-lg hover:bg-gray-300 dark:hover:bg-gray-600 transition-colors text-sm"
+              className="bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-200 px-4 py-2 min-h-11 rounded-lg hover:bg-gray-300 dark:hover:bg-gray-600 transition-colors text-sm"
             >
               Dashboard
             </button>
@@ -234,6 +252,21 @@ const TestResult = () => {
       </nav>
 
       <div className="max-w-7xl mx-auto px-4 py-8">
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 mb-6">
+          <div className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-2xl p-4">
+            <p className="text-xs uppercase tracking-wide text-gray-500 dark:text-gray-400">Score</p>
+            <p className="text-2xl font-bold text-gray-900 dark:text-white">{scoreData.totalMarks.toFixed(2)}</p>
+          </div>
+          <div className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-2xl p-4">
+            <p className="text-xs uppercase tracking-wide text-gray-500 dark:text-gray-400">Accuracy</p>
+            <p className="text-2xl font-bold text-gray-900 dark:text-white">{Math.round(accuracy)}%</p>
+          </div>
+          <div className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-2xl p-4">
+            <p className="text-xs uppercase tracking-wide text-gray-500 dark:text-gray-400">Avg. Time</p>
+            <p className="text-2xl font-bold text-gray-900 dark:text-white">{timeSummary ? formatTime(timeSummary.average) : "-"}</p>
+          </div>
+        </div>
+
         {/* Score Card with Ring */}
         <div className="bg-gradient-to-r from-blue-500 to-purple-600 rounded-2xl shadow-xl p-8 text-white mb-8">
           <div className="flex flex-col md:flex-row items-center gap-8">
@@ -423,9 +456,15 @@ const TestResult = () => {
             Time Analysis
           </h3>
           {!timeSummary ? (
-            <p className="text-gray-600 dark:text-gray-400">
-              Time tracking is not available for this test.
-            </p>
+            <div className="text-gray-600 dark:text-gray-400">
+              <p>Time tracking is not available for this test.</p>
+              <button
+                onClick={() => navigate("/test-selection")}
+                className="mt-3 px-4 py-2 min-h-11 rounded-xl bg-blue-600 text-white text-sm font-semibold hover:bg-blue-700 transition-colors"
+              >
+                Take Another Test
+              </button>
+            </div>
           ) : (
             <div className="space-y-4">
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
@@ -475,6 +514,18 @@ const TestResult = () => {
               </div>
             </div>
           )}
+        </div>
+
+        <div className="bg-gradient-to-r from-indigo-50 to-blue-50 dark:from-indigo-900/20 dark:to-blue-900/20 border border-indigo-200 dark:border-indigo-800 rounded-2xl p-5 mb-8">
+          <p className="text-xs uppercase tracking-wide text-indigo-600 dark:text-indigo-300 font-semibold">Next Best Action</p>
+          <h3 className="text-lg font-bold text-gray-900 dark:text-white mt-1">{nextAction.title}</h3>
+          <p className="text-sm text-gray-600 dark:text-gray-300 mt-1">{nextAction.subtitle}</p>
+          <button
+            onClick={nextAction.onClick}
+            className="mt-4 px-4 py-2 min-h-11 rounded-xl bg-indigo-600 text-white text-sm font-semibold hover:bg-indigo-700 transition-colors"
+          >
+            {nextAction.cta}
+          </button>
         </div>
 
         {/* Weak Areas */}

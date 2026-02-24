@@ -11,10 +11,14 @@ import { BottomNav } from "../../components";
 import { TopNav } from "../../components";
 import { DashboardSkeleton } from "../../components/ui/LoadingSkeleton";
 import logger from "../../utils/logger";
+import { getSafePhotoURL } from "../../utils/avatarUtils";
 
 // Cache for dashboard stats (5 minute TTL)
 const statsCache = { data: null, timestamp: 0, userId: null, examType: null };
 const CACHE_TTL = 5 * 60 * 1000;
+const hideBrokenImage = (e) => {
+  e.currentTarget.style.display = "none";
+};
 
 // 3D Stats Card Component
 const StatsCard3D = ({ value, label, icon, color, delay = 0 }) => {
@@ -366,12 +370,16 @@ const Dashboard = () => {
             <div className="flex items-center gap-3">
               <div className="relative">
                 <motion.div 
-                  className="w-11 h-11 rounded-full bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center text-white font-bold text-lg shadow-lg overflow-hidden"
+                  className="relative w-11 h-11 rounded-full bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center text-white font-bold text-lg shadow-lg overflow-hidden"
                 >
-                  {userDetails?.photoURL ? (
-                    <img src={userDetails.photoURL} alt="Profile" className="w-full h-full object-cover" />
-                  ) : (
-                    userDetails?.name?.charAt(0)?.toUpperCase() || "U"
+                  {userDetails?.name?.charAt(0)?.toUpperCase() || "U"}
+                  {getSafePhotoURL(userDetails?.photoURL) && (
+                    <img
+                      src={getSafePhotoURL(userDetails?.photoURL)}
+                      alt="Profile"
+                      className="absolute inset-0 w-full h-full object-cover"
+                      onError={hideBrokenImage}
+                    />
                   )}
                 </motion.div>
               </div>
@@ -481,6 +489,23 @@ const Dashboard = () => {
             }
           />
         </div>
+
+        {stats.attempted === 0 && (
+          <motion.div
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-2xl p-4"
+          >
+            <p className="text-sm font-semibold text-gray-800 dark:text-gray-100">No completed tests yet</p>
+            <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">Start with one mock test to unlock insights, rank, and AI coaching.</p>
+            <button
+              onClick={() => navigate("/test-selection")}
+              className="mt-3 px-4 py-2 min-h-11 rounded-xl bg-blue-600 text-white text-sm font-semibold hover:bg-blue-700 transition-colors"
+            >
+              Start First Test
+            </button>
+          </motion.div>
+        )}
 
         {/* Quick Actions */}
         <div className="grid grid-cols-2 gap-3 md:gap-4">

@@ -64,7 +64,7 @@ const InstallBanner = () => {
           initial={{ y: 100, opacity: 0 }}
           animate={{ y: 0, opacity: 1 }}
           exit={{ y: 100, opacity: 0 }}
-          className="fixed bottom-20 md:bottom-4 left-4 right-4 z-50 max-w-md mx-auto"
+          className="fixed top-[4.5rem] md:top-auto md:bottom-4 left-4 right-4 z-50 max-w-md mx-auto"
         >
           <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-2xl border border-gray-200 dark:border-gray-700 overflow-hidden">
             {!showIOSGuide ? (

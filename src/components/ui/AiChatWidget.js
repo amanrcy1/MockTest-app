@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect, useCallback, useMemo, memo, lazy, Suspense } from "react";
+﻿import { useState, useRef, useEffect, useCallback, useMemo, memo, lazy, Suspense } from "react";
 import { useAuth } from "../../context/AuthContext";
 import { sendChatMessage } from "../../services/chatService";
 import { collection, getDocs, query, where, orderBy, limit } from "firebase/firestore";
@@ -11,7 +11,7 @@ const MAX_MESSAGES = 50;
 const STATS_CACHE_KEY = "ai_chat_stats";
 const STATS_CACHE_TTL = 10 * 60 * 1000;
 
-// ─── Sanitizers ───
+// â”€â”€â”€ Sanitizers â”€â”€â”€
 const sanitizeInput = (str) =>
   str.replace(/<[^>]*>/g, "").replace(/[^\S\r\n]+/g, " ").trim().slice(0, 1000);
 
@@ -29,7 +29,7 @@ const sanitizeMarkdown = (md) =>
     .replace(/<img[\s\S]*?\/?>|<canvas[\s\S]*?(<\/canvas>|\/?>)/gi, "")
     .replace(/\[.*?\]\(data:[^)]*\)/gi, "");
 
-// ─── Icons ───
+// â”€â”€â”€ Icons â”€â”€â”€
 const AiIcon = ({ size = 24, className = "" }) => (
   <svg width={size} height={size} viewBox="0 0 24 24" fill="none" className={className}>
     <path d="M12 2L13.09 8.26L18 6L14.74 10.91L21 12L14.74 13.09L18 18L13.09 15.74L12 22L10.91 15.74L6 18L9.26 13.09L3 12L9.26 10.91L6 6L10.91 8.26L12 2Z" fill="currentColor" opacity="0.9" />
@@ -53,7 +53,7 @@ const MicIcon = ({ active }) => (
   </svg>
 );
 
-// ─── Typing indicator with 3D avatar ───
+// â”€â”€â”€ Typing indicator with 3D avatar â”€â”€â”€
 const TypingIndicator = memo(() => (
   <motion.div
     initial={{ opacity: 0, y: 10 }}
@@ -89,7 +89,26 @@ const formatTime = (ts) => {
   return new Date(ts).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
 };
 
-// ─── 3D Chat message bubble ───
+const getConfidenceInfo = (meta, boundary) => {
+  if (boundary?.violation) return { label: "Low", tone: "text-red-600 dark:text-red-400 bg-red-50 dark:bg-red-900/20" };
+  if (meta?.verified) return { label: "High", tone: "text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-900/20" };
+  if (meta?.queryType === "math" || meta?.queryType === "factual") {
+    return { label: "Medium", tone: "text-amber-600 dark:text-amber-400 bg-amber-50 dark:bg-amber-900/20" };
+  }
+  return { label: "Medium", tone: "text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-900/20" };
+};
+
+const getSourceChips = (meta, context) => {
+  const chips = [];
+  if (context?.examType) chips.push(context.examType);
+  if (meta?.queryType) chips.push(meta.queryType);
+  if (meta?.cacheHit) chips.push("cache");
+  if (meta?.historyUsed > 0) chips.push("history");
+  if (chips.length === 0) chips.push("general");
+  return chips.slice(0, 3);
+};
+
+// â”€â”€â”€ 3D Chat message bubble â”€â”€â”€
 const ChatMessage = memo(({ msg, index, onEdit, loading, listening, toggleListening, hasStt }) => {
   const [copied, setCopied] = useState(false);
   const [editing, setEditing] = useState(false);
@@ -452,10 +471,24 @@ const ChatMessage = memo(({ msg, index, onEdit, loading, listening, toggleListen
             </Suspense>
           )}
         </motion.div>
-        <div className="flex items-center gap-1 px-1 mt-0.5 min-h-[24px]">
+        <div className="flex flex-wrap items-center gap-1 px-1 mt-0.5 min-h-[24px]">
           {msg.timestamp && <span className="text-[10px] text-gray-400 dark:text-gray-600 select-none leading-none">{formatTime(msg.timestamp)}</span>}
           {msg.elapsed && !speaking && <span className="text-[10px] text-gray-400 dark:text-gray-500 select-none leading-none">· {msg.elapsed}s</span>}
           {speaking && <span className="text-[10px] text-violet-500 dark:text-violet-400 select-none font-medium leading-none">{Math.floor(speakElapsed / 60)}:{String(speakElapsed % 60).padStart(2, "0")}</span>}
+          {!speaking && (
+            <>
+              <span className={`text-[10px] px-2 py-0.5 rounded-full font-semibold ${getConfidenceInfo(msg.meta, msg.boundary).tone}`}>
+                {getConfidenceInfo(msg.meta, msg.boundary).label} confidence
+              </span>
+              <div className="flex items-center gap-1">
+                {getSourceChips(msg.meta, msg.context).map((chip) => (
+                  <span key={`${msg.timestamp}-${chip}`} className="text-[10px] px-1.5 py-0.5 rounded-full bg-gray-100 dark:bg-gray-700 text-gray-500 dark:text-gray-300">
+                    {chip}
+                  </span>
+                ))}
+              </div>
+            </>
+          )}
           <span className="flex-1" />
           <button
             onClick={handleCopy}
@@ -486,7 +519,7 @@ const ChatMessage = memo(({ msg, index, onEdit, loading, listening, toggleListen
 });
 ChatMessage.displayName = "ChatMessage";
 
-// ─── 3D Scroll-to-bottom ───
+// â”€â”€â”€ 3D Scroll-to-bottom â”€â”€â”€
 const ScrollDownBtn = memo(({ onClick }) => (
   <motion.button
     initial={{ opacity: 0, y: 10, scale: 0.8 }}
@@ -506,9 +539,9 @@ const ScrollDownBtn = memo(({ onClick }) => (
 ));
 ScrollDownBtn.displayName = "ScrollDownBtn";
 
-// ═══════════════════════════════════════════
+// â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
 // MAIN WIDGET
-// ═══════════════════════════════════════════
+// â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
 const AiChatWidget = memo(({ context = {} }) => {
   const { currentUser, userDetails } = useAuth();
   const [isOpen, setIsOpen] = useState(false);
@@ -535,7 +568,7 @@ const AiChatWidget = memo(({ context = {} }) => {
   const statsFetchedRef = useRef(false);
   const [keyboardVisible, setKeyboardVisible] = useState(false);
 
-  // ── Desktop resize ──
+  // â”€â”€ Desktop resize â”€â”€
   const [panelSize, setPanelSize] = useState({ width: 400, height: 576 });
   const resizingRef = useRef(null);
   const resizeStartRef = useRef({ x: 0, y: 0, w: 0, h: 0 });
@@ -610,7 +643,7 @@ const AiChatWidget = memo(({ context = {} }) => {
     setShowScrollBtn(el.scrollHeight - el.scrollTop - el.clientHeight > 120);
   }, []);
 
-  // ── Mobile keyboard detection + panel pinning to visual viewport ──
+  // â”€â”€ Mobile keyboard detection + panel pinning to visual viewport â”€â”€
   useEffect(() => {
     if (!isOpen) return;
     const vv = window.visualViewport;
@@ -621,11 +654,11 @@ const AiChatWidget = memo(({ context = {} }) => {
       const isMobile = window.innerWidth < 768;
       if (!isMobile || !panel) return;
 
-      // Always pin panel to visual viewport — handles keyboard, address bar, everything
+      // Always pin panel to visual viewport â€” handles keyboard, address bar, everything
       panel.style.height = `${vv.height}px`;
       panel.style.top = `${vv.offsetTop}px`;
 
-      // Compare against screen height — reliable across all devices
+      // Compare against screen height â€” reliable across all devices
       const kbOpen = window.screen.height - vv.height > 150;
       setKeyboardVisible(kbOpen);
       if (kbOpen) requestAnimationFrame(() => scrollToBottom("instant"));
@@ -645,7 +678,7 @@ const AiChatWidget = memo(({ context = {} }) => {
     };
   }, [isOpen, scrollToBottom]);
 
-  // ── Scroll to bottom when textarea gets focus (keyboard opening) ──
+  // â”€â”€ Scroll to bottom when textarea gets focus (keyboard opening) â”€â”€
   useEffect(() => {
     if (!isOpen) return;
     const ta = inputRef.current;
@@ -662,12 +695,12 @@ const AiChatWidget = memo(({ context = {} }) => {
   useEffect(() => { scrollToBottom(); }, [messages, scrollToBottom]);
   useEffect(() => {
     if (!isOpen) return;
-    // Only auto-focus on desktop — on mobile it opens the keyboard which is annoying
+    // Only auto-focus on desktop â€” on mobile it opens the keyboard which is annoying
     const isMobile = window.innerWidth < 768;
     if (!isMobile) setTimeout(() => inputRef.current?.focus(), 200);
   }, [isOpen]);
 
-  // ── Lock body scroll on mobile when chat is open ──
+  // â”€â”€ Lock body scroll on mobile when chat is open â”€â”€
   useEffect(() => {
     if (!isOpen) return;
     const isMobile = window.innerWidth < 768;
@@ -685,7 +718,7 @@ const AiChatWidget = memo(({ context = {} }) => {
     };
   }, [isOpen]);
 
-  // ── Stats fetch (cached) ──
+  // â”€â”€ Stats fetch (cached) â”€â”€
   useEffect(() => {
     if (!isOpen || !currentUser || statsFetchedRef.current) return;
     statsFetchedRef.current = true;
@@ -806,7 +839,7 @@ const AiChatWidget = memo(({ context = {} }) => {
     return ctx;
   }, [context, userDetails, userStats]);
 
-  // ── Boundary violation detection ──
+  // â”€â”€ Boundary violation detection â”€â”€
   const violationCountRef = useRef(0);
 
   const isBoundaryViolation = useCallback((payload) => {
@@ -820,7 +853,7 @@ const AiChatWidget = memo(({ context = {} }) => {
     return markers.some((m) => lower.includes(m));
   }, []);
 
-  // ── Production-ready STT ──
+  // â”€â”€ Production-ready STT â”€â”€
   const sttSilenceRef = useRef(null);
   const sttRestartRef = useRef(false);
   const sttStoppingRef = useRef(false);
@@ -856,7 +889,7 @@ const AiChatWidget = memo(({ context = {} }) => {
       const history = messages.slice(-10).map((m) => ({ role: m.role, content: m.content }));
       const aiResult = await sendChatMessage(sanitized, history, enrichedContext);
       const elapsed = ((Date.now() - sendStart) / 1000).toFixed(1);
-      setMessages((prev) => [...prev.slice(-(MAX_MESSAGES - 1)), { role: "assistant", content: aiResult.reply, timestamp: Date.now(), elapsed }]);
+      setMessages((prev) => [...prev.slice(-(MAX_MESSAGES - 1)), { role: "assistant", content: aiResult.reply, timestamp: Date.now(), elapsed, boundary: aiResult.boundary || null, meta: aiResult.meta || null, context: { examType: enrichedContext.examType || null } }]);
 
       // Check if AI flagged this as off-topic/harmful
       if (isBoundaryViolation(aiResult)) {
@@ -869,7 +902,7 @@ const AiChatWidget = memo(({ context = {} }) => {
             setIsOpen(false);
             violationCountRef.current = 0;
           }, 2000);
-          setError("Chat closed — repeated off-topic messages.");
+          setError("Chat closed â€” repeated off-topic messages.");
         }
       } else {
         // Reset counter on a valid on-topic exchange
@@ -994,7 +1027,7 @@ const AiChatWidget = memo(({ context = {} }) => {
         if (sttSilenceRef.current) { clearTimeout(sttSilenceRef.current); sttSilenceRef.current = null; }
         const err = e.error;
         if (err === "aborted") {
-          // User or system aborted — clean exit
+          // User or system aborted â€” clean exit
           recognitionRef.current = null;
           setListening(false);
           return;
@@ -1057,7 +1090,7 @@ const AiChatWidget = memo(({ context = {} }) => {
           }
         });
     } else {
-      // Fallback — try directly (older browsers)
+      // Fallback â€” try directly (older browsers)
       try { startRecognition(); } catch { setError("Could not start voice input."); }
     }
   }, [stopListening]);
@@ -1099,7 +1132,7 @@ const AiChatWidget = memo(({ context = {} }) => {
       const history = messages.slice(0, msgIndex).slice(-10).map((m) => ({ role: m.role, content: m.content }));
       const aiResult = await sendChatMessage(sanitized, history, enrichedContext);
       const elapsed = ((Date.now() - editStart) / 1000).toFixed(1);
-      setMessages((prev) => [...prev, { role: "assistant", content: aiResult.reply, timestamp: Date.now(), elapsed }]);
+      setMessages((prev) => [...prev, { role: "assistant", content: aiResult.reply, timestamp: Date.now(), elapsed, boundary: aiResult.boundary || null, meta: aiResult.meta || null, context: { examType: enrichedContext.examType || null } }]);
     } catch (err) {
       const msg = err.message || "";
       if (msg.includes("Rate") || msg.includes("Too many")) setError("Too many requests. Wait a moment.");
@@ -1148,7 +1181,7 @@ const AiChatWidget = memo(({ context = {} }) => {
 
   return (
     <>
-      {/* ── 3D Floating Action Button ── */}
+      {/* â”€â”€ 3D Floating Action Button â”€â”€ */}
       <AnimatePresence>
         {!isOpen && (
           <motion.button
@@ -1164,7 +1197,7 @@ const AiChatWidget = memo(({ context = {} }) => {
             style={{ perspective: "500px", transformStyle: "preserve-3d" }}
             aria-label="Open Mockzam AI chat"
           >
-            {/* 3D Glow layers — contained to prevent overflow clipping */}
+            {/* 3D Glow layers â€” contained to prevent overflow clipping */}
             <span className="absolute inset-0 rounded-full bg-gradient-to-r from-violet-500 to-blue-500 opacity-30 blur-xl animate-pulse pointer-events-none" />
             <span className="absolute inset-[-3px] rounded-full bg-gradient-to-r from-violet-400 via-blue-400 to-indigo-400 opacity-20 blur-md pointer-events-none" />
             {/* Main button with 3D depth */}
@@ -1184,7 +1217,7 @@ const AiChatWidget = memo(({ context = {} }) => {
         )}
       </AnimatePresence>
 
-      {/* ── 3D Chat Panel ── */}
+      {/* â”€â”€ 3D Chat Panel â”€â”€ */}
       <AnimatePresence>
         {isOpen && (
           <motion.div
@@ -1203,7 +1236,7 @@ const AiChatWidget = memo(({ context = {} }) => {
             role="dialog"
             aria-label="Mockzam AI Chat"
           >
-            {/* ── Desktop resize handles ── */}
+            {/* â”€â”€ Desktop resize handles â”€â”€ */}
             <div
               onMouseDown={startResize("left")}
               className="hidden md:block absolute left-0 top-0 bottom-0 w-1.5 cursor-ew-resize z-10 hover:bg-violet-500/20 active:bg-violet-500/30 transition-colors rounded-l-2xl"
@@ -1216,7 +1249,7 @@ const AiChatWidget = memo(({ context = {} }) => {
               onMouseDown={startResize("corner")}
               className="hidden md:block absolute top-0 left-0 w-3 h-3 cursor-nwse-resize z-20 hover:bg-violet-500/30 active:bg-violet-500/40 transition-colors rounded-tl-2xl"
             />
-            {/* ── Header — adapts between full 3D and slim keyboard mode ── */}
+            {/* â”€â”€ Header â€” adapts between full 3D and slim keyboard mode â”€â”€ */}
             <motion.div
               className="relative flex items-center justify-between px-4 flex-shrink-0 overflow-hidden"
               style={{ transformStyle: "preserve-3d" }}
@@ -1225,7 +1258,7 @@ const AiChatWidget = memo(({ context = {} }) => {
             >
               <div className="absolute inset-0 bg-gradient-to-r from-violet-600 via-blue-600 to-indigo-600" />
 
-              {/* Animated decorations — only when keyboard closed */}
+              {/* Animated decorations â€” only when keyboard closed */}
               <AnimatePresence>
                 {!keyboardVisible && (
                   <>
@@ -1289,7 +1322,7 @@ const AiChatWidget = memo(({ context = {} }) => {
                     whileHover={{ scale: 1.1, rotate: 180 }}
                     whileTap={{ scale: 0.9 }}
                     onClick={() => { setMessages([]); setError(null); }}
-                    className={`hover:bg-white/15 rounded-lg transition-all text-white/70 hover:text-white ${keyboardVisible ? "p-1.5" : "p-2"}`}
+                    className={`min-h-11 min-w-11 flex items-center justify-center hover:bg-white/15 rounded-lg transition-all text-white/70 hover:text-white ${keyboardVisible ? "p-1.5" : "p-2"}`}
                     title="New chat"
                     aria-label="Clear chat"
                   >
@@ -1302,7 +1335,7 @@ const AiChatWidget = memo(({ context = {} }) => {
                   whileHover={{ scale: 1.1, rotate: 90 }}
                   whileTap={{ scale: 0.9 }}
                   onClick={() => setIsOpen(false)}
-                  className={`hover:bg-white/15 rounded-lg transition-all text-white/70 hover:text-white ${keyboardVisible ? "p-1.5" : "p-2"}`}
+                  className={`min-h-11 min-w-11 flex items-center justify-center hover:bg-white/15 rounded-lg transition-all text-white/70 hover:text-white ${keyboardVisible ? "p-1.5" : "p-2"}`}
                   aria-label="Close chat"
                 >
                   <svg className={`transition-all duration-300 ${keyboardVisible ? "w-4 h-4" : "w-5 h-5"}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -1312,13 +1345,13 @@ const AiChatWidget = memo(({ context = {} }) => {
               </div>
             </motion.div>
 
-            {/* ── Messages area ── */}
+            {/* â”€â”€ Messages area â”€â”€ */}
             <div
               ref={messagesContainerRef}
               onScroll={handleScroll}
               className={`relative flex-1 overflow-y-auto space-y-3 bg-gray-50/50 dark:bg-gray-900 scroll-smooth overscroll-contain min-h-0 transition-all duration-300 ${keyboardVisible ? "px-3 py-2" : "px-4 py-4"}`}
             >
-              {/* ── Full empty state (keyboard closed) ── */}
+              {/* â”€â”€ Full empty state (keyboard closed) â”€â”€ */}
               {messages.length === 0 && !keyboardVisible && (
                 <div className="flex flex-col items-center justify-center h-full py-4" style={{ perspective: "800px" }}>
                   {/* 3D Floating AI Avatar */}
@@ -1414,7 +1447,7 @@ const AiChatWidget = memo(({ context = {} }) => {
                 </div>
               )}
 
-              {/* ── Keyboard-open empty state: mini avatar + horizontal quick chips ── */}
+              {/* â”€â”€ Keyboard-open empty state: mini avatar + horizontal quick chips â”€â”€ */}
               {messages.length === 0 && keyboardVisible && (
                 <motion.div
                   initial={{ opacity: 0, y: 8 }}
@@ -1465,7 +1498,7 @@ const AiChatWidget = memo(({ context = {} }) => {
                       className="text-xs text-red-600 dark:text-red-400 bg-red-50 dark:bg-red-900/20 px-3 py-2 rounded-xl border border-red-200 dark:border-red-800/50 hover:bg-red-100 dark:hover:bg-red-900/30 transition-colors inline-flex items-center gap-1.5"
                     >
                       <svg className="w-3.5 h-3.5 flex-shrink-0 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" /></svg>
-                      <span>{error} — Tap to dismiss</span>
+                      <span>{error} â€” Tap to dismiss</span>
                     </button>
                   </motion.div>
                 )}
@@ -1475,7 +1508,7 @@ const AiChatWidget = memo(({ context = {} }) => {
               <AnimatePresence>{showScrollBtn && <ScrollDownBtn onClick={() => scrollToBottom()} />}</AnimatePresence>
             </div>
 
-            {/* ── Input Area ── */}
+            {/* â”€â”€ Input Area â”€â”€ */}
             <motion.div
               className={`flex-shrink-0 border-t border-gray-200 dark:border-gray-700/80 bg-white dark:bg-gray-900 px-3 transition-all duration-300 ease-out ${keyboardVisible ? "py-1.5" : "py-2.5 pb-[calc(0.625rem+env(safe-area-inset-bottom,0px))] md:pb-2.5"}`}
               style={{ transformStyle: "preserve-3d" }}
@@ -1535,7 +1568,7 @@ const AiChatWidget = memo(({ context = {} }) => {
                     <span className="text-[10px] text-gray-400 dark:text-gray-600 select-none">
                       {input.length > 0 && <span className={input.length > 900 ? "text-orange-400" : ""}>{input.length}/1000</span>}
                     </span>
-                    <span className="text-[10px] text-gray-400 dark:text-gray-600 select-none">AI · May not always be accurate</span>
+                    <span className="text-[10px] text-gray-400 dark:text-gray-600 select-none">AI Â· May not always be accurate</span>
                   </motion.div>
                 )}
               </AnimatePresence>

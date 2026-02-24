@@ -8,7 +8,6 @@ import {
   query,
   where,
   doc,
-  setDoc,
 } from "firebase/firestore";
 import {
   addWeeks,
@@ -22,19 +21,27 @@ import { db } from "../../config/firebase";
 import { EXAM_PATTERNS } from "../../utils/examPatterns";
 import { TopNav, BottomNav } from "../../components";
 import { LeaderboardSkeleton } from "../../components/ui/LoadingSkeleton";
+import { getSafePhotoURL } from "../../utils/avatarUtils";
 
 // Cache for leaderboard data (keyed by examType_weekOffset)
 const leaderboardCache = new Map();
 const CACHE_TTL = 5 * 60 * 1000;
+const hideBrokenImage = (e) => {
+  e.currentTarget.style.display = "none";
+};
+const formatScore = (value) => Number(value || 0).toFixed(2);
+const formatAccuracy = (value) => `${Math.round(Number(value || 0))}%`;
 
 const Leaderboard = () => {
   const navigate = useNavigate();
-  const { currentUser } = useAuth();
+  const { currentUser, userDetails } = useAuth();
   const [examType, setExamType] = useState("CDS");
   const [weekOffset, setWeekOffset] = useState(0);
   const [entries, setEntries] = useState([]);
   const [loading, setLoading] = useState(true);
   const [myRank, setMyRank] = useState(null);
+  const [myOutsideEntry, setMyOutsideEntry] = useState(null);
+  const [error, setError] = useState("");
   const fetchingRef = useRef(false);
 
   const weekRange = useMemo(() => {
@@ -62,6 +69,18 @@ const Leaderboard = () => {
         if (currentUser) {
           const index = cached.allSorted.findIndex((e) => e.userId === currentUser.uid);
           setMyRank(index >= 0 ? index + 1 : null);
+          if (index >= 100) {
+            const mine = cached.allSorted[index];
+            setMyOutsideEntry({
+              ...mine,
+              rank: index + 1,
+              name: userDetails?.name || "You",
+              photoURL: userDetails?.photoURL || null,
+              isDeleted: false,
+            });
+          } else {
+            setMyOutsideEntry(null);
+          }
         }
         setLoading(false);
         return;
@@ -70,6 +89,7 @@ const Leaderboard = () => {
       fetchingRef.current = true;
 
       try {
+        setError("");
         setLoading(true);
         const weekNumber = getISOWeek(weekRange.start);
         const yearNumber = getISOWeekYear(weekRange.start);
@@ -93,24 +113,39 @@ const Leaderboard = () => {
             if (currentUser) {
               const index = storedEntries.findIndex((e) => e.userId === currentUser.uid);
               setMyRank(index >= 0 ? index + 1 : null);
+              setMyOutsideEntry(null);
             }
             return;
           }
         }
 
-        const q = query(
-          collection(db, "tests"),
-          where("examType", "==", examType),
-          where("completed", "==", true),
-        );
-        const snapshot = await getDocs(q);
+        const startIso = weekRange.start.toISOString();
+        const endIso = weekRange.end.toISOString();
+
+        let snapshot;
+        try {
+          const q = query(
+            collection(db, "tests"),
+            where("examType", "==", examType),
+            where("completed", "==", true),
+            where("endTime", ">=", startIso),
+            where("endTime", "<=", endIso),
+          );
+          snapshot = await getDocs(q);
+        } catch {
+          // Index fallback: still functional, but more expensive.
+          const fallbackQ = query(
+            collection(db, "tests"),
+            where("examType", "==", examType),
+            where("completed", "==", true),
+          );
+          snapshot = await getDocs(fallbackQ);
+        }
 
         const bestByUser = new Map();
         snapshot.forEach((docSnap) => {
           const data = docSnap.data();
           const endTime = data.endTime ? new Date(data.endTime) : null;
-          
-          // Filter by week range
           if (!endTime || endTime < weekRange.start || endTime > weekRange.end) return;
           if (data.score == null) return;
 
@@ -173,35 +208,29 @@ const Leaderboard = () => {
         if (currentUser) {
           const index = sorted.findIndex((entry) => entry.userId === currentUser.uid);
           setMyRank(index >= 0 ? index + 1 : null);
+          if (index >= 100) {
+            const mine = sorted[index];
+            setMyOutsideEntry({
+              ...mine,
+              rank: index + 1,
+              name: userDetails?.name || "You",
+              photoURL: userDetails?.photoURL || null,
+              isDeleted: false,
+            });
+          } else {
+            setMyOutsideEntry(null);
+          }
         }
 
-        // Store leaderboard snapshot (best-effort, requires admin write permission)
-        try {
-          const weekDocSnap = await getDoc(weekDocRef);
-          const updatedAtValue = weekDocSnap.data()?.updatedAt;
-          const updateInterval = 6 * 60 * 60 * 1000;
-          const shouldUpdate =
-            !weekDocSnap.exists() ||
-            !updatedAtValue ||
-            now - new Date(updatedAtValue).getTime() > updateInterval;
-
-          if (shouldUpdate) {
-            await setDoc(
-              weekDocRef,
-              {
-                examType,
-                week: weekNumber,
-                year: yearNumber,
-                rangeStart: weekRange.start.toISOString(),
-                rangeEnd: weekRange.end.toISOString(),
-                entries: enriched,
-                updatedAt: new Date().toISOString(),
-              },
-              { merge: true },
-            );
-          }
-        } catch {
-          // Non-admin users can't write snapshots — leaderboard still works via live query
+        // Snapshot writes are server/admin responsibility only.
+      } catch (err) {
+        setEntries([]);
+        setMyRank(null);
+        setMyOutsideEntry(null);
+        if (err?.code === "permission-denied") {
+          setError("Leaderboard is temporarily unavailable due to access rules.");
+        } else {
+          setError("Failed to load leaderboard. Please try again.");
         }
       } finally {
         setLoading(false);
@@ -210,7 +239,7 @@ const Leaderboard = () => {
     };
 
     fetchLeaderboard();
-  }, [currentUser, examType, weekOffset, weekRange.end, weekRange.start]);
+  }, [currentUser, examType, userDetails?.name, userDetails?.photoURL, weekOffset, weekRange.end, weekRange.start]);
 
   return (
     <div className="min-h-screen mesh-gradient pb-20 md:pb-0">
@@ -231,7 +260,7 @@ const Leaderboard = () => {
               <select
                 value={weekOffset}
                 onChange={handleWeekChange}
-                className="px-4 py-2.5 bg-gray-50 dark:bg-gray-700/50 border border-gray-200 dark:border-gray-600 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none dark:text-white transition-all"
+                className="px-4 py-2.5 min-h-11 bg-gray-50 dark:bg-gray-700/50 border border-gray-200 dark:border-gray-600 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none dark:text-white transition-all"
               >
                 <option value={0}>This Week</option>
                 <option value={1}>Last Week</option>
@@ -242,7 +271,7 @@ const Leaderboard = () => {
               <select
                 value={examType}
                 onChange={handleExamChange}
-                className="px-4 py-2.5 bg-gray-50 dark:bg-gray-700/50 border border-gray-200 dark:border-gray-600 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none dark:text-white transition-all"
+                className="px-4 py-2.5 min-h-11 bg-gray-50 dark:bg-gray-700/50 border border-gray-200 dark:border-gray-600 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none dark:text-white transition-all"
               >
                 {Object.keys(EXAM_PATTERNS).map((key) => (
                   <option key={key} value={key}>
@@ -265,7 +294,7 @@ const Leaderboard = () => {
               <div className="flex items-center gap-2">
                 <button
                   onClick={handleBack}
-                  className="p-2 bg-gray-100 dark:bg-gray-700 rounded-xl"
+                  className="p-2 min-h-11 min-w-11 bg-gray-100 dark:bg-gray-700 rounded-xl"
                   aria-label="Back"
                 >
                   <svg className="w-5 h-5 text-gray-700 dark:text-gray-200" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -278,7 +307,7 @@ const Leaderboard = () => {
               <select
                 value={weekOffset}
                 onChange={handleWeekChange}
-                className="w-full px-3 py-2.5 text-sm bg-gray-50 dark:bg-gray-700/50 border border-gray-200 dark:border-gray-600 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none dark:text-white truncate"
+                className="w-full px-3 py-2.5 min-h-11 text-sm bg-gray-50 dark:bg-gray-700/50 border border-gray-200 dark:border-gray-600 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none dark:text-white truncate"
               >
                 <option value={0}>This Week</option>
                 <option value={1}>Last Week</option>
@@ -289,7 +318,7 @@ const Leaderboard = () => {
               <select
                 value={examType}
                 onChange={handleExamChange}
-                className="w-full px-3 py-2.5 text-sm bg-gray-50 dark:bg-gray-700/50 border border-gray-200 dark:border-gray-600 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none dark:text-white truncate"
+                className="w-full px-3 py-2.5 min-h-11 text-sm bg-gray-50 dark:bg-gray-700/50 border border-gray-200 dark:border-gray-600 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none dark:text-white truncate"
               >
                 {Object.keys(EXAM_PATTERNS).map((key) => (
                   <option key={key} value={key}>
@@ -320,6 +349,23 @@ const Leaderboard = () => {
 
         {loading ? (
           <LeaderboardSkeleton />
+        ) : error ? (
+          <motion.div
+            initial={{ opacity: 0, scale: 0.95 }}
+            animate={{ opacity: 1, scale: 1 }}
+            className="bg-white dark:bg-gray-800 rounded-2xl shadow-xl p-8 text-center border border-gray-100 dark:border-gray-700"
+          >
+            <p className="text-red-600 dark:text-red-400 font-semibold">{error}</p>
+            <p className="text-sm text-gray-500 dark:text-gray-400 mt-2">
+              Complete a test and refresh, or try again in a moment.
+            </p>
+            <button
+              onClick={() => window.location.reload()}
+              className="mt-4 px-4 py-2 min-h-11 rounded-xl bg-blue-600 text-white text-sm font-semibold hover:bg-blue-700 transition-colors"
+            >
+              Retry
+            </button>
+          </motion.div>
         ) : entries.length === 0 ? (
           <motion.div 
             initial={{ opacity: 0, scale: 0.95 }}
@@ -349,24 +395,28 @@ const Leaderboard = () => {
                     return (
                       <div key={entry.userId} className="text-center">
                         <div className="flex justify-center mb-1">{medals[idx]}</div>
-                        <div className={`w-12 h-12 rounded-full mx-auto mb-1 overflow-hidden ${
+                        <div className={`relative w-12 h-12 rounded-full mx-auto mb-1 overflow-hidden ${
                           entry.isDeleted 
                             ? "bg-gray-400" 
                             : "bg-gradient-to-br from-blue-500 to-purple-600"
                         }`}>
-                          {entry.photoURL ? (
-                            <img src={entry.photoURL} alt="" className="w-full h-full object-cover" />
-                          ) : (
-                            <div className="w-full h-full flex items-center justify-center text-white font-bold">
-                              {entry.name?.charAt(0)?.toUpperCase() || "U"}
-                            </div>
+                          <div className="w-full h-full flex items-center justify-center text-white font-bold">
+                            {entry.name?.charAt(0)?.toUpperCase() || "U"}
+                          </div>
+                          {getSafePhotoURL(entry.photoURL) && (
+                            <img
+                              src={getSafePhotoURL(entry.photoURL)}
+                              alt=""
+                              className="absolute inset-0 w-full h-full object-cover"
+                              onError={hideBrokenImage}
+                            />
                           )}
                         </div>
                         <p className="text-xs font-semibold text-gray-800 dark:text-gray-200 truncate max-w-[80px]">
                           {entry.name}
                         </p>
                         <p className="text-xs text-gray-600 dark:text-gray-400">
-                          {entry.score.toFixed(1)}
+                          {formatScore(entry.score)}
                         </p>
                       </div>
                     );
@@ -413,15 +463,19 @@ const Leaderboard = () => {
                       #{entry.rank}
                     </span>
                     <span className="truncate flex items-center gap-2">
-                      <div className={`w-8 h-8 rounded-full flex items-center justify-center text-white text-xs font-bold overflow-hidden flex-shrink-0 ${
+                      <div className={`relative w-8 h-8 rounded-full flex items-center justify-center text-white text-xs font-bold overflow-hidden flex-shrink-0 ${
                         entry.isDeleted 
                           ? "bg-gray-400 dark:bg-gray-600" 
                           : "bg-gradient-to-br from-blue-500 to-purple-600"
                       }`}>
-                        {entry.photoURL ? (
-                          <img src={entry.photoURL} alt="" className="w-full h-full object-cover" />
-                        ) : (
-                          entry.name?.charAt(0)?.toUpperCase() || "U"
+                        {entry.name?.charAt(0)?.toUpperCase() || "U"}
+                        {getSafePhotoURL(entry.photoURL) && (
+                          <img
+                            src={getSafePhotoURL(entry.photoURL)}
+                            alt=""
+                            className="absolute inset-0 w-full h-full object-cover"
+                            onError={hideBrokenImage}
+                          />
                         )}
                       </div>
                       <span className={`truncate ${entry.isDeleted ? "text-gray-400 dark:text-gray-500 italic" : ""}`}>
@@ -431,22 +485,26 @@ const Leaderboard = () => {
                         <span className="text-xs bg-blue-100 dark:bg-blue-800 text-blue-700 dark:text-blue-200 px-2 py-0.5 rounded-full font-medium">You</span>
                       )}
                     </span>
-                    <span className="font-bold text-blue-600 dark:text-blue-400">{entry.score.toFixed(2)}</span>
-                    <span className="text-green-600 dark:text-green-400">{entry.accuracy}%</span>
+                    <span className="font-bold text-blue-600 dark:text-blue-400">{formatScore(entry.score)}</span>
+                    <span className="text-green-600 dark:text-green-400">{formatAccuracy(entry.accuracy)}</span>
                   </div>
                   
                   {/* Mobile Card */}
                   <div className="sm:hidden p-4">
                     <div className="flex items-center gap-3">
-                      <div className={`w-10 h-10 rounded-full flex items-center justify-center text-white text-sm font-bold overflow-hidden flex-shrink-0 ${
+                      <div className={`relative w-10 h-10 rounded-full flex items-center justify-center text-white text-sm font-bold overflow-hidden flex-shrink-0 ${
                         entry.isDeleted 
                           ? "bg-gray-400 dark:bg-gray-600" 
                           : "bg-gradient-to-br from-blue-500 to-purple-600"
                       }`}>
-                        {entry.photoURL ? (
-                          <img src={entry.photoURL} alt="" className="w-full h-full object-cover" />
-                        ) : (
-                          entry.name?.charAt(0)?.toUpperCase() || "U"
+                        {entry.name?.charAt(0)?.toUpperCase() || "U"}
+                        {getSafePhotoURL(entry.photoURL) && (
+                          <img
+                            src={getSafePhotoURL(entry.photoURL)}
+                            alt=""
+                            className="absolute inset-0 w-full h-full object-cover"
+                            onError={hideBrokenImage}
+                          />
                         )}
                       </div>
                       <div className="flex-1 min-w-0">
@@ -462,13 +520,13 @@ const Leaderboard = () => {
                               <span className="text-xs bg-blue-100 dark:bg-blue-800 text-blue-700 dark:text-blue-200 px-2 py-0.5 rounded-full font-medium">You</span>
                             )}
                           </div>
-                          <span className="font-bold text-blue-600 dark:text-blue-400">{entry.score.toFixed(1)}</span>
+                          <span className="font-bold text-blue-600 dark:text-blue-400">{formatScore(entry.score)}</span>
                         </div>
                         <div className="flex items-center justify-between text-sm text-gray-500 dark:text-gray-400">
                           <span className={`truncate max-w-[60%] ${entry.isDeleted ? "text-gray-400 dark:text-gray-500 italic" : ""}`}>
                             {entry.name}
                           </span>
-                          <span className="text-green-600 dark:text-green-400">{entry.accuracy}%</span>
+                          <span className="text-green-600 dark:text-green-400">{formatAccuracy(entry.accuracy)}</span>
                         </div>
                       </div>
                     </div>
@@ -476,6 +534,22 @@ const Leaderboard = () => {
                 </motion.div>
               ))}
             </motion.div>
+
+            {myOutsideEntry && (
+              <motion.div
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                className="mt-4 sticky bottom-24 md:bottom-4 z-10 bg-blue-50 dark:bg-blue-900/25 border border-blue-200 dark:border-blue-800 rounded-2xl p-3"
+              >
+                <p className="text-xs font-semibold text-blue-700 dark:text-blue-300 mb-2">Your Position</p>
+                <div className="grid grid-cols-4 gap-3 items-center text-sm">
+                  <span className="font-bold text-blue-700 dark:text-blue-300">#{myOutsideEntry.rank}</span>
+                  <span className="truncate text-gray-800 dark:text-gray-100">{myOutsideEntry.name}</span>
+                  <span className="font-semibold text-blue-700 dark:text-blue-300">{formatScore(myOutsideEntry.score)}</span>
+                  <span className="text-green-600 dark:text-green-400">{formatAccuracy(myOutsideEntry.accuracy)}</span>
+                </div>
+              </motion.div>
+            )}
           </>
         )}
       </div>

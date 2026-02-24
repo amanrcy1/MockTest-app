@@ -1,15 +1,17 @@
 import { useEffect, useState, useRef, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import { doc, updateDoc } from "firebase/firestore";
+import { deleteObject, getDownloadURL, ref, uploadString } from "firebase/storage";
 import toast, { messages } from "../../utils/toast";
 import { motion, AnimatePresence } from "framer-motion";
 import Cropper from "react-easy-crop";
-import { db } from "../../config/firebase";
+import { db, storage } from "../../config/firebase";
 import { useAuth } from "../../context/AuthContext";
 import { EXAM_PATTERNS } from "../../utils/examPatterns";
 import { ThemeToggle, AuthAuroraCanvas, BottomNav, TopNav } from "../../components";
 import { ProfileSkeleton } from "../../components/ui/LoadingSkeleton";
 import logger from "../../utils/logger";
+import { getSafePhotoURL } from "../../utils/avatarUtils";
 
 const createCroppedImage = async (imageSrc, pixelCrop, maxSize = 200, quality = 0.8) => {
   const image = await new Promise((resolve, reject) => {
@@ -34,6 +36,15 @@ const createCroppedImage = async (imageSrc, pixelCrop, maxSize = 200, quality = 
   });
 };
 
+const deleteStoredPhotoIfAny = async (photoPath) => {
+  if (!photoPath || typeof photoPath !== "string") return;
+  try {
+    await deleteObject(ref(storage, photoPath));
+  } catch {
+    // Best effort cleanup.
+  }
+};
+
 const stagger = { hidden: {}, visible: { transition: { staggerChildren: 0.07 } } };
 const fadeUp = { hidden: { opacity: 0, y: 20 }, visible: { opacity: 1, y: 0, transition: { type: "spring", stiffness: 120, damping: 14 } } };
 
@@ -52,6 +63,7 @@ const Profile = () => {
   const [crop, setCrop] = useState({ x: 0, y: 0 });
   const [zoom, setZoom] = useState(1);
   const [croppedAreaPixels, setCroppedAreaPixels] = useState(null);
+  const [avatarLoadFailed, setAvatarLoadFailed] = useState(false);
 
   useEffect(() => {
     if (userDetails) {
@@ -60,6 +72,10 @@ const Profile = () => {
       setLoading(false);
     }
   }, [userDetails]);
+
+  useEffect(() => {
+    setAvatarLoadFailed(false);
+  }, [previewUrl]);
 
   const handleChange = (e) => setFormData((p) => ({ ...p, [e.target.name]: e.target.value }));
 
@@ -82,8 +98,33 @@ const Profile = () => {
     try {
       setUploadingPhoto(true);
       const cropped = await createCroppedImage(imageToCrop, croppedAreaPixels);
-      await updateDoc(doc(db, "users", currentUser.uid), { photoURL: cropped, updatedAt: new Date().toISOString() });
-      setPreviewUrl(cropped); setShowCropper(false); setImageToCrop(null);
+      const previousPhotoPath = userDetails?.photoPath || null;
+      let finalPhotoURL = cropped;
+      let finalPhotoPath = null;
+
+      try {
+        const newPhotoPath = `profiles/${currentUser.uid}/${Date.now()}.jpg`;
+        const storageRef = ref(storage, newPhotoPath);
+        await uploadString(storageRef, cropped, "data_url");
+        finalPhotoURL = await getDownloadURL(storageRef);
+        finalPhotoPath = newPhotoPath;
+      } catch {
+        // Fallback for projects without Firebase Storage (Spark-only / no bucket setup).
+        finalPhotoURL = cropped;
+        finalPhotoPath = null;
+      }
+
+      await updateDoc(doc(db, "users", currentUser.uid), {
+        photoURL: finalPhotoURL,
+        photoPath: finalPhotoPath,
+        updatedAt: new Date().toISOString(),
+      });
+
+      if (previousPhotoPath && previousPhotoPath !== finalPhotoPath) {
+        await deleteStoredPhotoIfAny(previousPhotoPath);
+      }
+
+      setPreviewUrl(finalPhotoURL); setShowCropper(false); setImageToCrop(null);
       await refreshUserDetails();
       toast.success(messages.PHOTO_UPDATED);
     } catch (err) { logger.error("Crop save error:", err); toast.error(messages.PHOTO_SAVE_FAILED); }
@@ -94,7 +135,12 @@ const Profile = () => {
     if (!currentUser) return;
     try {
       setUploadingPhoto(true); setShowPhotoOptions(false);
-      await updateDoc(doc(db, "users", currentUser.uid), { photoURL: null, updatedAt: new Date().toISOString() });
+      await deleteStoredPhotoIfAny(userDetails?.photoPath);
+      await updateDoc(doc(db, "users", currentUser.uid), {
+        photoURL: null,
+        photoPath: null,
+        updatedAt: new Date().toISOString(),
+      });
       setPreviewUrl(null); await refreshUserDetails(); toast.success(messages.PHOTO_REMOVED);
     } catch (err) { logger.error("Remove photo error:", err); toast.error(messages.PHOTO_REMOVE_FAILED); }
     finally { setUploadingPhoto(false); }
@@ -121,6 +167,7 @@ const Profile = () => {
   }, [logout, navigate]);
 
   const initial = userDetails?.name?.charAt(0)?.toUpperCase() || "U";
+  const safePreviewUrl = getSafePhotoURL(previewUrl);
   const memberSince = userDetails?.createdAt ? new Date(userDetails.createdAt).toLocaleDateString("en-IN", { month: "short", year: "numeric" }) : null;
 
   if (loading) {
@@ -183,14 +230,14 @@ const Profile = () => {
                 <h3 className="text-lg font-bold text-gray-900 dark:text-white text-center">Profile Photo</h3>
               </div>
               <div className="p-2">
-                <button onClick={() => { setShowPhotoOptions(false); fileInputRef.current?.click(); }} className="w-full flex items-center gap-4 p-4 hover:bg-gray-50 dark:hover:bg-gray-700 rounded-xl transition-colors">
+                <button onClick={() => { setShowPhotoOptions(false); fileInputRef.current?.click(); }} className="w-full min-h-11 flex items-center gap-4 p-4 hover:bg-gray-50 dark:hover:bg-gray-700 rounded-xl transition-colors">
                   <div className="w-12 h-12 bg-blue-100 dark:bg-blue-900/30 rounded-full flex items-center justify-center">
                     <svg className="w-6 h-6 text-blue-600 dark:text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" /></svg>
                   </div>
                   <div className="text-left"><p className="font-semibold text-gray-900 dark:text-white">Choose from Gallery</p><p className="text-sm text-gray-500 dark:text-gray-400">Select and crop your photo</p></div>
                 </button>
                 {previewUrl && (
-                  <button onClick={handleRemovePhoto} disabled={uploadingPhoto} className="w-full flex items-center gap-4 p-4 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-xl transition-colors disabled:opacity-50">
+                  <button onClick={handleRemovePhoto} disabled={uploadingPhoto} className="w-full min-h-11 flex items-center gap-4 p-4 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-xl transition-colors disabled:opacity-50">
                     <div className="w-12 h-12 bg-red-100 dark:bg-red-900/30 rounded-full flex items-center justify-center">
                       <svg className="w-6 h-6 text-red-600 dark:text-red-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg>
                     </div>
@@ -199,7 +246,7 @@ const Profile = () => {
                 )}
               </div>
               <div className="p-2 border-t border-gray-100 dark:border-gray-700">
-                <button onClick={() => setShowPhotoOptions(false)} className="w-full p-4 text-gray-500 font-semibold hover:bg-gray-50 dark:hover:bg-gray-700 rounded-xl transition-colors">Cancel</button>
+                <button onClick={() => setShowPhotoOptions(false)} className="w-full min-h-11 p-4 text-gray-500 font-semibold hover:bg-gray-50 dark:hover:bg-gray-700 rounded-xl transition-colors">Cancel</button>
               </div>
             </motion.div>
           </motion.div>
@@ -210,7 +257,7 @@ const Profile = () => {
       <header className="sticky top-0 md:top-14 z-40 backdrop-blur-xl bg-white/60 dark:bg-gray-900/60 border-b border-white/20 dark:border-gray-700/30">
         <div className="px-4 py-3 max-w-2xl mx-auto flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <motion.button whileHover={{ scale: 1.1 }} whileTap={{ scale: 0.9 }} onClick={() => navigate("/dashboard")} className="p-2 -ml-2 rounded-xl hover:bg-white/40 dark:hover:bg-gray-700/40 transition-colors md:hidden" aria-label="Back">
+            <motion.button whileHover={{ scale: 1.1 }} whileTap={{ scale: 0.9 }} onClick={() => navigate("/dashboard")} className="p-2 min-h-11 min-w-11 -ml-2 rounded-xl hover:bg-white/40 dark:hover:bg-gray-700/40 transition-colors md:hidden" aria-label="Back">
               <svg className="w-5 h-5 text-gray-700 dark:text-gray-200" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" /></svg>
             </motion.button>
             <h1 className="text-lg font-bold text-gray-900 dark:text-white">Profile</h1>
@@ -224,25 +271,40 @@ const Profile = () => {
 
           {/* Hero Card — Avatar + Info */}
           <motion.div variants={fadeUp} className="relative bg-white/70 dark:bg-gray-900/70 backdrop-blur-2xl rounded-3xl border border-white/30 dark:border-gray-700/40 shadow-2xl shadow-purple-500/5 overflow-hidden">
-            <div className="h-24 bg-gradient-to-r from-blue-500 via-purple-500 to-pink-500 relative">
+            <div className="h-20 bg-gradient-to-r from-blue-500 via-indigo-500 to-cyan-500 relative">
               <div className="absolute inset-0 bg-[radial-gradient(circle_at_30%_50%,rgba(255,255,255,0.2),transparent_70%)]" />
             </div>
 
-            <div className="px-6 pb-6 -mt-14 flex flex-col items-center">
+            <div className="px-6 pb-6 -mt-10 flex flex-col items-center">
               <motion.div className="relative cursor-pointer group" whileHover={{ scale: 1.05 }} onClick={() => setShowPhotoOptions(true)}>
-                <div className="absolute -inset-1 bg-gradient-to-br from-blue-400 to-purple-500 rounded-full blur-md opacity-60 group-hover:opacity-80 transition-opacity" />
-                <div className="relative w-28 h-28 rounded-full bg-gradient-to-br from-blue-500 via-purple-500 to-pink-500 flex items-center justify-center text-white text-4xl font-bold shadow-xl ring-4 ring-white dark:ring-gray-900 overflow-hidden">
-                  {previewUrl ? <img src={previewUrl} alt="Profile" className="w-full h-full object-cover" /> : initial}
+                <div className="absolute -inset-1 bg-gradient-to-br from-blue-400 to-indigo-500 rounded-full blur-md opacity-40 group-hover:opacity-70 transition-opacity" />
+                <div className="relative w-24 h-24 rounded-full bg-gradient-to-br from-blue-500 via-indigo-500 to-cyan-500 flex items-center justify-center text-white text-3xl font-bold shadow-xl ring-4 ring-white dark:ring-gray-900 overflow-hidden">
+                  {initial}
+                  {safePreviewUrl && !avatarLoadFailed && (
+                    <img
+                      src={safePreviewUrl}
+                      alt="Profile"
+                      className="absolute inset-0 w-full h-full object-cover"
+                      onError={() => setAvatarLoadFailed(true)}
+                    />
+                  )}
                   <div className="absolute inset-0 bg-black/0 group-hover:bg-black/40 flex items-center justify-center transition-all">
                     <svg className="w-7 h-7 text-white opacity-0 group-hover:opacity-100 transition-opacity" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z" /><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 13a3 3 0 11-6 0 3 3 0 016 0z" /></svg>
                   </div>
                 </div>
-                <motion.div className="absolute -bottom-1 -right-1 w-9 h-9 bg-blue-500 rounded-full border-[3px] border-white dark:border-gray-900 flex items-center justify-center shadow-lg" initial={{ scale: 0 }} animate={{ scale: 1 }} transition={{ delay: 0.3, type: "spring" }}>
-                  <svg className="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" /></svg>
+                <motion.div className="absolute -bottom-1 -right-1 w-8 h-8 bg-blue-500 rounded-full border-[3px] border-white dark:border-gray-900 flex items-center justify-center shadow-lg" initial={{ scale: 0 }} animate={{ scale: 1 }} transition={{ delay: 0.3, type: "spring" }}>
+                  <svg className="w-3.5 h-3.5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" /></svg>
                 </motion.div>
               </motion.div>
 
-              <h2 className="text-2xl font-bold text-gray-900 dark:text-white mt-4">{userDetails?.name}</h2>
+              <button
+                onClick={() => setShowPhotoOptions(true)}
+                className="mt-3 min-h-11 px-4 py-2 text-xs font-semibold rounded-full bg-blue-50 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 hover:bg-blue-100 dark:hover:bg-blue-900/40 transition-colors"
+              >
+                Change Photo
+              </button>
+
+              <h2 className="text-2xl font-bold text-gray-900 dark:text-white mt-3">{userDetails?.name}</h2>
 
               <div className="flex items-center gap-6 mt-4">
                 {userDetails?.targetExam && (
@@ -330,7 +392,7 @@ const Profile = () => {
           {/* Action Buttons */}
           <motion.div variants={fadeUp} className="space-y-3 pb-4">
             <motion.button whileHover={{ scale: 1.01, y: -1 }} whileTap={{ scale: 0.98 }} onClick={handleSave} disabled={saving}
-              className="w-full py-4 bg-gradient-to-r from-blue-500 via-blue-600 to-purple-600 text-white rounded-2xl font-bold text-base shadow-xl shadow-blue-500/20 hover:shadow-blue-500/30 transition-all disabled:opacity-50 disabled:cursor-not-allowed relative overflow-hidden group">
+              className="w-full min-h-11 py-4 bg-gradient-to-r from-blue-500 via-blue-600 to-purple-600 text-white rounded-2xl font-bold text-base shadow-xl shadow-blue-500/20 hover:shadow-blue-500/30 transition-all disabled:opacity-50 disabled:cursor-not-allowed relative overflow-hidden group">
               <div className="absolute inset-0 bg-gradient-to-r from-white/0 via-white/10 to-white/0 translate-x-[-100%] group-hover:translate-x-[100%] transition-transform duration-700" />
               {saving ? (
                 <span className="flex items-center justify-center gap-2">
@@ -340,11 +402,11 @@ const Profile = () => {
               ) : "Save Changes"}
             </motion.button>
             <motion.button whileHover={{ scale: 1.01 }} whileTap={{ scale: 0.98 }} onClick={() => navigate("/dashboard")}
-              className="w-full py-3.5 bg-white/60 dark:bg-gray-800/60 backdrop-blur-sm text-gray-600 dark:text-gray-300 rounded-2xl font-semibold hover:bg-white/80 dark:hover:bg-gray-700/60 transition-all border border-gray-200/50 dark:border-gray-700/40">
+              className="w-full min-h-11 py-3.5 bg-white/60 dark:bg-gray-800/60 backdrop-blur-sm text-gray-600 dark:text-gray-300 rounded-2xl font-semibold hover:bg-white/80 dark:hover:bg-gray-700/60 transition-all border border-gray-200/50 dark:border-gray-700/40">
               Cancel
             </motion.button>
             <motion.button whileHover={{ scale: 1.01 }} whileTap={{ scale: 0.98 }} onClick={handleLogout}
-              className="w-full py-3.5 bg-red-50/60 dark:bg-red-900/20 backdrop-blur-sm text-red-600 dark:text-red-400 rounded-2xl font-semibold hover:bg-red-100/80 dark:hover:bg-red-900/30 transition-all border border-red-200/50 dark:border-red-700/40 flex items-center justify-center gap-2">
+              className="w-full min-h-11 py-3.5 bg-red-50/60 dark:bg-red-900/20 backdrop-blur-sm text-red-600 dark:text-red-400 rounded-2xl font-semibold hover:bg-red-100/80 dark:hover:bg-red-900/30 transition-all border border-red-200/50 dark:border-red-700/40 flex items-center justify-center gap-2">
               <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2}>
                 <path strokeLinecap="round" strokeLinejoin="round" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
               </svg>

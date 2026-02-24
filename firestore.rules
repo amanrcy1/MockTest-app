@@ -58,7 +58,11 @@ service cloud.firestore {
 
     match /tests/{testId} {
       allow read: if isSignedIn()
-                  && (resource.data.userId == request.auth.uid || isAdmin());
+                  && (
+                    resource.data.userId == request.auth.uid
+                    || resource.data.completed == true
+                    || isAdmin()
+                  );
 
       allow create: if isSignedIn()
                     && incomingData().userId == request.auth.uid;
@@ -106,7 +110,7 @@ service cloud.firestore {
     // Only admins can delete (user deletion flow).
 
     match /emails/{emailKey} {
-      allow read: if true;
+      allow read: if isAdmin();
 
       allow create: if isSignedIn()
                     && incomingData().userId == request.auth.uid;
@@ -133,7 +137,7 @@ service cloud.firestore {
 
     match /leaderboard/{docId} {
       allow read: if isSignedIn();
-      allow create, update: if isSignedIn();
+      allow create, update: if isAdmin();
       allow delete: if isAdmin();
     }
 

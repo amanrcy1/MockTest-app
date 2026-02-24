@@ -22,27 +22,32 @@ if (!admin.apps.length) {
   }
 }
 
-const rateLimitMap = new Map();
 const RATE_LIMIT_WINDOW = 60_000;
 const RATE_LIMIT_MAX = 15;
+const RATE_LIMIT_COLLECTION = 'rateLimitsExplanations';
 
-function isRateLimited(key) {
+async function isRateLimited(uid) {
   const now = Date.now();
-  const entry = rateLimitMap.get(key);
-  if (!entry || now - entry.windowStart > RATE_LIMIT_WINDOW) {
-    rateLimitMap.set(key, { windowStart: now, count: 1 });
-    return false;
-  }
-  entry.count++;
-  return entry.count > RATE_LIMIT_MAX;
+  const bucket = Math.floor(now / RATE_LIMIT_WINDOW);
+  const docId = `${uid}_${bucket}`;
+  const ref = admin.firestore().collection(RATE_LIMIT_COLLECTION).doc(docId);
+
+  const count = await admin.firestore().runTransaction(async (tx) => {
+    const snap = await tx.get(ref);
+    const existing = snap.exists ? snap.data().count || 0 : 0;
+    const next = existing + 1;
+    tx.set(ref, {
+      uid,
+      count: next,
+      bucket,
+      expiresAt: new Date((bucket + 2) * RATE_LIMIT_WINDOW),
+      updatedAt: admin.firestore.FieldValue.serverTimestamp(),
+    }, { merge: true });
+    return next;
+  });
+
+  return count > RATE_LIMIT_MAX;
 }
-
-setInterval(() => {
-  const now = Date.now();
-  for (const [key, entry] of rateLimitMap) {
-    if (now - entry.windowStart > RATE_LIMIT_WINDOW * 2) rateLimitMap.delete(key);
-  }
-}, RATE_LIMIT_WINDOW * 5);
 
 function truncate(str, maxLen) {
   if (typeof str !== 'string') return '';
@@ -129,20 +134,23 @@ async function callGroq(messages, models, groqApiKey) {
 
 export default async function handler(req, res) {
   const origin = req.headers.origin || '';
-  const allowedOrigin = ALLOWED_ORIGINS.includes(origin) ? origin : ALLOWED_ORIGINS[0];
-  res.setHeader('Access-Control-Allow-Origin', allowedOrigin);
+  const originAllowed = !origin || ALLOWED_ORIGINS.includes(origin);
+  if (originAllowed && origin) {
+    res.setHeader('Access-Control-Allow-Origin', origin);
+  }
   res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
   res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
 
-  if (req.method === 'OPTIONS') return res.status(200).end();
+  if (req.method === 'OPTIONS') return res.status(originAllowed ? 200 : 403).end();
   if (req.method !== 'POST') return res.status(405).json({ error: 'Method Not Allowed' });
+  if (!originAllowed) return res.status(403).json({ error: 'Origin not allowed' });
   if (parseInt(req.headers['content-length'] || '0', 10) > 10240) {
     return res.status(413).json({ error: 'Payload Too Large' });
   }
 
   const decodedToken = await verifyAuth(req);
   if (!decodedToken) return res.status(401).json({ error: 'Unauthorized' });
-  if (isRateLimited(decodedToken.uid)) return res.status(429).json({ error: 'Too many requests.' });
+  if (await isRateLimited(decodedToken.uid)) return res.status(429).json({ error: 'Too many requests.' });
 
   try {
     const {

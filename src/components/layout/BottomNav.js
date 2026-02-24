@@ -4,11 +4,11 @@ import PropTypes from "prop-types";
 
 // Static nav items - defined outside component to prevent recreation
 const NAV_ITEMS = [
-  { path: "/dashboard", label: "Home", gradient: "from-blue-500 to-blue-600" },
-  { path: "/test-selection", label: "Tests", gradient: "from-emerald-500 to-emerald-600" },
-  { path: "/leaderboard", label: "Rank", gradient: "from-purple-500 to-purple-600" },
-  { path: "/bookmarks", label: "Saved", gradient: "from-orange-500 to-orange-600" },
-  { path: "/profile", label: "Profile", gradient: "from-pink-500 to-pink-600" },
+  { path: "/dashboard", label: "Home" },
+  { path: "/test-selection", label: "Tests" },
+  { path: "/leaderboard", label: "Rank" },
+  { path: "/bookmarks", label: "Saved" },
+  { path: "/profile", label: "Profile" },
 ];
 
 // Icon components - memoized
@@ -62,7 +62,7 @@ const NavItem = memo(({ item }) => {
     <NavLink
       to={item.path}
       className={({ isActive }) =>
-        `relative flex flex-col items-center justify-center flex-1 h-full py-1 active:scale-90 transition-transform ${
+        `relative flex flex-col items-center justify-center flex-1 h-full py-1 min-h-11 active:scale-90 transition-transform ${
           isActive ? "text-gray-900 dark:text-white" : "text-gray-500 dark:text-gray-400"
         }`
       }
@@ -71,11 +71,11 @@ const NavItem = memo(({ item }) => {
       {({ isActive }) => (
         <>
           {isActive && (
-            <div className={`absolute -top-1 w-10 h-1 rounded-full bg-gradient-to-r ${item.gradient}`} />
+            <div className="absolute -top-1 w-10 h-1 rounded-full bg-blue-500" />
           )}
           <div className={`relative p-2 rounded-xl transition-all duration-200 ${
             isActive 
-              ? `bg-gradient-to-br ${item.gradient} text-white shadow-lg -translate-y-1` 
+              ? "bg-blue-600 text-white shadow-lg -translate-y-1" 
               : "text-gray-500 dark:text-gray-400"
           }`}>
             <Icon />
@@ -96,7 +96,6 @@ NavItem.propTypes = {
   item: PropTypes.shape({
     path: PropTypes.string.isRequired,
     label: PropTypes.string.isRequired,
-    gradient: PropTypes.string.isRequired,
   }).isRequired,
 };
 

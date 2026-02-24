@@ -1,5 +1,6 @@
 import { memo } from "react";
 import PropTypes from "prop-types";
+import { getSafePhotoURL } from "../../utils/avatarUtils";
 
 /**
  * Optimized Leaderboard Podium - reduced animations for performance
@@ -31,11 +32,16 @@ const LeaderboardPodium = memo(({ topThree = [] }) => {
             {/* User Avatar & Info */}
             <div className="mb-3 text-center hover:scale-105 transition-transform">
               <div className="relative inline-block">
-                <div className={`w-14 h-14 sm:w-16 sm:h-16 rounded-full bg-gradient-to-br ${config.color} flex items-center justify-center text-white font-bold text-lg shadow-lg ${config.glow} overflow-hidden`}>
-                  {user.photoURL ? (
-                    <img src={user.photoURL} alt="" className="w-full h-full object-cover" loading="lazy" />
-                  ) : (
-                    user.name?.charAt(0)?.toUpperCase() || "?"
+                <div className={`relative w-14 h-14 sm:w-16 sm:h-16 rounded-full bg-gradient-to-br ${config.color} flex items-center justify-center text-white font-bold text-lg shadow-lg ${config.glow} overflow-hidden`}>
+                  {user.name?.charAt(0)?.toUpperCase() || "?"}
+                  {getSafePhotoURL(user.photoURL) && (
+                    <img
+                      src={getSafePhotoURL(user.photoURL)}
+                      alt=""
+                      className="absolute inset-0 w-full h-full object-cover"
+                      loading="lazy"
+                      onError={(e) => { e.currentTarget.style.display = "none"; }}
+                    />
                   )}
                 </div>
                 <span className="absolute -top-1 -right-1">{config.medal}</span>

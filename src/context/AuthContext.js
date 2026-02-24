@@ -5,6 +5,8 @@ import {
   onAuthStateChanged,
   GoogleAuthProvider,
   signInWithPopup,
+  signInWithRedirect,
+  getRedirectResult,
 } from "firebase/auth";
 import {
   doc,
@@ -17,6 +19,7 @@ import { useSessionTimeout } from "../hooks/useSessionTimeout";
 import logger from "../utils/logger";
 
 const AuthContext = createContext();
+const AUTH_REDIRECT_INTENT_KEY = "auth.google.redirect.intent";
 
 export const useAuth = () => {
   return useContext(AuthContext);
@@ -37,6 +40,8 @@ const getErrorMessage = (error) => {
     "auth/popup-blocked": "Popup was blocked. Please allow popups and try again.",
     "auth/popup-closed-by-user": "Sign-in cancelled.",
     "auth/cancelled-popup-request": "Sign-in cancelled.",
+    "auth/unauthorized-domain": "This domain is not authorized in Firebase Auth. Add it in Firebase Console > Authentication > Settings > Authorized domains.",
+    "auth/operation-not-supported-in-this-environment": "Google login is blocked in this browser context. Try normal Chrome window.",
     "permission-denied": "You do not have permission to perform this action.",
     "unavailable": "Service temporarily unavailable. Please try again later.",
   };
@@ -50,6 +55,9 @@ const getErrorMessage = (error) => {
 const sanitizeFirestoreKey = (value) => {
   return value.replace(/[.#$[\]/]/g, "_");
 };
+
+const isPermissionDenied = (error) =>
+  error?.code === "permission-denied" || error?.code === "firestore/permission-denied";
 
 // ============================================
 // AUTH PROVIDER
@@ -88,6 +96,75 @@ export const AuthProvider = ({ children }) => {
     }
   }, []);
 
+  const ensureGoogleUserProfile = useCallback(async (user) => {
+    const googleEmail = user?.email;
+    if (!googleEmail) {
+      await signOut(auth);
+      throw new Error("Could not retrieve email from Google.");
+    }
+
+    const userDocRef = doc(db, "users", user.uid);
+    let userDoc = null;
+    try {
+      userDoc = await getDoc(userDocRef);
+    } catch (readError) {
+      if (!isPermissionDenied(readError)) throw readError;
+      logger.warn("Permission denied reading user profile, attempting create/merge fallback.");
+    }
+
+    if (userDoc?.exists()) {
+      const userData = userDoc.data();
+      await setDoc(userDocRef, {
+        lastLoginAt: new Date().toISOString(),
+        loginCount: (userData.loginCount || 0) + 1,
+      }, { merge: true });
+      await fetchUserDetails(user.uid);
+      return { isNewUser: false };
+    }
+
+    const displayName = user.displayName || googleEmail.split("@")[0];
+    const createdDocs = [];
+
+    try {
+      const emailKey = sanitizeFirestoreKey(googleEmail.toLowerCase());
+      const emailDocRef = doc(db, "emails", emailKey);
+      try {
+        await setDoc(emailDocRef, {
+          userId: user.uid,
+          email: googleEmail,
+          createdAt: new Date().toISOString(),
+        });
+        createdDocs.push({ ref: emailDocRef, type: "email" });
+      } catch (emailError) {
+        if (!isPermissionDenied(emailError)) throw emailError;
+        logger.warn("Email mapping write denied by rules, continuing without /emails mapping.");
+      }
+
+      await setDoc(userDocRef, {
+        userId: user.uid,
+        name: displayName,
+        email: googleEmail,
+        photoURL: user.photoURL || null,
+        targetExam: "CDS",
+        isAdmin: false,
+        onboardingComplete: false,
+        createdAt: new Date().toISOString(),
+        lastLoginAt: new Date().toISOString(),
+        loginCount: 1,
+      });
+      createdDocs.push({ ref: userDocRef, type: "user" });
+    } catch (docError) {
+      for (const docInfo of createdDocs) {
+        try { await deleteDoc(docInfo.ref); } catch { /* best effort */ }
+      }
+      throw docError;
+    }
+
+    await fetchUserDetails(user.uid);
+    logger.info("Google sign-in new user created:", { userId: user.uid });
+    return { isNewUser: true };
+  }, [fetchUserDetails]);
+
   // ------------------------------------------
   // LOGIN WITH GOOGLE (sign-in / sign-up)
   // ------------------------------------------
@@ -96,78 +173,34 @@ export const AuthProvider = ({ children }) => {
         const provider = new GoogleAuthProvider();
         provider.setCustomParameters({ prompt: "select_account" });
 
-        const result = await signInWithPopup(auth, provider);
-        const user = result.user;
-        const googleEmail = user.email;
-
-        if (!googleEmail) {
-          await signOut(auth);
-          return { success: false, error: "Could not retrieve email from Google." };
-        }
-
-        // Check if user profile already exists
-        const userDoc = await getDoc(doc(db, "users", user.uid));
-        if (userDoc.exists()) {
-          // Existing user — update last login
-          const userData = userDoc.data();
-          await setDoc(doc(db, "users", user.uid), {
-            lastLoginAt: new Date().toISOString(),
-            loginCount: (userData.loginCount || 0) + 1,
-          }, { merge: true });
-          await fetchUserDetails(user.uid);
-          return { success: true, isNewUser: false };
-        }
-
-        // New user — create profile with Google info
-        const displayName = user.displayName || googleEmail.split("@")[0];
-
-        const createdDocs = [];
-
         try {
-          // Create email mapping
-          const emailKey = sanitizeFirestoreKey(googleEmail.toLowerCase());
-          const emailDocRef = doc(db, "emails", emailKey);
-          await setDoc(emailDocRef, {
-            userId: user.uid,
-            email: googleEmail,
-            createdAt: new Date().toISOString(),
-          });
-          createdDocs.push({ ref: emailDocRef, type: "email" });
+          const result = await signInWithPopup(auth, provider);
+          const profileResult = await ensureGoogleUserProfile(result.user);
+          return { success: true, isNewUser: profileResult.isNewUser };
+        } catch (popupError) {
+          const popupFallbackCodes = new Set([
+            "auth/popup-blocked",
+            "auth/popup-closed-by-user",
+            "auth/cancelled-popup-request",
+            "auth/operation-not-supported-in-this-environment",
+          ]);
 
-          // Create user profile
-          const userDocRef = doc(db, "users", user.uid);
-          await setDoc(userDocRef, {
-            userId: user.uid,
-            name: displayName,
-            email: googleEmail,
-            photoURL: user.photoURL || null,
-            targetExam: "CDS",
-            isAdmin: false,
-            onboardingComplete: false,
-            createdAt: new Date().toISOString(),
-            lastLoginAt: new Date().toISOString(),
-            loginCount: 1,
-          });
-          createdDocs.push({ ref: userDocRef, type: "user" });
-        } catch (docError) {
-          // Rollback created docs on failure
-          for (const docInfo of createdDocs) {
-            try { await deleteDoc(docInfo.ref); } catch { /* best effort */ }
+          if (!popupFallbackCodes.has(popupError?.code)) {
+            throw popupError;
           }
-          throw docError;
-        }
 
-        await fetchUserDetails(user.uid);
-        logger.info("Google sign-in new user created:", { userId: user.uid });
-        return { success: true, isNewUser: true };
+          sessionStorage.setItem(AUTH_REDIRECT_INTENT_KEY, "1");
+          await signInWithRedirect(auth, provider);
+          return { success: true, redirected: true };
+        }
       } catch (error) {
         logger.error("Google sign-in error:", error);
-        if (error.code === "auth/popup-closed-by-user" || error.code === "auth/cancelled-popup-request") {
+        if (error.code === "auth/cancelled-popup-request") {
           return { success: false, error: "Sign-in cancelled." };
         }
         return { success: false, error: getErrorMessage(error) };
       }
-    }, [fetchUserDetails]);
+    }, [ensureGoogleUserProfile]);
 
   // ------------------------------------------
   // LOGOUT
@@ -206,6 +239,26 @@ export const AuthProvider = ({ children }) => {
 
   useSessionTimeout(handleSessionTimeout, !!currentUser);
 
+  useEffect(() => {
+    const processRedirectResult = async () => {
+      const hadIntent = sessionStorage.getItem(AUTH_REDIRECT_INTENT_KEY) === "1";
+      if (!hadIntent) return;
+
+      try {
+        const result = await getRedirectResult(auth);
+        if (result?.user) {
+          await ensureGoogleUserProfile(result.user);
+        }
+      } catch (error) {
+        logger.error("Google redirect result error:", error);
+      } finally {
+        sessionStorage.removeItem(AUTH_REDIRECT_INTENT_KEY);
+      }
+    };
+
+    processRedirectResult();
+  }, [ensureGoogleUserProfile]);
+
   // ------------------------------------------
   // AUTH STATE LISTENER
   // ------------------------------------------
@@ -213,7 +266,14 @@ export const AuthProvider = ({ children }) => {
     const unsubscribe = onAuthStateChanged(auth, async (user) => {
       setCurrentUser(user);
       if (user) {
-        await fetchUserDetails(user.uid);
+        const data = await fetchUserDetails(user.uid);
+        if (!data) {
+          try {
+            await ensureGoogleUserProfile(user);
+          } catch (err) {
+            logger.error("Failed to ensure Google user profile on auth state:", err);
+          }
+        }
       } else {
         setUserDetails(null);
       }
@@ -221,7 +281,7 @@ export const AuthProvider = ({ children }) => {
     });
 
     return unsubscribe;
-  }, [fetchUserDetails]);
+  }, [ensureGoogleUserProfile, fetchUserDetails]);
 
   // ------------------------------------------
   // CONTEXT VALUE

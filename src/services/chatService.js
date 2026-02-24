@@ -63,6 +63,7 @@ export const sendChatMessage = async (message, conversationHistory = [], context
     return {
       reply: data.reply,
       boundary: data.boundary || null,
+      meta: data.meta || null,
     };
   } catch (error) {
     clearTimeout(timeoutId);

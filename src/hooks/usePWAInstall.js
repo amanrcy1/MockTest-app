@@ -43,7 +43,6 @@ const usePWAInstall = () => {
 
     // Listen for beforeinstallprompt (Android/Desktop Chrome)
     const handleBeforeInstall = (e) => {
-      e.preventDefault();
       // If we receive this event, app is NOT installed (browser tells us)
       // Clear the localStorage flag if it was set incorrectly
       try {
@@ -56,7 +55,9 @@ const usePWAInstall = () => {
       } catch (_err) {
         // localStorage might be unavailable
       }
-      setInstallPrompt(e);
+      if (typeof e?.prompt === 'function') {
+        setInstallPrompt(e);
+      }
     };
 
     // Listen for app installed
