@@ -13,6 +13,7 @@ import { ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 import { ErrorBoundary, AiChatWidget } from "./components";
 import InstallBanner from "./components/ui/InstallBanner";
+import SwipeRefresh from "./components/ui/SwipeRefresh";
 
 // Eager load critical pages
 import Auth from "./pages/auth/Auth";
@@ -160,6 +161,8 @@ function App() {
               pauseOnHover
               theme="colored"
             />
+
+            <SwipeRefresh />
 
             <main id="main-content">
               <Suspense fallback={<PageLoader />}>

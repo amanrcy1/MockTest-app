@@ -59,6 +59,15 @@ const sanitizeFirestoreKey = (value) => {
 const isPermissionDenied = (error) =>
   error?.code === "permission-denied" || error?.code === "firestore/permission-denied";
 
+const shouldPreferRedirectAuth = () => {
+  if (typeof window === "undefined") return false;
+  const ua = navigator.userAgent || "";
+  const isMobile = /Android|iPhone|iPad|iPod|Mobile/i.test(ua);
+  const isInAppBrowser = /FBAN|FBAV|Instagram|Line|wv\)/i.test(ua);
+  const isStandalonePwa = window.matchMedia?.("(display-mode: standalone)")?.matches || window.navigator.standalone === true;
+  return isMobile || isInAppBrowser || isStandalonePwa;
+};
+
 // ============================================
 // AUTH PROVIDER
 // ============================================
@@ -172,6 +181,12 @@ export const AuthProvider = ({ children }) => {
       try {
         const provider = new GoogleAuthProvider();
         provider.setCustomParameters({ prompt: "select_account" });
+
+        if (shouldPreferRedirectAuth()) {
+          sessionStorage.setItem(AUTH_REDIRECT_INTENT_KEY, "1");
+          await signInWithRedirect(auth, provider);
+          return { success: true, redirected: true };
+        }
 
         try {
           const result = await signInWithPopup(auth, provider);
