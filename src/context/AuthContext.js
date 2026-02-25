@@ -39,12 +39,15 @@ const getErrorMessage = (error) => {
   const errorMessages = {
     "auth/too-many-requests": "Too many attempts. Please wait a few minutes and try again.",
     "auth/network-request-failed": "Network error. Please check your internet connection.",
-    "auth/user-disabled": "This account has been disabled. Please contact support.",
+    "auth/user-disabled": "This account is disabled. Please contact support.",
     "auth/popup-blocked": "Popup was blocked. Please allow popups and try again.",
     "auth/popup-closed-by-user": "Sign-in cancelled.",
     "auth/cancelled-popup-request": "Sign-in cancelled.",
     "auth/unauthorized-domain": "This domain is not authorized in Firebase Auth. Add it in Firebase Console > Authentication > Settings > Authorized domains.",
-    "auth/operation-not-supported-in-this-environment": "Google login is blocked in this browser context. Try normal Chrome window.",
+    "auth/operation-not-supported-in-this-environment": "Google login is blocked in this browser context. Try a normal browser window.",
+    "auth/web-storage-unsupported": "Your browser is blocking cookies/storage. Enable cookies or use another browser.",
+    "auth/third-party-cookie-inaccessible": "Third-party cookies are blocked. Enable them or switch to a standard browser tab.",
+    "auth/third-party-cookies-blocked": "Third-party cookies are blocked. Enable them or switch to a standard browser tab.",
     "permission-denied": "You do not have permission to perform this action.",
     "unavailable": "Service temporarily unavailable. Please try again later.",
   };
@@ -65,13 +68,12 @@ const isPermissionDenied = (error) =>
 const shouldPreferRedirectAuth = () => {
   if (typeof window === "undefined") return false;
   const ua = navigator.userAgent || "";
-  // In-app browsers (Facebook, Instagram, Line, WebView) always need redirect
-  if (/FBAN|FBAV|Instagram|Line|wv\)/i.test(ua)) return true;
-  // Standalone PWA mode — popups are unreliable
-  if (window.matchMedia?.("(display-mode: standalone)")?.matches) return true;
-  // ALL mobile devices — popups are frequently blocked or cause UX issues
-  if (/Android|iPhone|iPad|iPod|Mobile|Tablet/i.test(ua)) return true;
-  return false;
+  const isInAppBrowser = /FBAN|FBAV|Instagram|Line|wv\)/i.test(ua);
+  const isStandalonePwa = window.matchMedia?.("(display-mode: standalone)")?.matches;
+  // Prefer popup for regular browsers (desktop + mobile) because redirect
+  // breaks when third-party storage is blocked. Redirect only where popups
+  // are known to fail.
+  return isInAppBrowser || isStandalonePwa;
 };
 
 // ============================================
@@ -88,6 +90,34 @@ export const AuthProvider = ({ children }) => {
 
   // Track whether redirect processing is done so onAuthStateChanged can coordinate
   const redirectProcessedRef = useRef(!sessionStorage.getItem(AUTH_REDIRECT_INTENT_KEY));
+  // Keep persistence setup resilient across browsers that block local storage
+  const persistenceConfiguredRef = useRef(false);
+  const persistencePromiseRef = useRef(null);
+
+  const configurePersistence = useCallback(async () => {
+    if (persistenceConfiguredRef.current) return true;
+    if (persistencePromiseRef.current) return persistencePromiseRef.current;
+
+    persistencePromiseRef.current = (async () => {
+      try {
+        await setPersistence(auth, browserLocalPersistence);
+        persistenceConfiguredRef.current = true;
+        return true;
+      } catch (localErr) {
+        logger.warn("Local auth persistence unavailable, falling back to session persistence.", localErr);
+        try {
+          await setPersistence(auth, browserSessionPersistence);
+          persistenceConfiguredRef.current = true;
+          return true;
+        } catch (sessionErr) {
+          logger.error("Failed to configure Firebase auth persistence.", sessionErr);
+          return false;
+        }
+      }
+    })();
+
+    return persistencePromiseRef.current;
+  }, [auth, browserLocalPersistence, browserSessionPersistence, logger, setPersistence]);
 
   // ------------------------------------------
   // Fetch user details from Firestore
@@ -191,6 +221,8 @@ export const AuthProvider = ({ children }) => {
   // ------------------------------------------
   const loginWithGoogle = useCallback(async () => {
     try {
+      await configurePersistence();
+
       const provider = new GoogleAuthProvider();
       provider.setCustomParameters({ prompt: "select_account" });
 
@@ -210,6 +242,9 @@ export const AuthProvider = ({ children }) => {
           "auth/popup-closed-by-user",
           "auth/cancelled-popup-request",
           "auth/operation-not-supported-in-this-environment",
+          "auth/web-storage-unsupported",
+          "auth/third-party-cookie-inaccessible",
+          "auth/third-party-cookies-blocked",
         ]);
 
         if (!popupFallbackCodes.has(popupError?.code)) {
@@ -217,7 +252,12 @@ export const AuthProvider = ({ children }) => {
         }
 
         sessionStorage.setItem(AUTH_REDIRECT_INTENT_KEY, "1");
-        await signInWithRedirect(auth, provider);
+        try {
+          await signInWithRedirect(auth, provider);
+        } catch (redirectError) {
+          sessionStorage.removeItem(AUTH_REDIRECT_INTENT_KEY);
+          throw redirectError;
+        }
         return { success: true, redirected: true };
       }
     } catch (error) {
@@ -228,7 +268,7 @@ export const AuthProvider = ({ children }) => {
       const code = error?.code ? ` [${error.code}]` : "";
       return { success: false, error: `${getErrorMessage(error)}${code}` };
     }
-  }, [ensureGoogleUserProfile]);
+  }, [configurePersistence, ensureGoogleUserProfile]);
 
   // ------------------------------------------
   // LOGOUT
@@ -268,21 +308,8 @@ export const AuthProvider = ({ children }) => {
   useSessionTimeout(handleSessionTimeout, !!currentUser);
 
   useEffect(() => {
-    const setupPersistence = async () => {
-      try {
-        await setPersistence(auth, browserLocalPersistence);
-      } catch (localErr) {
-        logger.warn("Local auth persistence unavailable, falling back to session persistence.", localErr);
-        try {
-          await setPersistence(auth, browserSessionPersistence);
-        } catch (sessionErr) {
-          logger.error("Failed to configure Firebase auth persistence.", sessionErr);
-        }
-      }
-    };
-
-    setupPersistence();
-  }, []);
+    configurePersistence();
+  }, [configurePersistence]);
 
   useEffect(() => {
     // Only process redirect if we actually initiated one
