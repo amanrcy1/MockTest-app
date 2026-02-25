@@ -16,6 +16,13 @@ body {
   @apply bg-gray-50 text-gray-900 transition-colors duration-200;
 }
 
+html,
+body,
+#root {
+  /* Prevent native browser pull-to-refresh so custom SwipeRefresh can handle gestures. */
+  overscroll-behavior-y: contain;
+}
+
 /* Dark mode base styles - Standard dark mode */
 .dark body,
 .dark {

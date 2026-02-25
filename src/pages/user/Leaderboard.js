@@ -26,6 +26,7 @@ import { getSafePhotoURL } from "../../utils/avatarUtils";
 // Cache for leaderboard data (keyed by examType_weekOffset)
 const leaderboardCache = new Map();
 const CACHE_TTL = 5 * 60 * 1000;
+const getRefreshEpoch = () => (typeof window !== "undefined" ? Number(window.__APP_REFRESH_EPOCH__ || 0) : 0);
 const hideBrokenImage = (e) => {
   e.currentTarget.style.display = "none";
 };
@@ -62,9 +63,10 @@ const Leaderboard = () => {
       const cacheKey = `${examType}_${weekOffset}`;
       const cached = leaderboardCache.get(cacheKey);
       const now = Date.now();
+      const refreshEpoch = getRefreshEpoch();
       
       // Use cache if valid
-      if (cached && now - cached.timestamp < CACHE_TTL) {
+      if (cached && cached.refreshEpoch === refreshEpoch && now - cached.timestamp < CACHE_TTL) {
         setEntries(cached.entries);
         if (currentUser) {
           const index = cached.allSorted.findIndex((e) => e.userId === currentUser.uid);
@@ -108,6 +110,7 @@ const Leaderboard = () => {
               entries: storedEntries,
               allSorted: storedEntries,
               timestamp: now,
+              refreshEpoch,
             });
             
             if (currentUser) {
@@ -203,6 +206,7 @@ const Leaderboard = () => {
           entries: enriched,
           allSorted: sorted,
           timestamp: now,
+          refreshEpoch,
         });
 
         if (currentUser) {

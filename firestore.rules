@@ -22,6 +22,56 @@ service cloud.firestore {
       return request.resource.data;
     }
 
+    function userAllowedKeys() {
+      return [
+        "userId",
+        "name",
+        "email",
+        "photoURL",
+        "targetExam",
+        "isAdmin",
+        "onboardingComplete",
+        "createdAt",
+        "updatedAt",
+        "lastLoginAt",
+        "loginCount"
+      ];
+    }
+
+    function isValidUserCreate(userId) {
+      return incomingData().keys().hasAll([
+        "userId",
+        "name",
+        "email",
+        "isAdmin",
+        "onboardingComplete",
+        "createdAt",
+        "lastLoginAt",
+        "loginCount"
+      ])
+      && incomingData().keys().hasOnly(userAllowedKeys())
+      && incomingData().userId == userId
+      && incomingData().isAdmin == false
+      && incomingData().name is string
+      && incomingData().email is string
+      && incomingData().loginCount is int
+      && incomingData().loginCount >= 0;
+    }
+
+    function isValidOwnerUserUpdate() {
+      let changed = request.resource.data.diff(resource.data).affectedKeys();
+      return request.resource.data.keys().hasOnly(userAllowedKeys())
+      && !("isAdmin" in changed)
+      && !("userId" in changed)
+      && !("email" in changed)
+      && !("createdAt" in changed)
+      && request.resource.data.userId == resource.data.userId
+      && request.resource.data.email == resource.data.email
+      && request.resource.data.createdAt == resource.data.createdAt
+      && request.resource.data.loginCount is int
+      && request.resource.data.loginCount >= 0;
+    }
+
     // ── users ────────────────────────────────────────────────
     // Users can read any profile (leaderboard, etc.).
     // Users can only create their own doc (uid must match).
@@ -31,12 +81,9 @@ service cloud.firestore {
     match /users/{userId} {
       allow read: if isSignedIn();
 
-      allow create: if isOwner(userId)
-                    && incomingData().userId == userId
-                    && incomingData().isAdmin == false;
+      allow create: if isOwner(userId) && isValidUserCreate(userId);
 
-      allow update: if isOwner(userId)
-                    && !("isAdmin" in request.resource.data.diff(resource.data).affectedKeys())
+      allow update: if (isOwner(userId) && isValidOwnerUserUpdate())
                     || isAdmin();
 
       allow delete: if isAdmin();
@@ -105,7 +152,7 @@ service cloud.firestore {
 
     // ── emails ───────────────────────────────────────────────
     // Email-to-uid mapping for Google sign-in dedup.
-    // Public read so sign-in flow can check existence.
+    // Read restricted to admins only.
     // Only the owning user can create/update their mapping.
     // Only admins can delete (user deletion flow).
 

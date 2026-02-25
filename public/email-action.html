@@ -157,107 +157,104 @@
     <div id="info" class="info"></div>
   </div>
 
+  <script src="/firebase-runtime-config.js"></script>
   <script type="module">
-    // Firebase configuration will be loaded from environment
-    // This needs to match your Firebase project settings
-    const firebaseConfig = {
-      apiKey: "AIzaSyCbHzoUbpWPt0XOz4bclcVghuASrE5GOus",
-      authDomain: "upsc-mock-test-18b34.firebaseapp.com",
-      projectId: "upsc-mock-test-18b34"
-    };
-
-    // Import Firebase modules
-    import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js';
-    import { 
-      getAuth, 
-      applyActionCode, 
-      verifyPasswordResetCode, 
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+    import {
+      getAuth,
+      applyActionCode,
+      verifyPasswordResetCode,
       confirmPasswordReset,
-      checkActionCode
-    } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js';
+      checkActionCode,
+    } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
 
-    // Initialize Firebase
+    const messageEl = document.getElementById("message");
+    const actionsEl = document.getElementById("actions");
+    const infoEl = document.getElementById("info");
+    const supportEmail = window.__MOCKZAM_SUPPORT_EMAIL__ || "support@mockzam.com";
+
+    const firebaseConfig = window.__MOCKZAM_FIREBASE_CONFIG__ || {};
+    const hasFirebaseConfig =
+      Boolean(firebaseConfig.apiKey) &&
+      Boolean(firebaseConfig.authDomain) &&
+      Boolean(firebaseConfig.projectId);
+
+    if (!hasFirebaseConfig) {
+      showError("Email action page is not configured. Please contact support.");
+      throw new Error("Missing __MOCKZAM_FIREBASE_CONFIG__ in /public/firebase-runtime-config.js");
+    }
+
     const app = initializeApp(firebaseConfig);
     const auth = getAuth(app);
 
-    // Get URL parameters
     const urlParams = new URLSearchParams(window.location.search);
-    const mode = urlParams.get('mode');
-    const actionCode = urlParams.get('oobCode');
-    const continueUrl = urlParams.get('continueUrl');
-    const lang = urlParams.get('lang') || 'en';
+    const mode = urlParams.get("mode");
+    const actionCode = urlParams.get("oobCode");
+    const continueUrl = urlParams.get("continueUrl");
 
-    const messageEl = document.getElementById('message');
-    const actionsEl = document.getElementById('actions');
-    const infoEl = document.getElementById('info');
-
-    // Handle different action modes
     async function handleAction() {
       if (!actionCode) {
-        showError('Invalid or missing action code.');
+        showError("Invalid or missing action code.");
         return;
       }
 
       try {
         switch (mode) {
-          case 'verifyEmail':
+          case "verifyEmail":
             await handleVerifyEmail();
             break;
-          case 'resetPassword':
+          case "resetPassword":
             await handleResetPassword();
             break;
-          case 'recoverEmail':
+          case "recoverEmail":
             await handleRecoverEmail();
             break;
           default:
-            showError('Invalid action mode.');
+            showError("Invalid action mode.");
         }
       } catch (error) {
-        console.error('Error:', error);
+        console.error("Error:", error);
         showError(getErrorMessage(error));
       }
     }
 
-    // Handle email verification
     async function handleVerifyEmail() {
       try {
         await applyActionCode(auth, actionCode);
-        showSuccess('✅ Email verified successfully!', 
-          'Your email has been verified. You can now access all features.');
+        showSuccess(
+          "Email verified successfully!",
+          "Your email has been verified. You can now access all features."
+        );
         actionsEl.innerHTML = `
-          <button onclick="window.location.href='${continueUrl || '/'}'">
+          <button onclick="window.location.href='${continueUrl || "/"}'">
             Go to Dashboard
           </button>
         `;
       } catch (error) {
-        if (error.code === 'auth/invalid-action-code') {
-          showError('This verification link has expired or has already been used.');
+        if (error.code === "auth/invalid-action-code") {
+          showError("This verification link has expired or has already been used.");
         } else {
           throw error;
         }
       }
     }
 
-    // Handle password reset
     async function handleResetPassword() {
       try {
-        // Verify the code is valid first
         const email = await verifyPasswordResetCode(auth, actionCode);
-        
-        showSuccess('Reset Your Password', 
-          `Enter a new password for ${email}`);
-        
+        showSuccess("Reset Your Password", `Enter a new password for ${email}`);
+
         actionsEl.innerHTML = `
-          <input 
-            type="password" 
-            id="newPassword" 
+          <input
+            type="password"
+            id="newPassword"
             placeholder="New password (min 6 characters)"
             minlength="6"
             required
           >
-          <input 
-            type="password" 
-            id="confirmPassword" 
+          <input
+            type="password"
+            id="confirmPassword"
             placeholder="Confirm new password"
             minlength="6"
             required
@@ -267,8 +264,8 @@
           </button>
         `;
       } catch (error) {
-        if (error.code === 'auth/invalid-action-code') {
-          showError('This password reset link has expired or has already been used.');
+        if (error.code === "auth/invalid-action-code") {
+          showError("This password reset link has expired or has already been used.");
           actionsEl.innerHTML = `
             <button onclick="window.location.href='/forgot-password'">
               Request New Reset Link
@@ -280,57 +277,44 @@
       }
     }
 
-    // Handle email recovery
     async function handleRecoverEmail() {
-      try {
-        const info = await checkActionCode(auth, actionCode);
-        await applyActionCode(auth, actionCode);
-        
-        showSuccess('✅ Email recovered successfully!', 
-          `Your email ${info.data.email} has been restored.`);
-        
-        actionsEl.innerHTML = `
-          <button onclick="window.location.href='${continueUrl || '/'}'">
-            Go to Dashboard
-          </button>
-        `;
-      } catch (error) {
-        throw error;
-      }
+      const info = await checkActionCode(auth, actionCode);
+      await applyActionCode(auth, actionCode);
+      showSuccess("Email recovered successfully!", `Your email ${info.data.email} has been restored.`);
+      actionsEl.innerHTML = `
+        <button onclick="window.location.href='${continueUrl || "/"}'">
+          Go to Dashboard
+        </button>
+      `;
     }
 
-    // Reset password function
-    window.resetPassword = async function() {
-      const newPassword = document.getElementById('newPassword').value;
-      const confirmPassword = document.getElementById('confirmPassword').value;
-      const resetBtn = document.getElementById('resetBtn');
+    window.resetPassword = async function resetPassword() {
+      const newPassword = document.getElementById("newPassword").value;
+      const confirmPassword = document.getElementById("confirmPassword").value;
+      const resetBtn = document.getElementById("resetBtn");
 
-      // Validation
       if (!newPassword || !confirmPassword) {
-        showError('Please fill in both password fields.');
+        showError("Please fill in both password fields.");
         return;
       }
-
       if (newPassword.length < 6) {
-        showError('Password must be at least 6 characters long.');
+        showError("Password must be at least 6 characters long.");
         return;
       }
-
       if (newPassword !== confirmPassword) {
-        showError('Passwords do not match.');
+        showError("Passwords do not match.");
         return;
       }
 
-      // Disable button during processing
       resetBtn.disabled = true;
-      resetBtn.textContent = 'Resetting...';
+      resetBtn.textContent = "Resetting...";
 
       try {
         await confirmPasswordReset(auth, actionCode, newPassword);
-        
-        showSuccess('✅ Password reset successfully!', 
-          'Your password has been updated. You can now log in with your new password.');
-        
+        showSuccess(
+          "Password reset successfully!",
+          "Your password has been updated. You can now log in with your new password."
+        );
         actionsEl.innerHTML = `
           <button onclick="window.location.href='/login'">
             Go to Login
@@ -338,42 +322,35 @@
         `;
       } catch (error) {
         resetBtn.disabled = false;
-        resetBtn.textContent = 'Reset Password';
+        resetBtn.textContent = "Reset Password";
         showError(getErrorMessage(error));
       }
     };
 
-    // Helper functions
     function showSuccess(title, description) {
-      messageEl.className = 'success';
+      messageEl.className = "success";
       messageEl.innerHTML = `<strong>${title}</strong>`;
-      if (description) {
-        infoEl.textContent = description;
-      }
+      infoEl.textContent = description || "";
     }
 
     function showError(message) {
-      messageEl.className = 'error';
-      messageEl.innerHTML = `<strong>❌ Error</strong><br>${message}`;
-      infoEl.innerHTML = `
-        Need help? <a href="mailto:support@yourdomain.com" style="color: #667eea;">Contact Support</a>
-      `;
+      messageEl.className = "error";
+      messageEl.innerHTML = `<strong>Error</strong><br>${message}`;
+      infoEl.innerHTML = `Need help? <a href="mailto:${supportEmail}" style="color: #667eea;">Contact Support</a>`;
     }
 
     function getErrorMessage(error) {
       const errorMessages = {
-        'auth/expired-action-code': 'This link has expired. Please request a new one.',
-        'auth/invalid-action-code': 'This link is invalid or has already been used.',
-        'auth/user-disabled': 'This account has been disabled.',
-        'auth/user-not-found': 'No account found with this email.',
-        'auth/weak-password': 'Password is too weak. Please use a stronger password.',
-        'auth/network-request-failed': 'Network error. Please check your connection and try again.'
+        "auth/expired-action-code": "This link has expired. Please request a new one.",
+        "auth/invalid-action-code": "This link is invalid or has already been used.",
+        "auth/user-disabled": "This account has been disabled.",
+        "auth/user-not-found": "No account found with this email.",
+        "auth/weak-password": "Password is too weak. Please use a stronger password.",
+        "auth/network-request-failed": "Network error. Please check your connection and try again.",
       };
-
-      return errorMessages[error.code] || error.message || 'An unexpected error occurred. Please try again.';
+      return errorMessages[error.code] || error.message || "An unexpected error occurred. Please try again.";
     }
 
-    // Start handling the action
     handleAction();
   </script>
 </body>

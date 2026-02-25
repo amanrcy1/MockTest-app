@@ -22,6 +22,11 @@ const isLikelyMobile = () => {
 };
 
 const getMainContentNode = () => document.getElementById("main-content");
+const getPageScrollTop = () => {
+  if (typeof window === "undefined") return 0;
+  const docTop = document.scrollingElement?.scrollTop ?? document.documentElement?.scrollTop ?? 0;
+  return Math.max(window.scrollY || 0, docTop);
+};
 
 const applyContentOffset = (offset, animated = false) => {
   const node = getMainContentNode();
@@ -62,7 +67,7 @@ const SwipeRefresh = ({ onRefresh }) => {
     if (!isMobile) return undefined;
 
     const handleTouchStart = (e) => {
-      if (refreshing || e.touches.length !== 1 || window.scrollY > 0) return;
+      if (refreshing || e.touches.length !== 1 || getPageScrollTop() > 0) return;
       if (isInteractiveTarget(e.target)) return;
       pullingRef.current = true;
       thresholdHitRef.current = false;
@@ -74,10 +79,10 @@ const SwipeRefresh = ({ onRefresh }) => {
       const currentY = e.touches[0].clientY;
       const delta = currentY - startYRef.current;
 
-      if (delta <= 0 || window.scrollY > 0) {
+      if (delta <= 0 || getPageScrollTop() > 0) {
         setPullDistance(0);
         applyContentOffset(0);
-        if (window.scrollY > 0) pullingRef.current = false;
+        if (getPageScrollTop() > 0) pullingRef.current = false;
         return;
       }
 
@@ -219,10 +224,8 @@ SwipeRefresh.propTypes = {
 };
 
 SwipeRefresh.defaultProps = {
-  onRefresh: () => {
-    window.location.reload();
-    return Promise.resolve();
-  },
+  // Default is a soft refresh animation only; callers can pass a hard reload if needed.
+  onRefresh: () => Promise.resolve(),
 };
 
 export default SwipeRefresh;

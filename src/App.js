@@ -1,4 +1,4 @@
-import { Suspense, lazy } from "react";
+import { Suspense, lazy, useCallback, useState } from "react";
 import PropTypes from "prop-types";
 import {
   BrowserRouter as Router,
@@ -59,6 +59,28 @@ const ChatWrapper = () => {
   };
 
   return <AiChatWidget context={chatContext} />;
+};
+
+const REFRESH_STORAGE_KEYS = [
+  "questionCounts",
+  "questionCountsAt",
+  "ai_chat_stats",
+  "ai_chat_messages",
+];
+
+const bumpGlobalRefreshEpoch = () => {
+  if (typeof window === "undefined") return 0;
+  const current = Number(window.__APP_REFRESH_EPOCH__ || 0);
+  const next = current + 1;
+  window.__APP_REFRESH_EPOCH__ = next;
+  return next;
+};
+
+const clearRefreshCaches = () => {
+  if (typeof sessionStorage === "undefined") return;
+  for (const key of REFRESH_STORAGE_KEYS) {
+    sessionStorage.removeItem(key);
+  }
 };
 
 // Loading fallback component
@@ -144,222 +166,246 @@ PublicRoute.propTypes = {
 };
 
 function App() {
+  const AppContent = () => {
+    const [refreshKey, setRefreshKey] = useState(0);
+    const { refreshUserDetails } = useAuth();
+
+    const handleRefresh = useCallback(async () => {
+      clearRefreshCaches();
+      bumpGlobalRefreshEpoch();
+
+      try {
+        await refreshUserDetails?.();
+      } catch {
+        // Best effort: route remount below still refreshes page-level data loaders.
+      }
+
+      setRefreshKey((prev) => prev + 1);
+    }, [refreshUserDetails]);
+
+    return (
+      <>
+        {/* Skip to main content link for accessibility */}
+        <a href="#main-content" className="skip-link">
+          Skip to main content
+        </a>
+        
+        <ToastContainer
+          position="top-right"
+          autoClose={3000}
+          hideProgressBar={false}
+          newestOnTop
+          closeOnClick
+          rtl={false}
+          pauseOnFocusLoss
+          draggable
+          pauseOnHover
+          theme="colored"
+        />
+
+        <SwipeRefresh onRefresh={handleRefresh} />
+
+        <main id="main-content" key={`route-refresh-${refreshKey}`}>
+          <Suspense fallback={<PageLoader />}>
+            <Routes>
+              {/* Legal Routes (accessible to everyone) */}
+              <Route path="/terms" element={<TermsOfService />} />
+              <Route path="/privacy" element={<PrivacyPolicy />} />
+
+              {/* Public Routes */}
+              <Route
+                path="/login"
+                element={
+                  <PublicRoute>
+                    <Auth />
+                  </PublicRoute>
+                }
+              />
+              <Route path="/register" element={<Navigate to="/login" replace />} />
+              <Route path="/forgot-password" element={<Navigate to="/login" replace />} />
+
+              {/* Protected Routes */}
+              <Route
+                path="/onboarding"
+                element={
+                  <ProtectedRoute skipOnboardingCheck>
+                    <Onboarding />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/dashboard"
+                element={
+                  <ProtectedRoute>
+                    <Dashboard />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/profile"
+                element={
+                  <ProtectedRoute>
+                    <Profile />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/test-selection"
+                element={
+                  <ProtectedRoute>
+                    <TestSelection />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/test/mock"
+                element={
+                  <ProtectedRoute>
+                    <MockTest />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/test/result"
+                element={
+                  <ProtectedRoute>
+                    <TestResult />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/test/practice"
+                element={
+                  <ProtectedRoute>
+                    <PracticeMode />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/test/custom-setup"
+                element={
+                  <ProtectedRoute>
+                    <CustomTestSetup />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/test/custom"
+                element={
+                  <ProtectedRoute>
+                    <CustomTest />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/test/history"
+                element={
+                  <ProtectedRoute>
+                    <TestHistory />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/leaderboard"
+                element={
+                  <ProtectedRoute>
+                    <Leaderboard />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/bookmarks"
+                element={
+                  <ProtectedRoute>
+                    <Bookmarks />
+                  </ProtectedRoute>
+                }
+              />
+
+              {/* Admin Routes */}
+              <Route
+                path="/admin/dashboard"
+                element={
+                  <AdminRoute>
+                    <AdminDashboard />
+                  </AdminRoute>
+                }
+              />
+              <Route
+                path="/admin/add-question"
+                element={
+                  <AdminRoute>
+                    <AddQuestion />
+                  </AdminRoute>
+                }
+              />
+              <Route
+                path="/admin/manage-questions"
+                element={
+                  <AdminRoute>
+                    <ManageQuestions />
+                  </AdminRoute>
+                }
+              />
+              <Route
+                path="/admin/bulk-upload"
+                element={
+                  <AdminRoute>
+                    <BulkUpload />
+                  </AdminRoute>
+                }
+              />
+              <Route
+                path="/admin/users"
+                element={
+                  <AdminRoute>
+                    <AdminUsers />
+                  </AdminRoute>
+                }
+              />
+              <Route
+                path="/admin/error-reports"
+                element={
+                  <AdminRoute>
+                    <AdminErrorReports />
+                  </AdminRoute>
+                }
+              />
+              <Route
+                path="/admin/bookmarks"
+                element={
+                  <AdminRoute>
+                    <AdminBookmarks />
+                  </AdminRoute>
+                }
+              />
+
+              {/* Default redirect */}
+              <Route path="/" element={
+                <PublicRoute>
+                  <Landing />
+                </PublicRoute>
+              } />
+              <Route path="*" element={<NotFound />} />
+            </Routes>
+          </Suspense>
+        </main>
+        
+        {/* PWA Install Banner */}
+        <InstallBanner />
+        
+        {/* AI Chat Widget */}
+        <ChatWrapper />
+      </>
+    );
+  };
+
   return (
     <ErrorBoundary>
       <ThemeProvider>
         <Router>
           <AuthProvider>
-            {/* Skip to main content link for accessibility */}
-            <a href="#main-content" className="skip-link">
-              Skip to main content
-            </a>
-            
-            <ToastContainer
-              position="top-right"
-              autoClose={3000}
-              hideProgressBar={false}
-              newestOnTop
-              closeOnClick
-              rtl={false}
-              pauseOnFocusLoss
-              draggable
-              pauseOnHover
-              theme="colored"
-            />
-
-            <SwipeRefresh />
-
-            <main id="main-content">
-              <Suspense fallback={<PageLoader />}>
-                <Routes>
-                  {/* Legal Routes (accessible to everyone) */}
-                  <Route path="/terms" element={<TermsOfService />} />
-                  <Route path="/privacy" element={<PrivacyPolicy />} />
-
-                  {/* Public Routes */}
-                  <Route
-                    path="/login"
-                    element={
-                      <PublicRoute>
-                        <Auth />
-                      </PublicRoute>
-                    }
-                  />
-                  <Route path="/register" element={<Navigate to="/login" replace />} />
-                  <Route path="/forgot-password" element={<Navigate to="/login" replace />} />
-
-                  {/* Protected Routes */}
-                  <Route
-                    path="/onboarding"
-                    element={
-                      <ProtectedRoute skipOnboardingCheck>
-                        <Onboarding />
-                      </ProtectedRoute>
-                    }
-                  />
-                  <Route
-                    path="/dashboard"
-                    element={
-                      <ProtectedRoute>
-                        <Dashboard />
-                      </ProtectedRoute>
-                    }
-                  />
-                  <Route
-                    path="/profile"
-                    element={
-                      <ProtectedRoute>
-                        <Profile />
-                      </ProtectedRoute>
-                    }
-                  />
-                  <Route
-                    path="/test-selection"
-                    element={
-                      <ProtectedRoute>
-                        <TestSelection />
-                      </ProtectedRoute>
-                    }
-                  />
-                  <Route
-                    path="/test/mock"
-                    element={
-                      <ProtectedRoute>
-                        <MockTest />
-                      </ProtectedRoute>
-                    }
-                  />
-                  <Route
-                    path="/test/result"
-                    element={
-                      <ProtectedRoute>
-                        <TestResult />
-                      </ProtectedRoute>
-                    }
-                  />
-                  <Route
-                    path="/test/practice"
-                    element={
-                      <ProtectedRoute>
-                        <PracticeMode />
-                      </ProtectedRoute>
-                    }
-                  />
-                  <Route
-                    path="/test/custom-setup"
-                    element={
-                      <ProtectedRoute>
-                        <CustomTestSetup />
-                      </ProtectedRoute>
-                    }
-                  />
-                  <Route
-                    path="/test/custom"
-                    element={
-                      <ProtectedRoute>
-                        <CustomTest />
-                      </ProtectedRoute>
-                    }
-                  />
-                  <Route
-                    path="/test/history"
-                    element={
-                      <ProtectedRoute>
-                        <TestHistory />
-                      </ProtectedRoute>
-                    }
-                  />
-                  <Route
-                    path="/leaderboard"
-                    element={
-                      <ProtectedRoute>
-                        <Leaderboard />
-                      </ProtectedRoute>
-                    }
-                  />
-                  <Route
-                    path="/bookmarks"
-                    element={
-                      <ProtectedRoute>
-                        <Bookmarks />
-                      </ProtectedRoute>
-                    }
-                  />
-
-                  {/* Admin Routes */}
-                  <Route
-                    path="/admin/dashboard"
-                    element={
-                      <AdminRoute>
-                        <AdminDashboard />
-                      </AdminRoute>
-                    }
-                  />
-                  <Route
-                    path="/admin/add-question"
-                    element={
-                      <AdminRoute>
-                        <AddQuestion />
-                      </AdminRoute>
-                    }
-                  />
-                  <Route
-                    path="/admin/manage-questions"
-                    element={
-                      <AdminRoute>
-                        <ManageQuestions />
-                      </AdminRoute>
-                    }
-                  />
-                  <Route
-                    path="/admin/bulk-upload"
-                    element={
-                      <AdminRoute>
-                        <BulkUpload />
-                      </AdminRoute>
-                    }
-                  />
-                  <Route
-                    path="/admin/users"
-                    element={
-                      <AdminRoute>
-                        <AdminUsers />
-                      </AdminRoute>
-                    }
-                  />
-                  <Route
-                    path="/admin/error-reports"
-                    element={
-                      <AdminRoute>
-                        <AdminErrorReports />
-                      </AdminRoute>
-                    }
-                  />
-                  <Route
-                    path="/admin/bookmarks"
-                    element={
-                      <AdminRoute>
-                        <AdminBookmarks />
-                      </AdminRoute>
-                    }
-                  />
-
-                  {/* Default redirect */}
-                  <Route path="/" element={
-                    <PublicRoute>
-                      <Landing />
-                    </PublicRoute>
-                  } />
-                  <Route path="*" element={<NotFound />} />
-                </Routes>
-              </Suspense>
-            </main>
-            
-            {/* PWA Install Banner */}
-            <InstallBanner />
-            
-            {/* AI Chat Widget */}
-            <ChatWrapper />
+            <AppContent />
           </AuthProvider>
         </Router>
       </ThemeProvider>
