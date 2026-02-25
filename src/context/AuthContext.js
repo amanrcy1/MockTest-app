@@ -1,4 +1,4 @@
-import { createContext, useState, useEffect, useContext, useCallback, useMemo } from "react";
+import { createContext, useState, useEffect, useContext, useCallback, useMemo, useRef } from "react";
 import PropTypes from "prop-types";
 import {
   signOut,
@@ -86,7 +86,7 @@ export const AuthProvider = ({ children }) => {
   });
 
   // Guard to prevent concurrent ensureGoogleUserProfile calls
-  const profileLockRef = { current: false };
+  const profileLockRef = useRef(false);
 
   // ------------------------------------------
   // Fetch user details from Firestore
