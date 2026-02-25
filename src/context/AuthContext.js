@@ -117,7 +117,7 @@ export const AuthProvider = ({ children }) => {
     })();
 
     return persistencePromiseRef.current;
-  }, [auth, browserLocalPersistence, browserSessionPersistence, logger, setPersistence]);
+  }, []);
 
   // ------------------------------------------
   // Fetch user details from Firestore
