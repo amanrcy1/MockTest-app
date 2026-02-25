@@ -130,6 +130,11 @@ const PublicRoute = ({ children }) => {
     return children;
   }
 
+  // Avoid redirect race after auth success while profile doc is still loading.
+  if (!userDetails) {
+    return <PageLoader />;
+  }
+
   // Logged in - redirect to appropriate page
   return <Navigate to={userDetails?.onboardingComplete ? "/dashboard" : "/onboarding"} />;
 };

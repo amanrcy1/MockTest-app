@@ -26,9 +26,10 @@ const Auth = () => {
         }, 4000);
         return;
       }
+      // Popup success — show toast, then let PublicRoute handle the redirect
+      // based on userDetails.onboardingComplete. This avoids competing navigations.
       toast.success(result.isNewUser ? "Welcome! Let's set up your profile." : "Welcome back!");
-      navigate(result.isNewUser ? "/onboarding" : "/dashboard");
-      // Don't reset loading on success - we're navigating away
+      // Don't reset loading — PublicRoute will redirect us away
       return;
     }
     

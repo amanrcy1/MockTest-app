@@ -65,9 +65,12 @@ const isPermissionDenied = (error) =>
 const shouldPreferRedirectAuth = () => {
   if (typeof window === "undefined") return false;
   const ua = navigator.userAgent || "";
+  // In-app browsers (Facebook, Instagram, Line, WebView) always need redirect
   const isInAppBrowser = /FBAN|FBAV|Instagram|Line|wv\)/i.test(ua);
-  const isStandalonePwa = window.matchMedia?.("(display-mode: standalone)")?.matches || window.navigator.standalone === true;
-  return isInAppBrowser || isStandalonePwa;
+  if (isInAppBrowser) return true;
+  // Standalone PWA mode — popups are unreliable
+  if (window.matchMedia?.("(display-mode: standalone)")?.matches) return true;
+  return false;
 };
 
 // ============================================
@@ -77,7 +80,13 @@ const shouldPreferRedirectAuth = () => {
 export const AuthProvider = ({ children }) => {
   const [currentUser, setCurrentUser] = useState(null);
   const [userDetails, setUserDetails] = useState(null);
-  const [loading, setLoading] = useState(true);
+  const [authLoading, setAuthLoading] = useState(true);
+  const [redirectLoading, setRedirectLoading] = useState(() => {
+    return !!sessionStorage.getItem(AUTH_REDIRECT_INTENT_KEY);
+  });
+
+  // Guard to prevent concurrent ensureGoogleUserProfile calls
+  const profileLockRef = { current: false };
 
   // ------------------------------------------
   // Fetch user details from Firestore
@@ -108,72 +117,83 @@ export const AuthProvider = ({ children }) => {
   }, []);
 
   const ensureGoogleUserProfile = useCallback(async (user) => {
-    const googleEmail = user?.email;
-    if (!googleEmail) {
-      await signOut(auth);
-      throw new Error("Could not retrieve email from Google.");
-    }
-
-    const userDocRef = doc(db, "users", user.uid);
-    let userDoc = null;
-    try {
-      userDoc = await getDoc(userDocRef);
-    } catch (readError) {
-      if (!isPermissionDenied(readError)) throw readError;
-      logger.warn("Permission denied reading user profile, attempting create/merge fallback.");
-    }
-
-    if (userDoc?.exists()) {
-      const userData = userDoc.data();
-      await setDoc(userDocRef, {
-        lastLoginAt: new Date().toISOString(),
-        loginCount: (userData.loginCount || 0) + 1,
-      }, { merge: true });
-      await fetchUserDetails(user.uid);
+    // Prevent concurrent calls (onAuthStateChanged + redirect result race)
+    if (profileLockRef.current) {
+      logger.info("Profile setup already in progress, skipping duplicate call");
       return { isNewUser: false };
     }
-
-    const displayName = user.displayName || googleEmail.split("@")[0];
-    const createdDocs = [];
+    profileLockRef.current = true;
 
     try {
-      const emailKey = sanitizeFirestoreKey(googleEmail.toLowerCase());
-      const emailDocRef = doc(db, "emails", emailKey);
+      const googleEmail = user?.email;
+      if (!googleEmail) {
+        await signOut(auth);
+        throw new Error("Could not retrieve email from Google.");
+      }
+
+      const userDocRef = doc(db, "users", user.uid);
+      let userDoc = null;
       try {
-        await setDoc(emailDocRef, {
+        userDoc = await getDoc(userDocRef);
+      } catch (readError) {
+        if (!isPermissionDenied(readError)) throw readError;
+        logger.warn("Permission denied reading user profile, attempting create/merge fallback.");
+      }
+
+      if (userDoc?.exists()) {
+        const userData = userDoc.data();
+        await setDoc(userDocRef, {
+          lastLoginAt: new Date().toISOString(),
+          loginCount: (userData.loginCount || 0) + 1,
+        }, { merge: true });
+        await fetchUserDetails(user.uid);
+        return { isNewUser: false };
+      }
+
+      const displayName = user.displayName || googleEmail.split("@")[0];
+      const createdDocs = [];
+
+      try {
+        const emailKey = sanitizeFirestoreKey(googleEmail.toLowerCase());
+        const emailDocRef = doc(db, "emails", emailKey);
+        try {
+          await setDoc(emailDocRef, {
+            userId: user.uid,
+            email: googleEmail,
+            createdAt: new Date().toISOString(),
+          });
+          createdDocs.push({ ref: emailDocRef, type: "email" });
+        } catch (emailError) {
+          if (!isPermissionDenied(emailError)) throw emailError;
+          logger.warn("Email mapping write denied by rules, continuing without /emails mapping.");
+        }
+
+        await setDoc(userDocRef, {
           userId: user.uid,
+          name: displayName,
           email: googleEmail,
+          photoURL: user.photoURL || null,
+          targetExam: "CDS",
+          isAdmin: false,
+          onboardingComplete: false,
           createdAt: new Date().toISOString(),
+          lastLoginAt: new Date().toISOString(),
+          loginCount: 1,
         });
-        createdDocs.push({ ref: emailDocRef, type: "email" });
-      } catch (emailError) {
-        if (!isPermissionDenied(emailError)) throw emailError;
-        logger.warn("Email mapping write denied by rules, continuing without /emails mapping.");
+        createdDocs.push({ ref: userDocRef, type: "user" });
+      } catch (docError) {
+        for (const docInfo of createdDocs) {
+          try { await deleteDoc(docInfo.ref); } catch { /* best effort */ }
+        }
+        throw docError;
       }
 
-      await setDoc(userDocRef, {
-        userId: user.uid,
-        name: displayName,
-        email: googleEmail,
-        photoURL: user.photoURL || null,
-        targetExam: "CDS",
-        isAdmin: false,
-        onboardingComplete: false,
-        createdAt: new Date().toISOString(),
-        lastLoginAt: new Date().toISOString(),
-        loginCount: 1,
-      });
-      createdDocs.push({ ref: userDocRef, type: "user" });
-    } catch (docError) {
-      for (const docInfo of createdDocs) {
-        try { await deleteDoc(docInfo.ref); } catch { /* best effort */ }
-      }
-      throw docError;
+      await fetchUserDetails(user.uid);
+      logger.info("Google sign-in new user created:", { userId: user.uid });
+      return { isNewUser: true };
+    } finally {
+      profileLockRef.current = false;
     }
-
-    await fetchUserDetails(user.uid);
-    logger.info("Google sign-in new user created:", { userId: user.uid });
-    return { isNewUser: true };
   }, [fetchUserDetails]);
 
   // ------------------------------------------
@@ -275,6 +295,12 @@ export const AuthProvider = ({ children }) => {
   }, []);
 
   useEffect(() => {
+    // Only process redirect if we actually initiated one
+    if (!sessionStorage.getItem(AUTH_REDIRECT_INTENT_KEY)) {
+      setRedirectLoading(false);
+      return;
+    }
+
     const processRedirectResult = async () => {
       try {
         const result = await getRedirectResult(auth);
@@ -292,10 +318,17 @@ export const AuthProvider = ({ children }) => {
         }
       } finally {
         sessionStorage.removeItem(AUTH_REDIRECT_INTENT_KEY);
+        setRedirectLoading(false);
       }
     };
 
-    processRedirectResult();
+    // Safety timeout — if redirect result takes too long, unblock the UI
+    const timeout = setTimeout(() => {
+      sessionStorage.removeItem(AUTH_REDIRECT_INTENT_KEY);
+      setRedirectLoading(false);
+    }, 8000);
+
+    processRedirectResult().then(() => clearTimeout(timeout));
   }, [ensureGoogleUserProfile]);
 
   // ------------------------------------------
@@ -305,26 +338,24 @@ export const AuthProvider = ({ children }) => {
     const unsubscribe = onAuthStateChanged(auth, async (user) => {
       setCurrentUser(user);
       if (user) {
-        const data = await fetchUserDetails(user.uid);
-        if (!data) {
-          try {
-            await ensureGoogleUserProfile(user);
-          } catch (err) {
-            logger.error("Failed to ensure Google user profile on auth state:", err);
-          }
-        }
+        // Just fetch details — don't create profile here.
+        // Profile creation is handled by loginWithGoogle (popup) or processRedirectResult (redirect).
+        // This avoids double-write races.
+        await fetchUserDetails(user.uid);
       } else {
         setUserDetails(null);
       }
-      setLoading(false);
+      setAuthLoading(false);
     });
 
     return unsubscribe;
-  }, [ensureGoogleUserProfile, fetchUserDetails]);
+  }, [fetchUserDetails]);
 
   // ------------------------------------------
   // CONTEXT VALUE
   // ------------------------------------------
+  const loading = authLoading || redirectLoading;
+
   const value = useMemo(() => ({
     currentUser,
     userDetails,
