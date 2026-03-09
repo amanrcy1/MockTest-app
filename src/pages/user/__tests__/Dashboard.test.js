@@ -20,8 +20,6 @@ vi.mock('../../../components/ui/LoadingSkeleton', () => ({
 
 import { __mockNavigate as mockNavigate, __mockLocation } from 'react-router-dom';
 
-vi.mock('react-router-dom');
-
 describe('Dashboard Page', () => {
   const mockLogout = vi.fn();
 
@@ -40,22 +38,22 @@ describe('Dashboard Page', () => {
   // Helper to render and wait for loading to complete
   const renderAndWait = async () => {
     render(<Dashboard />);
-    // Wait for content to appear (indicates loading is done)
     await waitFor(() => {
-      expect(screen.getByText('Test User')).toBeInTheDocument();
+      expect(screen.getByText('Test')).toBeInTheDocument();
     }, { timeout: 3000 });
   };
 
-  it('should render user name', async () => {
+  it('should render user first name in mobile header', async () => {
     await renderAndWait();
-    expect(screen.getByText('Test User')).toBeInTheDocument();
+    expect(screen.getByText('Test')).toBeInTheDocument();
   });
 
   it('should display stats cards', async () => {
     await renderAndWait();
-    expect(screen.getByText('Tests')).toBeInTheDocument();
-    expect(screen.getByText('Accuracy')).toBeInTheDocument();
-    expect(screen.getByText('Rank')).toBeInTheDocument();
+    expect(screen.getByText('Tests Taken')).toBeInTheDocument();
+    expect(screen.getByText('Avg Accuracy')).toBeInTheDocument();
+    expect(screen.getByText('Correct Answers')).toBeInTheDocument();
+    expect(screen.getByText('Day Streak')).toBeInTheDocument();
   });
 
   it('should show quick action cards', async () => {
@@ -97,10 +95,8 @@ describe('Dashboard Page', () => {
     });
     render(<Dashboard />);
     await waitFor(() => {
-      expect(screen.getByText('Admin')).toBeInTheDocument();
+      expect(screen.getByText('Admin Panel')).toBeInTheDocument();
     }, { timeout: 3000 });
-    const adminElements = screen.getAllByText('Admin Panel');
-    expect(adminElements.length).toBeGreaterThan(0);
   });
 
   it('should hide admin panel for regular users', async () => {
@@ -135,8 +131,8 @@ describe('Dashboard Page', () => {
     });
     getDocs.mockResolvedValue({
       docs: [
-        { id: 'test1', data: () => ({ accuracy: 80, timeTaken: 3600, completed: true, userId: 'stats-user-999' }) },
-        { id: 'test2', data: () => ({ accuracy: 90, timeTaken: 3000, completed: true, userId: 'stats-user-999' }) },
+        { id: 'test1', data: () => ({ accuracy: 80, timeTaken: 3600, completed: true, userId: 'stats-user-999', endTime: new Date().toISOString(), correct: 8, incorrect: 2, skipped: 0 }) },
+        { id: 'test2', data: () => ({ accuracy: 90, timeTaken: 3000, completed: true, userId: 'stats-user-999', endTime: new Date().toISOString(), correct: 9, incorrect: 1, skipped: 0 }) },
       ],
       empty: false,
       size: 2,
@@ -149,7 +145,7 @@ describe('Dashboard Page', () => {
     });
     render(<Dashboard />);
     await waitFor(() => {
-      expect(screen.getByText('Stats User')).toBeInTheDocument();
+      expect(screen.getByText('Stats')).toBeInTheDocument();
     }, { timeout: 3000 });
     expect(screen.getByText('2')).toBeInTheDocument();
   });

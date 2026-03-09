@@ -255,7 +255,15 @@ const TestSelection = () => {
       return;
     }
 
-    if (mode === "mock") navigate("/test/mock", { state: { examType: exam } });
+    if (mode === "mock") {
+      // Multi-paper exams (like CDS) go to paper selection screen
+      const pattern = EXAM_PATTERNS[exam];
+      if (pattern?.multiPaper) {
+        navigate("/test/paper-selection", { state: { examType: exam } });
+      } else {
+        navigate("/test/mock", { state: { examType: exam } });
+      }
+    }
     else if (mode === "practice") navigate("/test/practice", { state: { examType: exam } });
     else if (mode === "custom") navigate("/test/custom-setup", { state: { examType: exam } });
   };

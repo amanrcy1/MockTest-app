@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useState, useRef } from "react";
-import { useLocation, useNavigate } from "react-router-dom";
-import { collection, getDocs, query, where } from "firebase/firestore";
+import { useLocation, useNavigate, useParams } from "react-router-dom";
+import { collection, doc, getDoc, getDocs, query, where } from "firebase/firestore";
 import toast, { messages } from "../../utils/toast";
 import { db } from "../../config/firebase";
 import { calculateScore, formatTime } from "../../utils/testUtils";
@@ -12,9 +12,17 @@ import ReactMarkdown from "react-markdown";
 const TestResult = () => {
   const navigate = useNavigate();
   const location = useLocation();
+  const { testId: urlTestId } = useParams();
   const solutionsRef = useRef(null);
 
-  const { questions, responses, examType, testMode } = location.state || {};
+  const [testData, setTestData] = useState({
+    questions: location.state?.questions || null,
+    responses: location.state?.responses || null,
+    examType: location.state?.examType || null,
+    testMode: location.state?.testMode || null,
+  });
+  const { questions, responses, examType, testMode } = testData;
+  const [fetchingTest, setFetchingTest] = useState(false);
   const [showSolutions, setShowSolutions] = useState(false);
   const [solutionFilter, setSolutionFilter] = useState("all"); // all, correct, incorrect, skipped
   const [percentile, setPercentile] = useState(null);
@@ -45,6 +53,10 @@ const TestResult = () => {
   };
 
   const calculatePercentile = useCallback(async () => {
+    if (!examType || !questions?.length || !responses?.length) {
+      setLoading(false);
+      return;
+    }
     try {
       const q = query(
         collection(db, "tests"),
@@ -76,13 +88,72 @@ const TestResult = () => {
   }, [examType, questions, responses]);
 
   useEffect(() => {
-    if (!questions || !responses) {
-      toast.error(messages.NO_TEST_DATA);
-      navigate("/dashboard");
+    // If we have data from location state, just calculate percentile
+    if (questions && responses) {
+      calculatePercentile();
       return;
     }
-    calculatePercentile();
-  }, [calculatePercentile, navigate, questions, responses]);
+
+    // If we have a testId in URL, fetch from Firestore
+    if (urlTestId) {
+      const fetchTestData = async () => {
+        setFetchingTest(true);
+        try {
+          const testDoc = await getDoc(doc(db, "tests", urlTestId));
+          if (!testDoc.exists()) {
+            toast.error("Test result not found.");
+            navigate("/dashboard");
+            return;
+          }
+          const data = testDoc.data();
+          // Fetch full question objects from their IDs
+          const questionIds = data.questions || [];
+          if (questionIds.length === 0) {
+            toast.error("No questions found for this test.");
+            navigate("/dashboard");
+            return;
+          }
+          // Firestore 'in' queries support max 30 items, so batch them
+          const allQuestions = [];
+          for (let i = 0; i < questionIds.length; i += 30) {
+            const batch = questionIds.slice(i, i + 30);
+            const q = query(collection(db, "questions"), where("__name__", "in", batch));
+            const snap = await getDocs(q);
+            snap.forEach((d) => allQuestions.push({ id: d.id, ...d.data() }));
+          }
+          // Sort questions to match original order
+          const questionMap = Object.fromEntries(allQuestions.map((q) => [q.id, q]));
+          const orderedQuestions = questionIds.map((id) => questionMap[id]).filter(Boolean);
+
+          setTestData({
+            questions: orderedQuestions,
+            responses: data.responses || [],
+            examType: data.examType,
+            testMode: data.testMode,
+          });
+        } catch (error) {
+          logger.error("Error fetching test result:", error);
+          toast.error("Failed to load test result.");
+          navigate("/dashboard");
+        } finally {
+          setFetchingTest(false);
+        }
+      };
+      fetchTestData();
+      return;
+    }
+
+    // No data and no testId
+    toast.error(messages.NO_TEST_DATA);
+    navigate("/dashboard");
+  }, [urlTestId]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Calculate percentile once we have data
+  useEffect(() => {
+    if (questions && responses && !fetchingTest) {
+      calculatePercentile();
+    }
+  }, [questions, responses, fetchingTest, calculatePercentile]);
 
   const handleGetAiExplanation = async (index, question, response) => {
     if (aiExplanations[index] || loadingAi[index]) return;
@@ -119,6 +190,17 @@ const TestResult = () => {
       setLoadingAi((prev) => ({ ...prev, [index]: false }));
     }
   };
+
+  if (fetchingTest) {
+    return (
+      <div className="min-h-screen bg-gray-100 dark:bg-gray-950 flex items-center justify-center">
+        <div className="text-center">
+          <div className="w-10 h-10 border-4 border-blue-500 border-t-transparent rounded-full animate-spin mx-auto mb-3" />
+          <p className="text-sm text-gray-500 dark:text-gray-400">Loading test result...</p>
+        </div>
+      </div>
+    );
+  }
 
   if (!questions || !responses) {
     return null;
@@ -293,7 +375,7 @@ const TestResult = () => {
               <h2 className="text-2xl font-bold mb-1">Your Score</h2>
               <div className="text-5xl font-bold mb-2">
                 {scoreData.totalMarks.toFixed(2)}
-                <span className="text-xl opacity-70 ml-2">/ {(questions.length * responses[0].marksPerQuestion).toFixed(2)}</span>
+                <span className="text-xl opacity-70 ml-2">/ {responses.reduce((sum, r) => sum + (r.marksPerQuestion || 1), 0).toFixed(2)}</span>
               </div>
 
               <div className="grid grid-cols-2 md:grid-cols-5 gap-4 mt-6">
@@ -603,6 +685,29 @@ const TestResult = () => {
                 ))}
               </div>
             </div>
+
+            {/* Skipped questions notice */}
+            {scoreData.skipped > 0 && (
+              <div className="mb-6 p-4 bg-amber-50 dark:bg-amber-900/10 border border-amber-200 dark:border-amber-800/50 rounded-xl flex items-start gap-3">
+                <svg className="w-5 h-5 text-amber-500 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L4.082 16.5c-.77.833.192 2.5 1.732 2.5z" />
+                </svg>
+                <div className="flex-1">
+                  <p className="text-sm font-semibold text-amber-800 dark:text-amber-300">
+                    {scoreData.skipped} question{scoreData.skipped > 1 ? "s" : ""} skipped
+                  </p>
+                  <p className="text-xs text-amber-700 dark:text-amber-400 mt-0.5">
+                    Solutions are hidden for skipped questions. Use AI Explanation or retake the test.
+                  </p>
+                </div>
+                <button
+                  onClick={() => navigate("/test-selection", { state: { examType, mode: testMode || "mock" } })}
+                  className="flex-shrink-0 px-3 py-1.5 bg-amber-500 hover:bg-amber-600 text-white text-xs font-semibold rounded-lg transition-colors"
+                >
+                  Retake
+                </button>
+              </div>
+            )}
             <div className="space-y-6">
               {questions.map((question, index) => {
                 const response = responses[index];
@@ -622,7 +727,7 @@ const TestResult = () => {
                       isCorrect
                         ? "border-green-200 dark:border-green-800 bg-green-50 dark:bg-green-900/20"
                         : isSkipped
-                          ? "border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800"
+                          ? "border-amber-200 dark:border-amber-800/50 bg-amber-50/50 dark:bg-amber-900/10"
                           : "border-red-200 dark:border-red-800 bg-red-50 dark:bg-red-900/20"
                     }`}
                   >
@@ -690,11 +795,13 @@ const TestResult = () => {
                           <div
                             key={option}
                             className={`p-3 rounded-lg border-2 ${
-                              isCorrectAnswer
-                                ? "border-green-500 bg-green-100 dark:bg-green-900/30"
-                                : isUserAnswer
-                                  ? "border-red-500 bg-red-100 dark:bg-red-900/30"
-                                  : "border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900"
+                              isSkipped
+                                ? "border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900"
+                                : isCorrectAnswer
+                                  ? "border-green-500 bg-green-100 dark:bg-green-900/30"
+                                  : isUserAnswer
+                                    ? "border-red-500 bg-red-100 dark:bg-red-900/30"
+                                    : "border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900"
                             }`}
                           >
                             <div className="flex items-start gap-2">
@@ -702,7 +809,7 @@ const TestResult = () => {
                               <span className="flex-1 text-gray-800 dark:text-gray-200">
                                 {question.options[option]}
                               </span>
-                              {isCorrectAnswer && (
+                              {!isSkipped && isCorrectAnswer && (
                                 <span className="text-green-600 font-semibold">
                                   Correct
                                 </span>
@@ -718,23 +825,37 @@ const TestResult = () => {
                       })}
                     </div>
 
-                    {/* Solution */}
-                    <div className="bg-white dark:bg-gray-800 border-l-4 border-blue-500 p-4 rounded">
-                      <p className="font-semibold text-gray-800 dark:text-white mb-2">
-                        Solution:
-                      </p>
-                      <p className="text-gray-700 dark:text-gray-300">{question.solution}</p>
-                    </div>
+                    {/* Solution — only for attempted questions */}
+                    {!isSkipped && (
+                      <div className="bg-white dark:bg-gray-800 border-l-4 border-blue-500 p-4 rounded">
+                        <p className="font-semibold text-gray-800 dark:text-white mb-2">
+                          Solution:
+                        </p>
+                        <p className="text-gray-700 dark:text-gray-300">{question.solution}</p>
+                      </div>
+                    )}
 
-                    {/* AI Explanation - Only for incorrect answers */}
-                    {!isCorrect && !isSkipped && (
-                      <div className="mt-4">
-                        {!aiExplanations[index] ? (
-                          <button
-                            onClick={() => handleGetAiExplanation(index, question, response)}
-                            disabled={loadingAi[index]}
-                            className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-purple-500 to-indigo-600 text-white rounded-lg hover:from-purple-600 hover:to-indigo-700 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
-                          >
+                    {/* Skipped — retake prompt */}
+                    {isSkipped && (
+                      <div className="bg-amber-50 dark:bg-amber-900/10 border border-amber-200 dark:border-amber-800/50 rounded-lg p-4 flex items-center gap-3">
+                        <svg className="w-5 h-5 text-amber-500 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                        </svg>
+                        <div className="flex-1">
+                          <p className="text-sm font-medium text-amber-800 dark:text-amber-300">You skipped this question</p>
+                          <p className="text-xs text-amber-700 dark:text-amber-400 mt-0.5">Solution is hidden. Use AI Explanation below or retake the test.</p>
+                        </div>
+                      </div>
+                    )}
+
+                    {/* AI Explanation - Available for all attempted questions */}
+                    <div className="mt-4">
+                      {!aiExplanations[index] ? (
+                        <button
+                          onClick={() => handleGetAiExplanation(index, question, response)}
+                          disabled={loadingAi[index]}
+                          className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-purple-500 to-indigo-600 text-white rounded-lg hover:from-purple-600 hover:to-indigo-700 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                        >
                             {loadingAi[index] ? (
                               <>
                                 <svg className="animate-spin h-4 w-4" viewBox="0 0 24 24">
@@ -766,7 +887,6 @@ const TestResult = () => {
                           </div>
                         )}
                       </div>
-                    )}
                   </div>
                 );
               })}

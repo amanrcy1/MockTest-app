@@ -4,8 +4,6 @@ import TestResult from '../TestResult';
 import { getDocs } from 'firebase/firestore';
 import { __mockNavigate as mockNavigate, __mockLocation } from 'react-router-dom';
 
-vi.mock('react-router-dom');
-
 const mockQuestions = [
   { id: 'q1', questionText: 'Q1?', options: { A: 'A', B: 'B', C: 'C', D: 'D' }, correctAnswer: 'A', subject: 'English', topic: 'Grammar' },
   { id: 'q2', questionText: 'Q2?', options: { A: 'A', B: 'B', C: 'C', D: 'D' }, correctAnswer: 'B', subject: 'Math', topic: 'Algebra' },

@@ -26,6 +26,7 @@ const ManageQuestions = lazy(() => import("./pages/admin/ManageQuestions"));
 const BulkUpload = lazy(() => import("./pages/admin/BulkUpload"));
 const TestSelection = lazy(() => import("./pages/test/TestSelection"));
 const MockTest = lazy(() => import("./pages/test/MockTest"));
+const PaperSelection = lazy(() => import("./pages/test/PaperSelection"));
 const TestResult = lazy(() => import("./pages/test/TestResult"));
 const PracticeMode = lazy(() => import("./pages/test/PracticeMode"));
 const CustomTestSetup = lazy(() => import("./pages/test/CustomTestSetup"));
@@ -40,6 +41,7 @@ const Profile = lazy(() => import("./pages/user/Profile"));
 const Onboarding = lazy(() => import("./pages/Onboarding"));
 const NotFound = lazy(() => import("./pages/NotFound"));
 const Landing = lazy(() => import("./pages/Landing"));
+const Universe = lazy(() => import("./pages/Universe"));
 const TermsOfService = lazy(() => import("./pages/legal/TermsOfService"));
 const PrivacyPolicy = lazy(() => import("./pages/legal/PrivacyPolicy"));
 
@@ -47,7 +49,7 @@ const PrivacyPolicy = lazy(() => import("./pages/legal/PrivacyPolicy"));
 const ChatWrapper = () => {
   const { currentUser, userDetails } = useAuth();
   const location = useLocation();
-  const hiddenPaths = ["/test/mock", "/test/practice", "/test/custom", "/login", "/", "/onboarding"];
+  const hiddenPaths = ["/test/mock", "/test/paper-selection", "/test/practice", "/test/custom", "/login", "/", "/onboarding"];
   const isHidden = hiddenPaths.some((p) => location.pathname === p) || location.pathname.startsWith("/admin");
   if (!currentUser || isHidden) return null;
 
@@ -266,7 +268,23 @@ function App() {
                 }
               />
               <Route
+                path="/test/paper-selection"
+                element={
+                  <ProtectedRoute>
+                    <PaperSelection />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
                 path="/test/result"
+                element={
+                  <ProtectedRoute>
+                    <TestResult />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/test/result/:testId"
                 element={
                   <ProtectedRoute>
                     <TestResult />
@@ -379,6 +397,9 @@ function App() {
                   </AdminRoute>
                 }
               />
+
+              {/* Universe Explorer */}
+              <Route path="/universe" element={<Universe />} />
 
               {/* Default redirect */}
               <Route path="/" element={

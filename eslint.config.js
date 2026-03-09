@@ -72,4 +72,13 @@ export default [
   {
     ignores: ['dist/**', 'build/**', 'coverage/**', 'node_modules/**', 'api/**'],
   },
+  // React Three Fiber files use Three.js JSX elements with custom properties
+  // (args, transparent, roughness, etc.) that react/no-unknown-property doesn't recognize
+  {
+    files: ['src/components/3d/**/*.{js,jsx}'],
+    rules: {
+      'react/no-unknown-property': 'off',
+    },
+  },
 ];
+

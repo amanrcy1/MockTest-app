@@ -4,10 +4,13 @@ export const EXAM_PATTERNS = {
   CDS: {
     name: "CDS - Combined Defence Services",
     code: "CDS",
+    multiPaper: true, // Each section is a separate paper with its own timer
     sections: [
       {
         id: "cds_english",
         name: "English",
+        shortName: "Paper I",
+        shift: "Morning (9:00 AM - 11:00 AM)",
         totalQuestions: 120,
         totalMarks: 100,
         duration: 120, // minutes
@@ -17,6 +20,8 @@ export const EXAM_PATTERNS = {
       {
         id: "cds_gk",
         name: "General Knowledge",
+        shortName: "Paper II",
+        shift: "Afternoon (12:00 PM - 2:00 PM)",
         totalQuestions: 120,
         totalMarks: 100,
         duration: 120,
@@ -26,9 +31,11 @@ export const EXAM_PATTERNS = {
       {
         id: "cds_math",
         name: "Elementary Mathematics",
+        shortName: "Paper III",
+        shift: "Evening (3:00 PM - 5:00 PM)",
         totalQuestions: 100,
         totalMarks: 100,
-        duration: 100,
+        duration: 120,
         negativeMarking: -1 / 3,
         marksPerQuestion: 1,
       },

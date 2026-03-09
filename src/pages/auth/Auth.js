@@ -1,9 +1,73 @@
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
 import { useAuth } from "../../context/AuthContext";
 import { toast } from "react-toastify";
 import { ThemeToggle, AuthAuroraCanvas } from "../../components";
+
+// Same icons as landing page floating particles
+const PARTICLE_ICONS = [
+  <svg key="book" className="w-full h-full" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}><path strokeLinecap="round" strokeLinejoin="round" d="M12 6.042A8.967 8.967 0 006 3.75c-1.052 0-2.062.18-3 .512v14.25A8.987 8.987 0 016 18c2.305 0 4.408.867 6 2.292m0-14.25a8.966 8.966 0 016-2.292c1.052 0 2.062.18 3 .512v14.25A8.987 8.987 0 0018 18a8.967 8.967 0 00-6 2.292m0-14.25v14.25" /></svg>,
+  <svg key="check" className="w-full h-full" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}><path strokeLinecap="round" strokeLinejoin="round" d="M9 12.75L11.25 15 15 9.75M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>,
+  <svg key="pencil" className="w-full h-full" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}><path strokeLinecap="round" strokeLinejoin="round" d="M16.862 4.487l1.687-1.688a1.875 1.875 0 112.652 2.652L6.832 19.82a4.5 4.5 0 01-1.897 1.13l-2.685.8.8-2.685a4.5 4.5 0 011.13-1.897L16.863 4.487z" /></svg>,
+  <svg key="star" className="w-full h-full" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}><path strokeLinecap="round" strokeLinejoin="round" d="M11.48 3.499a.562.562 0 011.04 0l2.125 5.111a.563.563 0 00.475.345l5.518.442c.499.04.701.663.321.988l-4.204 3.602a.563.563 0 00-.182.557l1.285 5.385a.562.562 0 01-.84.61l-4.725-2.885a.563.563 0 00-.586 0L6.982 20.54a.562.562 0 01-.84-.61l1.285-5.386a.562.562 0 00-.182-.557l-4.204-3.602a.563.563 0 01.321-.988l5.518-.442a.563.563 0 00.475-.345L11.48 3.5z" /></svg>,
+  <svg key="bolt" className="w-full h-full" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}><path strokeLinecap="round" strokeLinejoin="round" d="M3.75 13.5l10.5-11.25L12 10.5h8.25L9.75 21.75 12 13.5H3.75z" /></svg>,
+  <svg key="trophy" className="w-full h-full" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}><path strokeLinecap="round" strokeLinejoin="round" d="M16.5 18.75h-9m9 0a3 3 0 013 3h-15a3 3 0 013-3m9 0v-3.375c0-.621-.503-1.125-1.125-1.125h-.871M7.5 18.75v-3.375c0-.621.504-1.125 1.125-1.125h.872m5.007 0H9.497m5.007 0a7.454 7.454 0 01-.982-3.172M9.497 14.25a7.454 7.454 0 00.981-3.172M5.25 4.236c-.982.143-1.954.317-2.916.52A6.003 6.003 0 007.73 9.728M5.25 4.236V4.5c0 2.108.966 3.99 2.48 5.228M5.25 4.236V2.721C7.456 2.41 9.71 2.25 12 2.25c2.291 0 4.545.16 6.75.47v1.516M18.75 4.236c.982.143 1.954.317 2.916.52A6.003 6.003 0 0016.27 9.728M18.75 4.236V4.5c0 2.108-.966 3.99-2.48 5.228m0 0a6.023 6.023 0 01-7.54 0" /></svg>,
+  <svg key="cap" className="w-full h-full" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}><path strokeLinecap="round" strokeLinejoin="round" d="M4.26 10.147a60.436 60.436 0 00-.491 6.347A48.627 48.627 0 0112 20.904a48.627 48.627 0 018.232-4.41 60.46 60.46 0 00-.491-6.347m-15.482 0a50.57 50.57 0 00-2.658-.813A59.905 59.905 0 0112 3.493a59.902 59.902 0 0110.399 5.84c-.896.248-1.783.52-2.658.814m-15.482 0A50.697 50.697 0 0112 13.489a50.702 50.702 0 017.74-3.342" /></svg>,
+  <svg key="globe" className="w-full h-full" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}><path strokeLinecap="round" strokeLinejoin="round" d="M12 21a9.004 9.004 0 008.716-6.747M12 21a9.004 9.004 0 01-8.716-6.747M12 21c2.485 0 4.5-4.03 4.5-9S14.485 3 12 3m0 18c-2.485 0-4.5-4.03-4.5-9S9.515 3 12 3m0 0a8.997 8.997 0 017.843 4.582M12 3a8.997 8.997 0 00-7.843 4.582m15.686 0A11.953 11.953 0 0112 10.5c-2.998 0-5.74-1.1-7.843-2.918m15.686 0A8.959 8.959 0 0121 12c0 .778-.099 1.533-.284 2.253m0 0A17.919 17.919 0 0112 16.5c-3.162 0-6.133-.815-8.716-2.247m0 0A9.015 9.015 0 013 12c0-1.605.42-3.113 1.157-4.418" /></svg>,
+];
+
+const PARTICLE_COLORS = [
+  "text-blue-400/30 dark:text-blue-400/20",
+  "text-purple-400/30 dark:text-purple-400/20",
+  "text-pink-400/30 dark:text-pink-400/20",
+  "text-emerald-400/30 dark:text-emerald-400/20",
+  "text-amber-400/30 dark:text-amber-400/20",
+  "text-indigo-400/30 dark:text-indigo-400/20",
+  "text-cyan-400/30 dark:text-cyan-400/20",
+  "text-rose-400/30 dark:text-rose-400/20",
+];
+
+const FloatingParticles = () => {
+  const particles = useMemo(() =>
+    Array.from({ length: 10 }, (_, i) => ({
+      id: i,
+      icon: PARTICLE_ICONS[i % PARTICLE_ICONS.length],
+      color: PARTICLE_COLORS[i % PARTICLE_COLORS.length],
+      size: 14 + Math.random() * 18,
+      x: Math.random() * 100,
+      duration: 16 + Math.random() * 14,
+      delay: -(Math.random() * 20),
+    })), []);
+
+  return (
+    <div className="fixed inset-0 overflow-hidden pointer-events-none z-[1]" aria-hidden="true">
+      {particles.map((p) => (
+        <div
+          key={p.id}
+          className={`absolute ${p.color}`}
+          style={{
+            left: `${p.x}%`,
+            width: p.size,
+            height: p.size,
+            animation: `authFloatUp ${p.duration}s linear ${p.delay}s infinite`,
+            opacity: 0,
+          }}
+        >
+          {p.icon}
+        </div>
+      ))}
+      <style>{`
+        @keyframes authFloatUp {
+          0% { transform: translateY(100vh) translateX(0px); opacity: 0; }
+          8% { opacity: 0.5; }
+          85% { opacity: 0.5; }
+          100% { transform: translateY(-10vh) translateX(25px); opacity: 0; }
+        }
+      `}</style>
+    </div>
+  );
+};
 
 const Auth = () => {
   const [loading, setLoading] = useState(false);
@@ -45,6 +109,7 @@ const Auth = () => {
   return (
     <div className="min-h-screen flex items-center justify-center p-4 relative overflow-hidden">
       <AuthAuroraCanvas />
+      <FloatingParticles />
 
       {/* Back to home button */}
       <motion.button

@@ -23,20 +23,45 @@ export const useTestSession = (sessionKey, activeKey, opts = {}) => {
       if (now - lastSavedRef.current < 5000) return;
       lastSavedRef.current = now;
 
-      localStorage.setItem(
-        sessionKey,
-        JSON.stringify({ ...payload, updatedAt: new Date().toISOString() })
-      );
-      localStorage.setItem(
-        activeKey,
-        JSON.stringify({
-          mode,
-          userId: userId || null,
-          examType,
-          ...(settings ? { settings } : {}),
-          updatedAt: new Date().toISOString(),
-        })
-      );
+      try {
+        localStorage.setItem(
+          sessionKey,
+          JSON.stringify({ ...payload, updatedAt: new Date().toISOString() })
+        );
+        localStorage.setItem(
+          activeKey,
+          JSON.stringify({
+            mode,
+            userId: userId || null,
+            examType,
+            ...(settings ? { settings } : {}),
+            updatedAt: new Date().toISOString(),
+          })
+        );
+      } catch (error) {
+        // Handle localStorage quota exceeded — try clearing stale sessions
+        if (error?.name === "QuotaExceededError" || error?.code === 22) {
+          try {
+            // Remove old test sessions to free space
+            const keysToRemove = [];
+            for (let i = 0; i < localStorage.length; i++) {
+              const key = localStorage.key(i);
+              if (key && (key.startsWith("mockTestSession") || key.startsWith("practiceSession") || key.startsWith("customTestSession")) && key !== sessionKey) {
+                keysToRemove.push(key);
+              }
+            }
+            keysToRemove.forEach((k) => localStorage.removeItem(k));
+            // Retry once after cleanup
+            localStorage.setItem(
+              sessionKey,
+              JSON.stringify({ ...payload, updatedAt: new Date().toISOString() })
+            );
+          } catch {
+            // Storage is truly full — session won't be saved but test continues
+            console.warn("localStorage quota exceeded. Session save skipped.");
+          }
+        }
+      }
     },
     [sessionKey, activeKey, mode, examType, userId, settings]
   );

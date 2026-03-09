@@ -6,7 +6,6 @@ import { getDocs } from 'firebase/firestore';
 import { __mockNavigate as mockNavigate, __mockLocation } from 'react-router-dom';
 import * as hooks from '../../../hooks';
 
-vi.mock('react-router-dom');
 vi.mock('../../../context/AuthContext');
 
 vi.mock('../../../hooks', () => ({
@@ -97,7 +96,7 @@ describe('MockTest Page', () => {
   it('should redirect if insufficient questions', async () => {
     getDocs.mockResolvedValue({ docs: [], empty: true, size: 0, forEach: vi.fn() });
     render(<MockTest />);
-    await waitFor(() => expect(mockNavigate).toHaveBeenCalledWith('/test-selection'));
+    await waitFor(() => expect(mockNavigate).toHaveBeenCalledWith('/test-selection', expect.anything()));
   });
 
   it('should fetch questions from firestore', async () => {

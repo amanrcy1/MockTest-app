@@ -3,6 +3,41 @@ import { vi } from 'vitest';
 import '@testing-library/jest-dom';
 
 // ============================================
+// REACT ROUTER DOM MOCK
+// ============================================
+
+const __mockNavigate = vi.fn();
+const __mockLocation = { pathname: '/', search: '', hash: '', state: null, key: 'default' };
+
+vi.mock('react-router-dom', () => ({
+  __mockNavigate,
+  __mockLocation,
+  useNavigate: () => __mockNavigate,
+  useLocation: () => __mockLocation,
+  useParams: () => ({}),
+  useSearchParams: () => [new URLSearchParams(), vi.fn()],
+  useMatch: () => null,
+  useRouteError: () => null,
+  Link: ({ children, to, ...rest }) => {
+    const React = require('react');
+    return React.createElement('a', { href: to, ...rest }, children);
+  },
+  NavLink: ({ children, to, ...rest }) => {
+    const React = require('react');
+    return React.createElement('a', { href: to, ...rest }, children);
+  },
+  Navigate: ({ to }) => {
+    __mockNavigate(to);
+    return null;
+  },
+  Outlet: () => null,
+  MemoryRouter: ({ children }) => children,
+  BrowserRouter: ({ children }) => children,
+  Routes: ({ children }) => children,
+  Route: () => null,
+}));
+
+// ============================================
 // FIREBASE MOCKS
 // ============================================
 

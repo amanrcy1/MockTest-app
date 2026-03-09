@@ -1,31 +1,46 @@
-import { useEffect, useState, useRef, useCallback } from "react";
+import { useEffect, useState, useRef, useCallback, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
-import { motion, useScroll, useTransform, useMotionValue, useSpring } from "framer-motion";
+import { motion, useScroll, useTransform, useMotionValue, useSpring, useMotionTemplate, AnimatePresence } from "framer-motion";
 import { ThemeToggle } from "../components";
 
 // ============================================
 // CANVAS AURORA WAVE BACKGROUND
 // ============================================
+// Throttle to ~30fps for a background effect — no one notices the difference
+const FRAME_INTERVAL = 1000 / 30;
+
 const AuroraCanvas = () => {
   const canvasRef = useRef(null);
   const animRef = useRef(null);
   const isDarkRef = useRef(false);
+  const isVisibleRef = useRef(true);
+  const lastFrameRef = useRef(0);
+  const timeRef = useRef(0);
 
-  const draw = useCallback(() => {
+  const setupCanvas = useCallback(() => {
     const canvas = canvasRef.current;
     if (!canvas) return;
-    const ctx = canvas.getContext("2d");
-    const dpr = Math.min(window.devicePixelRatio || 1, 2);
+    const ctx = canvas.getContext("2d", { alpha: false });
+    const dpr = Math.min(window.devicePixelRatio || 1, 1.5);
     const w = canvas.clientWidth;
     const h = canvas.clientHeight;
     canvas.width = w * dpr;
     canvas.height = h * dpr;
     ctx.scale(dpr, dpr);
+    return { ctx, w, h };
+  }, []);
+
+  const draw = useCallback(() => {
+    const setup = setupCanvas();
+    if (!setup) return;
+    const { ctx, w, h } = setup;
+
+    // Larger step on mobile for better perf
+    const step = w < 640 ? 8 : 4;
 
     isDarkRef.current = document.documentElement.classList.contains("dark");
     const dark = isDarkRef.current;
 
-    // Wave configuration — each wave is an aurora band
     const waves = [
       { color: dark ? "rgba(96,165,250," : "rgba(59,130,246,", amp: 120, freq: 0.0015, speed: 0.0004, yOffset: 0.18, width: 280 },
       { color: dark ? "rgba(167,139,250," : "rgba(139,92,246,", amp: 100, freq: 0.002, speed: -0.0003, yOffset: 0.30, width: 250 },
@@ -34,30 +49,47 @@ const AuroraCanvas = () => {
       { color: dark ? "rgba(129,140,248," : "rgba(99,102,241,", amp: 110, freq: 0.0012, speed: 0.00045, yOffset: 0.75, width: 260 },
     ];
 
-    let time = 0;
+    // Pre-compute gradient objects (reuse across frames)
+    const gradients = waves.map((wave) => {
+      const baseY = h * wave.yOffset;
+      const opacity = dark ? 0.12 : 0.08;
+      const grad = ctx.createLinearGradient(0, baseY - wave.amp * 1.5, 0, baseY + wave.width);
+      grad.addColorStop(0, wave.color + "0)");
+      grad.addColorStop(0.3, wave.color + (opacity * 1.5) + ")");
+      grad.addColorStop(0.6, wave.color + opacity + ")");
+      grad.addColorStop(1, wave.color + "0)");
+      return grad;
+    });
 
-    const render = () => {
-      time++;
-      ctx.clearRect(0, 0, w, h);
+    const baseFill = dark ? "#030712" : "#f8fafc";
 
-      // Base fill
-      if (dark) {
-        ctx.fillStyle = "#030712";
-      } else {
-        ctx.fillStyle = "#f8fafc";
+    const render = (timestamp) => {
+      if (!isVisibleRef.current) {
+        animRef.current = requestAnimationFrame(render);
+        return;
       }
+
+      // Throttle frame rate
+      const elapsed = timestamp - lastFrameRef.current;
+      if (elapsed < FRAME_INTERVAL) {
+        animRef.current = requestAnimationFrame(render);
+        return;
+      }
+      lastFrameRef.current = timestamp - (elapsed % FRAME_INTERVAL);
+      timeRef.current++;
+      const time = timeRef.current;
+
+      ctx.fillStyle = baseFill;
       ctx.fillRect(0, 0, w, h);
 
-      for (const wave of waves) {
+      for (let wi = 0; wi < waves.length; wi++) {
+        const wave = waves[wi];
         const baseY = h * wave.yOffset;
-        const opacity = dark ? 0.12 : 0.08;
 
-        // Draw the aurora band as a filled wave with vertical gradient
         ctx.beginPath();
         ctx.moveTo(0, h);
 
-        // Bottom edge of wave
-        for (let x = 0; x <= w; x += 3) {
+        for (let x = 0; x <= w; x += step) {
           const y =
             baseY +
             Math.sin(x * wave.freq + time * wave.speed) * wave.amp +
@@ -68,50 +100,48 @@ const AuroraCanvas = () => {
 
         ctx.lineTo(w, h);
         ctx.closePath();
-
-        // Vertical gradient fill for each band
-        const grad = ctx.createLinearGradient(0, baseY - wave.amp * 1.5, 0, baseY + wave.width);
-        grad.addColorStop(0, wave.color + "0)");
-        grad.addColorStop(0.3, wave.color + (opacity * 1.5) + ")");
-        grad.addColorStop(0.6, wave.color + opacity + ")");
-        grad.addColorStop(1, wave.color + "0)");
-        ctx.fillStyle = grad;
+        ctx.fillStyle = gradients[wi];
         ctx.fill();
-
-        // Bright edge line on top of wave
-        ctx.beginPath();
-        for (let x = 0; x <= w; x += 3) {
-          const y =
-            baseY +
-            Math.sin(x * wave.freq + time * wave.speed) * wave.amp +
-            Math.sin(x * wave.freq * 1.8 + time * wave.speed * 0.7) * (wave.amp * 0.4) +
-            Math.sin(x * wave.freq * 0.5 + time * wave.speed * 1.3) * (wave.amp * 0.6);
-          if (x === 0) ctx.moveTo(x, y);
-          else ctx.lineTo(x, y);
-        }
-        ctx.strokeStyle = wave.color + (dark ? "0.25)" : "0.15)");
-        ctx.lineWidth = 1.5;
-        ctx.stroke();
       }
 
       animRef.current = requestAnimationFrame(render);
     };
 
-    render();
-    return () => cancelAnimationFrame(animRef.current);
-  }, []);
+    animRef.current = requestAnimationFrame(render);
+  }, [setupCanvas]);
 
   useEffect(() => {
-    const cleanup = draw();
+    // Respect reduced motion
+    const mq = window.matchMedia("(prefers-reduced-motion: reduce)");
+    if (mq.matches) {
+      // Draw a single static frame
+      const setup = setupCanvas();
+      if (setup) {
+        const { ctx, w, h } = setup;
+        ctx.fillStyle = document.documentElement.classList.contains("dark") ? "#030712" : "#f8fafc";
+        ctx.fillRect(0, 0, w, h);
+      }
+      return;
+    }
 
-    // Redraw on resize
+    draw();
+
+    // Pause when tab is hidden
+    const handleVisibility = () => { isVisibleRef.current = !document.hidden; };
+    document.addEventListener("visibilitychange", handleVisibility);
+
+    // Debounced resize
+    let resizeTimer;
     const handleResize = () => {
-      cancelAnimationFrame(animRef.current);
-      draw();
+      clearTimeout(resizeTimer);
+      resizeTimer = setTimeout(() => {
+        cancelAnimationFrame(animRef.current);
+        draw();
+      }, 200);
     };
     window.addEventListener("resize", handleResize);
 
-    // Redraw on theme change
+    // Theme change
     const observer = new MutationObserver(() => {
       cancelAnimationFrame(animRef.current);
       draw();
@@ -119,20 +149,13 @@ const AuroraCanvas = () => {
     observer.observe(document.documentElement, { attributes: true, attributeFilter: ["class"] });
 
     return () => {
-      if (cleanup) cleanup();
       cancelAnimationFrame(animRef.current);
+      clearTimeout(resizeTimer);
       window.removeEventListener("resize", handleResize);
+      document.removeEventListener("visibilitychange", handleVisibility);
       observer.disconnect();
     };
-  }, [draw]);
-
-  // Respect reduced motion
-  useEffect(() => {
-    const mq = window.matchMedia("(prefers-reduced-motion: reduce)");
-    if (mq.matches) {
-      cancelAnimationFrame(animRef.current);
-    }
-  }, []);
+  }, [draw, setupCanvas]);
 
   return (
     <canvas
@@ -145,36 +168,300 @@ const AuroraCanvas = () => {
 };
 
 // ============================================
-// ANIMATED COUNTER
+// EFFECT 1: FLOATING PARTICLES (Antigravity)
 // ============================================
-const AnimatedCounter = ({ target, suffix = "", duration = 2 }) => {
-  const [count, setCount] = useState(0);
+const PARTICLE_ICONS = [
+  // Book
+  <svg key="book" className="w-full h-full" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}><path strokeLinecap="round" strokeLinejoin="round" d="M12 6.042A8.967 8.967 0 006 3.75c-1.052 0-2.062.18-3 .512v14.25A8.987 8.987 0 016 18c2.305 0 4.408.867 6 2.292m0-14.25a8.966 8.966 0 016-2.292c1.052 0 2.062.18 3 .512v14.25A8.987 8.987 0 0018 18a8.967 8.967 0 00-6 2.292m0-14.25v14.25" /></svg>,
+  // Checkmark
+  <svg key="check" className="w-full h-full" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}><path strokeLinecap="round" strokeLinejoin="round" d="M9 12.75L11.25 15 15 9.75M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>,
+  // Pencil
+  <svg key="pencil" className="w-full h-full" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}><path strokeLinecap="round" strokeLinejoin="round" d="M16.862 4.487l1.687-1.688a1.875 1.875 0 112.652 2.652L6.832 19.82a4.5 4.5 0 01-1.897 1.13l-2.685.8.8-2.685a4.5 4.5 0 011.13-1.897L16.863 4.487z" /></svg>,
+  // Star
+  <svg key="star" className="w-full h-full" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}><path strokeLinecap="round" strokeLinejoin="round" d="M11.48 3.499a.562.562 0 011.04 0l2.125 5.111a.563.563 0 00.475.345l5.518.442c.499.04.701.663.321.988l-4.204 3.602a.563.563 0 00-.182.557l1.285 5.385a.562.562 0 01-.84.61l-4.725-2.885a.563.563 0 00-.586 0L6.982 20.54a.562.562 0 01-.84-.61l1.285-5.386a.562.562 0 00-.182-.557l-4.204-3.602a.563.563 0 01.321-.988l5.518-.442a.563.563 0 00.475-.345L11.48 3.5z" /></svg>,
+  // Lightning
+  <svg key="bolt" className="w-full h-full" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}><path strokeLinecap="round" strokeLinejoin="round" d="M3.75 13.5l10.5-11.25L12 10.5h8.25L9.75 21.75 12 13.5H3.75z" /></svg>,
+  // Trophy
+  <svg key="trophy" className="w-full h-full" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}><path strokeLinecap="round" strokeLinejoin="round" d="M16.5 18.75h-9m9 0a3 3 0 013 3h-15a3 3 0 013-3m9 0v-3.375c0-.621-.503-1.125-1.125-1.125h-.871M7.5 18.75v-3.375c0-.621.504-1.125 1.125-1.125h.872m5.007 0H9.497m5.007 0a7.454 7.454 0 01-.982-3.172M9.497 14.25a7.454 7.454 0 00.981-3.172M5.25 4.236c-.982.143-1.954.317-2.916.52A6.003 6.003 0 007.73 9.728M5.25 4.236V4.5c0 2.108.966 3.99 2.48 5.228M5.25 4.236V2.721C7.456 2.41 9.71 2.25 12 2.25c2.291 0 4.545.16 6.75.47v1.516M18.75 4.236c.982.143 1.954.317 2.916.52A6.003 6.003 0 0016.27 9.728M18.75 4.236V4.5c0 2.108-.966 3.99-2.48 5.228m0 0a6.023 6.023 0 01-7.54 0" /></svg>,
+  // Academic cap
+  <svg key="cap" className="w-full h-full" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}><path strokeLinecap="round" strokeLinejoin="round" d="M4.26 10.147a60.436 60.436 0 00-.491 6.347A48.627 48.627 0 0112 20.904a48.627 48.627 0 018.232-4.41 60.46 60.46 0 00-.491-6.347m-15.482 0a50.57 50.57 0 00-2.658-.813A59.905 59.905 0 0112 3.493a59.902 59.902 0 0110.399 5.84c-.896.248-1.783.52-2.658.814m-15.482 0A50.697 50.697 0 0112 13.489a50.702 50.702 0 017.74-3.342" /></svg>,
+  // Globe
+  <svg key="globe" className="w-full h-full" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}><path strokeLinecap="round" strokeLinejoin="round" d="M12 21a9.004 9.004 0 008.716-6.747M12 21a9.004 9.004 0 01-8.716-6.747M12 21c2.485 0 4.5-4.03 4.5-9S14.485 3 12 3m0 18c-2.485 0-4.5-4.03-4.5-9S9.515 3 12 3m0 0a8.997 8.997 0 017.843 4.582M12 3a8.997 8.997 0 00-7.843 4.582m15.686 0A11.953 11.953 0 0112 10.5c-2.998 0-5.74-1.1-7.843-2.918m15.686 0A8.959 8.959 0 0121 12c0 .778-.099 1.533-.284 2.253m0 0A17.919 17.919 0 0112 16.5c-3.162 0-6.133-.815-8.716-2.247m0 0A9.015 9.015 0 013 12c0-1.605.42-3.113 1.157-4.418" /></svg>,
+];
+
+const PARTICLE_COLORS = [
+  "text-blue-400/40 dark:text-blue-400/25",
+  "text-purple-400/40 dark:text-purple-400/25",
+  "text-pink-400/40 dark:text-pink-400/25",
+  "text-emerald-400/40 dark:text-emerald-400/25",
+  "text-amber-400/40 dark:text-amber-400/25",
+  "text-indigo-400/40 dark:text-indigo-400/25",
+  "text-cyan-400/40 dark:text-cyan-400/25",
+  "text-rose-400/40 dark:text-rose-400/25",
+];
+
+const FloatingParticles = () => {
+  const particles = useMemo(() =>
+    Array.from({ length: 10 }, (_, i) => ({
+      id: i,
+      icon: PARTICLE_ICONS[i % PARTICLE_ICONS.length],
+      color: PARTICLE_COLORS[i % PARTICLE_COLORS.length],
+      size: 16 + Math.random() * 20,
+      x: Math.random() * 100,
+      startY: 80 + Math.random() * 30,
+      duration: 14 + Math.random() * 16,
+      delay: Math.random() * -20,
+      drift: (Math.random() - 0.5) * 60,
+      rotate: Math.random() * 360,
+      rotateDelta: (Math.random() - 0.5) * 180,
+    })), []);
+
+  // Use CSS keyframes instead of Framer Motion for infinite animations
+  return (
+    <div className="absolute inset-0 overflow-hidden pointer-events-none" aria-hidden="true">
+      {particles.map((p) => (
+        <div
+          key={p.id}
+          className={`absolute ${p.color}`}
+          style={{
+            left: `${p.x}%`,
+            width: p.size,
+            height: p.size,
+            animation: `floatUp ${p.duration}s linear ${p.delay}s infinite`,
+            transform: `rotate(${p.rotate}deg)`,
+            opacity: 0,
+          }}
+        >
+          {p.icon}
+        </div>
+      ))}
+      <style>{`
+        @keyframes floatUp {
+          0% { transform: translateY(90vh) translateX(0px); opacity: 0; }
+          10% { opacity: 0.6; }
+          80% { opacity: 0.6; }
+          100% { transform: translateY(-10vh) translateX(30px); opacity: 0; }
+        }
+      `}</style>
+    </div>
+  );
+};
+
+// ============================================
+// EFFECT 2: MAGNETIC CTA BUTTON
+// ============================================
+const MagneticButton = ({ children, onClick, className = "" }) => {
   const ref = useRef(null);
-  const [started, setStarted] = useState(false);
+  const magnetX = useMotionValue(0);
+  const magnetY = useMotionValue(0);
+  const springX = useSpring(magnetX, { stiffness: 150, damping: 15, mass: 0.1 });
+  const springY = useSpring(magnetY, { stiffness: 150, damping: 15, mass: 0.1 });
+  const isTouch = typeof window !== "undefined" && window.matchMedia("(pointer: coarse)").matches;
+  const rafRef = useRef(null);
+
+  const handleMouseMove = useCallback((e) => {
+    if (isTouch || rafRef.current) return;
+    rafRef.current = requestAnimationFrame(() => {
+      rafRef.current = null;
+      const rect = ref.current?.getBoundingClientRect();
+      if (!rect) return;
+      const centerX = rect.left + rect.width / 2;
+      const centerY = rect.top + rect.height / 2;
+      const distX = e.clientX - centerX;
+      const distY = e.clientY - centerY;
+      const distance = Math.sqrt(distX * distX + distY * distY);
+      const maxDist = 200;
+      if (distance < maxDist) {
+        const strength = 1 - distance / maxDist;
+        magnetX.set(distX * strength * 0.4);
+        magnetY.set(distY * strength * 0.4);
+      } else {
+        magnetX.set(0);
+        magnetY.set(0);
+      }
+    });
+  }, [magnetX, magnetY, isTouch]);
+
+  const handleMouseLeave = useCallback(() => {
+    magnetX.set(0);
+    magnetY.set(0);
+  }, [magnetX, magnetY]);
 
   useEffect(() => {
-    const observer = new IntersectionObserver(
-      ([entry]) => { if (entry.isIntersecting && !started) setStarted(true); },
-      { threshold: 0.5 }
-    );
-    if (ref.current) observer.observe(ref.current);
-    return () => observer.disconnect();
-  }, [started]);
+    if (isTouch) return;
+    const el = ref.current;
+    const parent = el?.parentElement?.parentElement;
+    if (!parent) return;
+    parent.addEventListener("mousemove", handleMouseMove, { passive: true });
+    parent.addEventListener("mouseleave", handleMouseLeave);
+    return () => {
+      parent.removeEventListener("mousemove", handleMouseMove);
+      parent.removeEventListener("mouseleave", handleMouseLeave);
+      if (rafRef.current) cancelAnimationFrame(rafRef.current);
+    };
+  }, [handleMouseMove, handleMouseLeave, isTouch]);
+
+  return (
+    <motion.button
+      ref={ref}
+      style={{ x: springX, y: springY }}
+      whileHover={{ scale: 1.05, boxShadow: "0 20px 40px rgba(59,130,246,0.4)" }}
+      whileTap={{ scale: 0.95 }}
+      onClick={onClick}
+      className={className}
+    >
+      {children}
+    </motion.button>
+  );
+};
+
+// ============================================
+// EFFECT 3: LIFT-OFF SCROLL ANIMATION WRAPPER
+// ============================================
+const LiftOff = ({ children, delay = 0, className = "", hover = 6 }) => (
+  <motion.div
+    initial={{ opacity: 0, y: 60 }}
+    whileInView={{
+      opacity: 1,
+      y: 0,
+      transition: {
+        type: "spring",
+        stiffness: 60,
+        damping: 12,
+        mass: 0.8,
+        delay,
+      },
+    }}
+    viewport={{ once: true, margin: "-60px" }}
+    whileHover={{ y: -hover, transition: { type: "spring", stiffness: 300, damping: 20 } }}
+    className={className}
+  >
+    {children}
+  </motion.div>
+);
+
+
+// ============================================
+// EFFECT 6: TYPEWRITER ROTATING WORDS
+// ============================================
+const ROTATING_WORDS = ["Smart Practice", "Confidence", "Success", "Discipline", "Results"];
+
+const RotatingText = () => {
+  const [index, setIndex] = useState(0);
 
   useEffect(() => {
-    if (!started) return;
-    let start = 0;
-    const end = parseInt(target);
-    const increment = end / (duration * 60);
     const timer = setInterval(() => {
-      start += increment;
-      if (start >= end) { setCount(end); clearInterval(timer); }
-      else setCount(Math.floor(start));
-    }, 1000 / 60);
+      setIndex((prev) => (prev + 1) % ROTATING_WORDS.length);
+    }, 2800);
     return () => clearInterval(timer);
-  }, [target, duration, started]);
+  }, []);
 
-  return <span ref={ref}>{count.toLocaleString()}{suffix}</span>;
+  return (
+    <span className="gradient-text relative inline-block min-h-[1.2em]" role="status" aria-live="polite" aria-atomic="true">
+      <AnimatePresence mode="wait">
+        <motion.span
+          key={ROTATING_WORDS[index]}
+          initial={{ y: 30, opacity: 0, rotateX: -40 }}
+          animate={{ y: 0, opacity: 1, rotateX: 0 }}
+          exit={{ y: -30, opacity: 0, rotateX: 40 }}
+          transition={{ duration: 0.5, ease: "easeInOut" }}
+          className="inline-block"
+          style={{ perspective: 200 }}
+        >
+          {ROTATING_WORDS[index]}
+        </motion.span>
+      </AnimatePresence>
+      <motion.div
+        className="absolute -bottom-2 left-0 right-0 h-1 bg-gradient-to-r from-blue-500 via-purple-500 to-pink-500 rounded-full"
+        initial={{ scaleX: 0 }}
+        animate={{ scaleX: 1 }}
+        transition={{ delay: 0.8, duration: 0.6 }}
+      />
+    </span>
+  );
+};
+
+// ============================================
+// EFFECT 7: SCROLL PROGRESS BAR
+// ============================================
+const ScrollProgress = () => {
+  const { scrollYProgress } = useScroll();
+  const scaleX = useSpring(scrollYProgress, { stiffness: 100, damping: 30, restDelta: 0.001 });
+
+  return (
+    <motion.div
+      className="fixed top-0 left-0 right-0 h-[3px] bg-gradient-to-r from-blue-500 via-purple-500 to-pink-500 z-[40] origin-left pointer-events-none"
+      style={{ scaleX }}
+    />
+  );
+};
+
+// ============================================
+// EFFECT 8: ANIMATED GRADIENT BORDER
+// ============================================
+const GlowBorder = ({ children, className = "" }) => {
+  return (
+    <div className={`relative ${className}`}>
+      {/* CSS-animated rotating border — no JS needed */}
+      <div
+        className="absolute -inset-[1.5px] rounded-2xl"
+        style={{
+          background: "conic-gradient(from var(--glow-angle, 0deg), rgba(99,102,241,0.3), rgba(59,130,246,0.15), transparent 40%, transparent 60%, rgba(139,92,246,0.15), rgba(99,102,241,0.3))",
+          animation: "glowRotate 12s linear infinite",
+        }}
+      />
+      {/* Soft ambient glow behind card */}
+      <div
+        className="absolute -inset-3 rounded-3xl"
+        style={{
+          background: "radial-gradient(ellipse at center, rgba(99,102,241,0.15), transparent 70%)",
+          animation: "glowPulse 4s ease-in-out infinite",
+        }}
+      />
+      <style>{`
+        @property --glow-angle { syntax: '<angle>'; initial-value: 0deg; inherits: false; }
+        @keyframes glowRotate { to { --glow-angle: 360deg; } }
+        @keyframes glowPulse { 0%, 100% { opacity: 0; } 50% { opacity: 0.4; } }
+      `}</style>
+      <div className="relative">
+        {children}
+      </div>
+    </div>
+  );
+};
+
+// ============================================
+// EFFECT 11: SCROLL-DRAWN CONNECTING LINE
+// ============================================
+const DrawLine = () => {
+  const ref = useRef(null);
+  const { scrollYProgress } = useScroll({
+    target: ref,
+    offset: ["start 80%", "end 40%"],
+  });
+  const pathLength = useSpring(scrollYProgress, { stiffness: 100, damping: 30 });
+
+  return (
+    <div ref={ref} className="hidden md:block absolute top-1/2 left-[15%] right-[15%] -translate-y-1/2 -z-10 h-8">
+      <svg className="w-full h-full" viewBox="0 0 800 30" fill="none" preserveAspectRatio="none">
+        <motion.path
+          d="M 0 15 Q 200 0, 400 15 Q 600 30, 800 15"
+          stroke="url(#lineGrad)"
+          strokeWidth="2.5"
+          strokeLinecap="round"
+          fill="none"
+          style={{ pathLength }}
+        />
+        <defs>
+          <linearGradient id="lineGrad" x1="0%" y1="0%" x2="100%" y2="0%">
+            <stop offset="0%" stopColor="#3b82f6" />
+            <stop offset="50%" stopColor="#a855f7" />
+            <stop offset="100%" stopColor="#10b981" />
+          </linearGradient>
+        </defs>
+      </svg>
+    </div>
+  );
 };
 
 // ============================================
@@ -186,8 +473,10 @@ const TiltCard = ({ children, className = "" }) => {
   const y = useMotionValue(0);
   const rotateX = useSpring(useTransform(y, [-0.5, 0.5], [8, -8]), { stiffness: 300, damping: 30 });
   const rotateY = useSpring(useTransform(x, [-0.5, 0.5], [-8, 8]), { stiffness: 300, damping: 30 });
+  const isTouch = typeof window !== "undefined" && window.matchMedia("(pointer: coarse)").matches;
 
   const handleMouse = (e) => {
+    if (isTouch) return;
     const rect = ref.current.getBoundingClientRect();
     x.set((e.clientX - rect.left) / rect.width - 0.5);
     y.set((e.clientY - rect.top) / rect.height - 0.5);
@@ -200,7 +489,7 @@ const TiltCard = ({ children, className = "" }) => {
       ref={ref}
       onMouseMove={handleMouse}
       onMouseLeave={handleLeave}
-      style={{ rotateX, rotateY, transformStyle: "preserve-3d" }}
+      style={isTouch ? {} : { rotateX, rotateY, transformStyle: "preserve-3d" }}
       className={className}
     >
       {children}
@@ -210,41 +499,6 @@ const TiltCard = ({ children, className = "" }) => {
 
 
 // ============================================
-// 3D FEATURE CARD
-// ============================================
-const FeatureCard = ({ icon, title, description, gradient, delay }) => (
-  <motion.div
-    initial={{ opacity: 0, y: 50, rotateX: 15 }}
-    whileInView={{ opacity: 1, y: 0, rotateX: 0 }}
-    viewport={{ once: true, margin: "-50px" }}
-    transition={{ duration: 0.7, delay, type: "spring", stiffness: 100 }}
-    className="perspective-1000"
-  >
-    <TiltCard className="relative group cursor-default h-full">
-      {/* Glow behind card */}
-      <div
-        className={`absolute -inset-1 bg-gradient-to-r ${gradient} rounded-2xl opacity-0 group-hover:opacity-30 transition-opacity duration-500`}
-      />
-      <div className="relative bg-white dark:bg-gray-800 rounded-2xl p-6 shadow-lg border border-gray-200 dark:border-gray-700 h-full overflow-hidden">
-        {/* Shimmer overlay */}
-        <div className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-700">
-          <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/10 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-1000" />
-        </div>
-        {/* Icon with 3D pop */}
-        <motion.div
-          className="w-14 h-14 rounded-2xl bg-gray-100 dark:bg-gray-700 flex items-center justify-center mb-5 shadow-md border border-gray-200 dark:border-gray-600 relative"
-          style={{ transform: "translateZ(40px)" }}
-          whileHover={{ scale: 1.15, rotate: 5 }}
-        >
-          {icon}
-        </motion.div>
-        <h3 className="text-lg font-bold text-gray-900 dark:text-white mb-2">{title}</h3>
-        <p className="text-sm text-gray-600 dark:text-gray-400 leading-relaxed">{description}</p>
-      </div>
-    </TiltCard>
-  </motion.div>
-);
-
 // ============================================
 // DEMO QUIZ DATA
 // ============================================
@@ -542,13 +796,13 @@ const StepCard = ({ step, title, desc, icon, gradient, delay }) => (
     className="relative"
   >
     <TiltCard className="text-center">
-      <div className="relative bg-white dark:bg-gray-800 rounded-2xl p-8 shadow-lg border border-gray-200 dark:border-gray-700 overflow-hidden">
+      <div className="relative bg-white dark:bg-gray-800 rounded-2xl p-5 sm:p-8 shadow-lg border border-gray-200 dark:border-gray-700 overflow-hidden">
         {/* Step number watermark */}
         <div className="absolute -top-4 -right-2 text-8xl font-black text-gray-100 dark:text-gray-800/50 select-none pointer-events-none">
           {step}
         </div>
         <motion.div
-          className={`w-16 h-16 mx-auto rounded-2xl bg-gradient-to-br ${gradient} flex items-center justify-center mb-5 shadow-lg relative text-white`}
+          className={`w-14 h-14 sm:w-16 sm:h-16 mx-auto rounded-2xl bg-gradient-to-br ${gradient} flex items-center justify-center mb-4 sm:mb-5 shadow-lg relative text-white`}
           whileHover={{ scale: 1.1, rotate: -5 }}
         >
           {icon}
@@ -561,64 +815,335 @@ const StepCard = ({ step, title, desc, icon, gradient, delay }) => (
 );
 
 // ============================================
-// TESTIMONIAL CARD
 // ============================================
-const TestimonialCard = ({ quote, name, exam, avatar, delay }) => (
-  <motion.div
-    initial={{ opacity: 0, y: 30, rotateY: 10 }}
-    whileInView={{ opacity: 1, y: 0, rotateY: 0 }}
-    viewport={{ once: true }}
-    transition={{ duration: 0.6, delay }}
-  >
-    <TiltCard className="h-full">
-      <div className="relative bg-white dark:bg-gray-800 rounded-2xl p-6 shadow-lg border border-gray-200 dark:border-gray-700 h-full">
-        {/* Quote mark */}
-        <div className="absolute top-4 right-4 text-4xl text-blue-100 dark:text-blue-900/50 font-serif select-none">&ldquo;</div>
-        <div className="flex gap-1 mb-4">
-          {[...Array(5)].map((_, i) => (
-            <svg key={i} className="w-4 h-4 text-yellow-400 drop-shadow-sm" fill="currentColor" viewBox="0 0 20 20">
-              <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
-            </svg>
-          ))}
-        </div>
-        <p className="text-gray-600 dark:text-gray-400 text-sm italic mb-5 leading-relaxed relative z-10">&ldquo;{quote}&rdquo;</p>
-        <div className="flex items-center gap-3">
-          <div className={`w-10 h-10 rounded-full bg-gradient-to-br ${avatar} flex items-center justify-center text-white font-bold text-sm shadow-lg`}>
-            {name.charAt(0)}
+// SOCIAL PROOF TICKER
+// ============================================
+const TICKER_ITEMS = [
+  "🎯 2,847 tests completed this week",
+  "🏆 Ankita scored 92% on IAS Prelims mock",
+  "📚 150+ new questions added this month",
+  "⚡ 340 aspirants practicing right now",
+  "🌟 Chirag improved 23% in 2 weeks",
+  "🔥 98% user satisfaction rate",
+  "📈 Average score improvement: 31%",
+  "🎓 Covers 10+ UPSC subjects",
+];
+
+const SocialProofTicker = () => {
+  return (
+  <div className="relative overflow-hidden py-4" aria-label="Social proof statistics">
+    <div className="absolute left-0 top-0 bottom-0 w-20 bg-gradient-to-r from-white dark:from-gray-950 to-transparent z-10 pointer-events-none" />
+    <div className="absolute right-0 top-0 bottom-0 w-20 bg-gradient-to-l from-white dark:from-gray-950 to-transparent z-10 pointer-events-none" />
+    <div
+      className="flex gap-8 whitespace-nowrap"
+      style={{ animation: "marquee 30s linear infinite" }}
+    >
+      {[...TICKER_ITEMS, ...TICKER_ITEMS].map((item, i) => (
+        <span
+          key={i}
+          className="text-sm text-gray-500 dark:text-gray-400 font-medium flex-shrink-0"
+        >
+          {item}
+        </span>
+      ))}
+    </div>
+    <style>{`@keyframes marquee { from { transform: translateX(0); } to { transform: translateX(-50%); } }`}</style>
+  </div>
+  );
+};
+
+// ============================================
+// ============================================
+// NAV LINKS (smooth scroll)
+// ============================================
+const NAV_SECTIONS = [
+  { label: "Features", id: "features-section" },
+  { label: "How it Works", id: "steps-section" },
+  { label: "Try Demo", id: "testimonials-section" },
+];
+
+// ============================================
+// ENHANCEMENT 1: SPOTLIGHT CARD (cursor light follows inside card)
+// ============================================
+const SpotlightCard = ({ children, className = "" }) => {
+  const ref = useRef(null);
+  const mouseX = useMotionValue(0);
+  const mouseY = useMotionValue(0);
+
+  const handleMouseMove = useCallback((e) => {
+    const rect = ref.current?.getBoundingClientRect();
+    if (!rect) return;
+    mouseX.set(e.clientX - rect.left);
+    mouseY.set(e.clientY - rect.top);
+  }, [mouseX, mouseY]);
+
+  const spotBg = useMotionTemplate`radial-gradient(280px circle at ${mouseX}px ${mouseY}px, rgba(99,102,241,0.12), transparent 70%)`;
+
+  return (
+    <motion.div
+      ref={ref}
+      onMouseMove={handleMouseMove}
+      className={`relative group ${className}`}
+    >
+      <motion.div
+        className="absolute inset-0 rounded-2xl opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none"
+        style={{ background: spotBg }}
+      />
+      {children}
+    </motion.div>
+  );
+};
+
+// ============================================
+// ENHANCEMENT 2: MORPHING COUNTER
+// ============================================
+const MorphingNumber = ({ target, suffix = "", duration = 2 }) => {
+  const [display, setDisplay] = useState("0");
+  const ref = useRef(null);
+  const [started, setStarted] = useState(false);
+
+  useEffect(() => {
+    const observer = new IntersectionObserver(
+      ([entry]) => { if (entry.isIntersecting && !started) setStarted(true); },
+      { threshold: 0.3 }
+    );
+    if (ref.current) observer.observe(ref.current);
+    return () => observer.disconnect();
+  }, [started]);
+
+  useEffect(() => {
+    if (!started) return;
+    const end = parseInt(target);
+    const totalFrames = duration * 30; // 30fps instead of 60fps — halves re-renders
+    let frame = 0;
+    const timer = setInterval(() => {
+      frame++;
+      const progress = Math.min(frame / totalFrames, 1);
+      const eased = 1 - Math.pow(1 - progress, 3);
+      const current = Math.round(eased * end);
+      setDisplay(current.toLocaleString());
+      if (frame >= totalFrames) {
+        clearInterval(timer);
+      }
+    }, 1000 / 30);
+    return () => clearInterval(timer);
+  }, [target, duration, started]);
+
+  return (
+    <span ref={ref} className="inline-block">
+      {display}{suffix}
+    </span>
+  );
+};
+
+// ============================================
+// ENHANCEMENT 3: SCROLL-GRADIENT TEXT
+// ============================================
+const ScrollGradientText = ({ children, className = "" }) => {
+  const ref = useRef(null);
+  const { scrollYProgress } = useScroll({
+    target: ref,
+    offset: ["start 90%", "start 40%"],
+  });
+  const progress = useSpring(scrollYProgress, { stiffness: 100, damping: 30 });
+  const clipRight = useTransform(progress, [0, 1], ["0%", "100%"]);
+
+  return (
+    <span ref={ref} className={`relative inline-block ${className}`}>
+      {/* Gray base text */}
+      <span className="text-gray-300 dark:text-gray-600">{children}</span>
+      {/* Gradient overlay that reveals on scroll */}
+      <motion.span
+        className="absolute inset-0 gradient-text"
+        style={{ clipPath: useMotionTemplate`inset(0 calc(100% - ${clipRight}) 0 0)` }}
+        aria-hidden="true"
+      >
+        {children}
+      </motion.span>
+    </span>
+  );
+};
+
+// ============================================
+// ENHANCEMENT 4: HORIZONTAL SCROLL SHOWCASE
+// ============================================
+const SHOWCASE_ITEMS = [
+  { title: "Real Exam Timer", desc: "Countdown with auto-submit keeps you exam-ready", color: "from-blue-500 to-indigo-600", icon: "M12 6v6h4.5m4.5 0a9 9 0 11-18 0 9 9 0 0118 0z" },
+  { title: "AI Explanations", desc: "Understand the why behind every answer instantly", color: "from-purple-500 to-pink-600", icon: "M9.813 15.904L9 18.75l-.813-2.846a4.5 4.5 0 00-3.09-3.09L2.25 12l2.846-.813a4.5 4.5 0 003.09-3.09L9 5.25l.813 2.846a4.5 4.5 0 003.09 3.09L15.75 12l-2.846.813a4.5 4.5 0 00-3.09 3.09z" },
+  { title: "Performance Analytics", desc: "Track progress with detailed charts and insights", color: "from-emerald-500 to-teal-600", icon: "M3 13.125C3 12.504 3.504 12 4.125 12h2.25c.621 0 1.125.504 1.125 1.125v6.75C7.5 20.496 6.996 21 6.375 21h-2.25A1.125 1.125 0 013 19.875v-6.75zM9.75 8.625c0-.621.504-1.125 1.125-1.125h2.25c.621 0 1.125.504 1.125 1.125v11.25c0 .621-.504 1.125-1.125 1.125h-2.25a1.125 1.125 0 01-1.125-1.125V8.625zM16.5 4.125c0-.621.504-1.125 1.125-1.125h2.25C20.496 3 21 3.504 21 4.125v15.75c0 .621-.504 1.125-1.125 1.125h-2.25a1.125 1.125 0 01-1.125-1.125V4.125z" },
+  { title: "Leaderboard", desc: "Compete nationally and track your rank weekly", color: "from-amber-500 to-orange-600", icon: "M16.5 18.75h-9m9 0a3 3 0 013 3h-15a3 3 0 013-3m9 0v-3.375c0-.621-.503-1.125-1.125-1.125h-.871M7.5 18.75v-3.375c0-.621.504-1.125 1.125-1.125h.872m5.007 0H9.497m5.007 0a7.454 7.454 0 01-.982-3.172M9.497 14.25a7.454 7.454 0 00.981-3.172" },
+  { title: "Bookmarks & Revision", desc: "Save tough questions and revisit them anytime", color: "from-rose-500 to-red-600", icon: "M17.593 3.322c1.1.128 1.907 1.077 1.907 2.185V21L12 17.25 4.5 21V5.507c0-1.108.806-2.057 1.907-2.185a48.507 48.507 0 0111.186 0z" },
+];
+
+const HorizontalShowcase = () => (
+  <section className="py-10 md:py-14 overflow-hidden">
+    <div className="max-w-7xl mx-auto px-4 mb-8">
+      <motion.p
+        initial={{ opacity: 0 }}
+        whileInView={{ opacity: 1 }}
+        viewport={{ once: true }}
+        className="text-sm font-semibold text-blue-600 dark:text-blue-400 uppercase tracking-wider mb-3"
+      >
+        What you get
+      </motion.p>
+      <h2 className="text-2xl sm:text-3xl md:text-5xl font-extrabold text-gray-900 dark:text-white">
+        <ScrollGradientText>Everything in one place</ScrollGradientText>
+      </h2>
+    </div>
+    {/* Auto-scrolling carousel — CSS animation, no JS */}
+    <div className="relative">
+      <div className="absolute left-0 top-0 bottom-0 w-16 md:w-32 bg-gradient-to-r from-white dark:from-gray-950 to-transparent z-10 pointer-events-none" />
+      <div className="absolute right-0 top-0 bottom-0 w-16 md:w-32 bg-gradient-to-l from-white dark:from-gray-950 to-transparent z-10 pointer-events-none" />
+      <div
+        className="flex gap-5 pl-4 md:pl-16"
+        style={{ animation: "marqueeShowcase 40s linear infinite" }}
+      >
+        {[...SHOWCASE_ITEMS, ...SHOWCASE_ITEMS].map((item, i) => (
+          <div key={i} className="flex-shrink-0 w-[260px] md:w-[320px]">
+            <SpotlightCard className="h-full">
+              <div className="relative bg-white dark:bg-gray-800/80 backdrop-blur-sm rounded-2xl p-6 border border-gray-200 dark:border-gray-700 h-full overflow-hidden group">
+                <div className={`w-11 h-11 rounded-xl bg-gradient-to-br ${item.color} flex items-center justify-center mb-4 shadow-lg text-white`}>
+                  <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+                    <path strokeLinecap="round" strokeLinejoin="round" d={item.icon} />
+                  </svg>
+                </div>
+                <h3 className="text-base font-bold text-gray-900 dark:text-white mb-1.5">{item.title}</h3>
+                <p className="text-sm text-gray-500 dark:text-gray-400 leading-relaxed">{item.desc}</p>
+                <div className={`absolute -bottom-6 -right-6 w-20 h-20 bg-gradient-to-br ${item.color} opacity-[0.06] rounded-full`} />
+              </div>
+            </SpotlightCard>
           </div>
-          <div>
-            <p className="font-semibold text-gray-900 dark:text-white text-sm">{name}</p>
-            <p className="text-xs text-gray-500 dark:text-gray-400">{exam}</p>
-          </div>
-        </div>
+        ))}
       </div>
-    </TiltCard>
-  </motion.div>
+      <style>{`@keyframes marqueeShowcase { from { transform: translateX(0); } to { transform: translateX(-50%); } }`}</style>
+    </div>
+  </section>
 );
 
 // ============================================
-// STAT CARD
+// BEFORE/AFTER COMPARISON (Social proof)
 // ============================================
-const StatCard = ({ value, suffix, label, icon, gradient, delay }) => (
-  <motion.div
-    initial={{ opacity: 0, scale: 0.8, rotateY: 20 }}
-    whileInView={{ opacity: 1, scale: 1, rotateY: 0 }}
-    viewport={{ once: true }}
-    transition={{ delay, type: "spring", stiffness: 100 }}
-  >
-    <TiltCard>
-      <div className="relative bg-white dark:bg-gray-800 rounded-2xl p-5 shadow-lg border border-gray-200 dark:border-gray-700 text-center overflow-hidden">
-        <div className={`absolute -top-6 -right-6 w-20 h-20 bg-gradient-to-br ${gradient} opacity-10 rounded-full`} />
-        <div className="text-2xl mb-2 flex justify-center">{icon}</div>
-        <p className="text-3xl md:text-4xl font-extrabold gradient-text mb-1">
-          <AnimatedCounter target={value} suffix={suffix || ""} />
-        </p>
-        <p className="text-sm text-gray-500 dark:text-gray-400 font-medium">{label}</p>
+const COMPARISON_ITEMS = [
+  { before: "Scattered PDFs and YouTube", after: "One platform, all subjects", gradient: "from-blue-500 to-indigo-600", icon: "M3.75 9.776c.112-.017.227-.026.344-.026h15.812c.117 0 .232.009.344.026m-16.5 0a2.25 2.25 0 00-1.883 2.542l.857 6a2.25 2.25 0 002.227 1.932H19.05a2.25 2.25 0 002.227-1.932l.857-6a2.25 2.25 0 00-1.883-2.542m-16.5 0V6A2.25 2.25 0 016 3.75h3.879a1.5 1.5 0 011.06.44l2.122 2.12a1.5 1.5 0 001.06.44H18A2.25 2.25 0 0120.25 9v.776" },
+  { before: "No idea where you stand", after: "Real-time rank and analytics", gradient: "from-purple-500 to-pink-600", icon: "M3 13.125C3 12.504 3.504 12 4.125 12h2.25c.621 0 1.125.504 1.125 1.125v6.75C7.5 20.496 6.996 21 6.375 21h-2.25A1.125 1.125 0 013 19.875v-6.75zM9.75 8.625c0-.621.504-1.125 1.125-1.125h2.25c.621 0 1.125.504 1.125 1.125v11.25c0 .621-.504 1.125-1.125 1.125h-2.25a1.125 1.125 0 01-1.125-1.125V8.625zM16.5 4.125c0-.621.504-1.125 1.125-1.125h2.25C20.496 3 21 3.504 21 4.125v15.75c0 .621-.504 1.125-1.125 1.125h-2.25a1.125 1.125 0 01-1.125-1.125V4.125z" },
+  { before: "Memorize answers blindly", after: "AI explains the why behind every answer", gradient: "from-emerald-500 to-teal-600", icon: "M9.813 15.904L9 18.75l-.813-2.846a4.5 4.5 0 00-3.09-3.09L2.25 12l2.846-.813a4.5 4.5 0 003.09-3.09L9 5.25l.813 2.846a4.5 4.5 0 003.09 3.09L15.75 12l-2.846.813a4.5 4.5 0 00-3.09 3.09z" },
+  { before: "No exam-day pressure practice", after: "Timed tests with anti-cheat system", gradient: "from-amber-500 to-orange-600", icon: "M12 6v6h4.5m4.5 0a9 9 0 11-18 0 9 9 0 0118 0z" },
+];
+
+const ComparisonSection = () => (
+  <section className="py-10 md:py-14 px-4">
+    <div className="max-w-4xl mx-auto">
+      <motion.div initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} className="text-center mb-10">
+        <h2 className="text-2xl md:text-4xl font-extrabold text-gray-900 dark:text-white">
+          <ScrollGradientText>Why aspirants switch to Mockzam</ScrollGradientText>
+        </h2>
+      </motion.div>
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+        {COMPARISON_ITEMS.map((item, i) => (
+          <motion.div
+            key={i}
+            initial={{ opacity: 0, y: 20 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true }}
+            transition={{ delay: i * 0.08 }}
+          >
+            <SpotlightCard>
+              <div className="relative bg-white dark:bg-gray-800/80 backdrop-blur-sm rounded-2xl p-5 border border-gray-200/80 dark:border-gray-700/80 overflow-hidden group hover:border-gray-300 dark:hover:border-gray-600 transition-colors h-full">
+                {/* Gradient accent line on top */}
+                <div className={`absolute top-0 left-6 right-6 h-[2px] bg-gradient-to-r ${item.gradient} opacity-0 group-hover:opacity-100 transition-opacity duration-500`} />
+                {/* Icon */}
+                <div className={`w-10 h-10 rounded-xl bg-gradient-to-br ${item.gradient} flex items-center justify-center mb-4 shadow-lg text-white`}>
+                  <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+                    <path strokeLinecap="round" strokeLinejoin="round" d={item.icon} />
+                  </svg>
+                </div>
+                {/* Before (crossed out) */}
+                <p className="text-sm text-red-400/80 dark:text-red-400/70 line-through decoration-red-300/50 mb-2">{item.before}</p>
+                {/* After */}
+                <div className="flex items-center gap-2">
+                  <svg className="w-5 h-5 text-emerald-500 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}><path strokeLinecap="round" strokeLinejoin="round" d="M4.5 12.75l6 6 9-13.5" /></svg>
+                  <span className="text-base font-semibold text-gray-900 dark:text-white">{item.after}</span>
+                </div>
+              </div>
+            </SpotlightCard>
+          </motion.div>
+        ))}
       </div>
-    </TiltCard>
-  </motion.div>
+    </div>
+  </section>
 );
 
+// ============================================
+// ENHANCEMENT 5: BENTO GRID FEATURES
+// ============================================
+const BentoCard = ({ icon, title, description, gradient, className = "", large = false }) => (
+  <SpotlightCard className={`${className} h-full`}>
+    <div className={`relative bg-white dark:bg-gray-800/80 backdrop-blur-sm rounded-2xl ${large ? "p-5 sm:p-8" : "p-4 sm:p-6"} border border-gray-200/80 dark:border-gray-700/80 h-full overflow-hidden group transition-colors duration-300 hover:border-gray-300 dark:hover:border-gray-600`}>
+      <div className={`absolute top-0 left-6 right-6 h-[2px] bg-gradient-to-r ${gradient} opacity-0 group-hover:opacity-100 transition-opacity duration-500`} />
+      <motion.div
+        className={`${large ? "w-14 h-14" : "w-11 h-11"} rounded-xl bg-gradient-to-br ${gradient} flex items-center justify-center mb-4 shadow-lg bento-icon`}
+        whileHover={{ scale: 1.1, rotate: -5 }}
+      >
+        {icon}
+      </motion.div>
+      <h3 className={`${large ? "text-xl" : "text-base"} font-bold text-gray-900 dark:text-white mb-2`}>{title}</h3>
+      <p className={`${large ? "text-base" : "text-sm"} text-gray-500 dark:text-gray-400 leading-relaxed`}>{description}</p>
+      <div className={`absolute -bottom-10 -right-10 w-32 h-32 bg-gradient-to-br ${gradient} opacity-0 group-hover:opacity-[0.07] rounded-full transition-opacity duration-500`} />
+    </div>
+  </SpotlightCard>
+);
+
+// ============================================
+// ENHANCEMENT 6: STICKY REVEAL SECTIONS
+// ============================================
+const RevealSection = ({ children, className = "" }) => {
+  const ref = useRef(null);
+  const { scrollYProgress } = useScroll({
+    target: ref,
+    offset: ["start end", "start 30%"],
+  });
+  const y = useTransform(scrollYProgress, [0, 1], [50, 0]);
+  const opacity = useTransform(scrollYProgress, [0, 0.4], [0, 1]);
+
+  return (
+    <motion.div
+      ref={ref}
+      style={{ y, opacity }}
+      className={`relative ${className}`}
+    >
+      {children}
+    </motion.div>
+  );
+};
+
+// ============================================
+// ENHANCEMENT 7: TRUST MARQUEE BAR
+// ============================================
+const TRUST_BADGES = [
+  "UPSC CSE", "IAS Prelims", "CDS", "CSAT", "Indian Polity", "Geography",
+  "Modern History", "Economics", "Science & Tech", "Environment", "Current Affairs", "Art & Culture",
+];
+
+const TrustMarquee = () => (
+  <div className="relative py-5 overflow-hidden" aria-label="Exam categories covered">
+    <div className="absolute left-0 top-0 bottom-0 w-24 bg-gradient-to-r from-white dark:from-gray-950 to-transparent z-10 pointer-events-none" />
+    <div className="absolute right-0 top-0 bottom-0 w-24 bg-gradient-to-l from-white dark:from-gray-950 to-transparent z-10 pointer-events-none" />
+    <div
+      className="flex gap-4 whitespace-nowrap"
+      style={{ animation: "marqueeTrust 25s linear infinite" }}
+    >
+      {[...TRUST_BADGES, ...TRUST_BADGES].map((badge, i) => (
+        <span
+          key={i}
+          className="flex-shrink-0 px-5 py-2.5 bg-gray-50 dark:bg-gray-800/60 border border-gray-200 dark:border-gray-700 rounded-full text-sm font-semibold text-gray-600 dark:text-gray-300"
+        >
+          {badge}
+        </span>
+      ))}
+    </div>
+    <style>{`@keyframes marqueeTrust { from { transform: translateX(0); } to { transform: translateX(-50%); } }`}</style>
+  </div>
+);
 
 // ============================================
 // MAIN LANDING COMPONENT
@@ -626,13 +1151,12 @@ const StatCard = ({ value, suffix, label, icon, gradient, delay }) => (
 const Landing = () => {
   const navigate = useNavigate();
   const { scrollYProgress } = useScroll();
-  const heroY = useTransform(scrollYProgress, [0, 0.3], [0, -100]);
-  const heroOpacity = useTransform(scrollYProgress, [0, 0.2], [1, 0]);
+  const heroY = useTransform(scrollYProgress, [0, 0.3], [0, -40]);
   const [navScrolled, setNavScrolled] = useState(false);
 
   useEffect(() => {
     const handleScroll = () => setNavScrolled(window.scrollY > 20);
-    window.addEventListener("scroll", handleScroll);
+    window.addEventListener("scroll", handleScroll, { passive: true });
     return () => window.removeEventListener("scroll", handleScroll);
   }, []);
 
@@ -676,398 +1200,293 @@ const Landing = () => {
   ];
 
 
+  /* =============================================
+   * PAGE STRUCTURE (based on top-100 landing page research):
+   * 1. HERO — centered headline + product preview (demo quiz)
+   * 2. TRUST BAR — stats + social proof ticker
+   * 3. PROBLEM — why aspirants need this (before/after)
+   * 4. FEATURES — bento grid (problem-oriented)
+   * 5. PRODUCT SHOWCASE — auto-scroll feature cards
+   * 6. HOW IT WORKS — 3 steps
+   * 7. SOCIAL PROOF — testimonials
+   * 8. FINAL CTA — full-width, distinct
+   * 9. FOOTER — minimal
+   * ============================================= */
+
   return (
     <div className="min-h-screen overflow-hidden relative">
-      {/* Full-page aurora canvas */}
       <AuroraCanvas />
+      <ScrollProgress />
 
-      {/* All content sits above the canvas */}
       <div className="relative z-10">
 
-      {/* ========== NAVBAR ========== */}
+      {/* ===== 0. NAVBAR ===== */}
       <motion.nav
-        className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 ${
-          navScrolled
-            ? "glass-card shadow-lg"
-            : "bg-transparent"
-        }`}
+        className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 ${navScrolled ? "glass-card shadow-lg" : "bg-transparent"}`}
         initial={{ y: -80 }}
         animate={{ y: 0 }}
         transition={{ duration: 0.5, type: "spring" }}
+        aria-label="Main navigation"
       >
         <div className="max-w-7xl mx-auto px-4 sm:px-6 py-3 flex items-center justify-between">
           <motion.div className="flex items-center gap-2.5" whileHover={{ scale: 1.02 }}>
-            <motion.div
-              className="w-10 h-10 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-xl flex items-center justify-center shadow-lg shadow-blue-500/30 overflow-hidden"
-              whileHover={{ rotate: 10 }}
-            >
+            <motion.div className="w-10 h-10 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-xl flex items-center justify-center shadow-lg shadow-blue-500/30 overflow-hidden" whileHover={{ rotate: 10 }}>
               <svg className="w-10 h-10" viewBox="0 0 64 64" fill="none" xmlns="http://www.w3.org/2000/svg">
-                <defs>
-                  <linearGradient id="navBolt" x1="0%" y1="0%" x2="100%" y2="100%">
-                    <stop offset="0%" stopColor="#fbbf24"/>
-                    <stop offset="100%" stopColor="#f59e0b"/>
-                  </linearGradient>
-                  <filter id="navGlow">
-                    <feGaussianBlur stdDeviation="1.5" result="coloredBlur"/>
-                    <feMerge>
-                      <feMergeNode in="coloredBlur"/>
-                      <feMergeNode in="SourceGraphic"/>
-                    </feMerge>
-                  </filter>
-                </defs>
+                <defs><linearGradient id="navBolt" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" stopColor="#fbbf24"/><stop offset="100%" stopColor="#f59e0b"/></linearGradient><filter id="navGlow"><feGaussianBlur stdDeviation="1.5" result="coloredBlur"/><feMerge><feMergeNode in="coloredBlur"/><feMergeNode in="SourceGraphic"/></feMerge></filter></defs>
                 <path d="M16 48 L16 20 L26 35 L32 20 L38 35 L48 20 L48 48" fill="none" stroke="white" strokeWidth="5" strokeLinecap="round" strokeLinejoin="round"/>
-                <path d="M38 8 L30 24 L36 24 L28 40 L42 20 L36 20 L42 8 Z" fill="url(#navBolt)" filter="url(#navGlow)">
-                  <animate attributeName="opacity" values="0.7;1;0.7" dur="2s" repeatCount="indefinite"/>
-                </path>
-                <path d="M38 8 L30 24 L36 24 L28 40 L42 20 L36 20 L42 8 Z" fill="#fef3c7" opacity="0">
-                  <animate attributeName="opacity" values="0;0.5;0" dur="2s" repeatCount="indefinite"/>
-                </path>
+                <path d="M38 8 L30 24 L36 24 L28 40 L42 20 L36 20 L42 8 Z" fill="url(#navBolt)" filter="url(#navGlow)"><animate attributeName="opacity" values="0.7;1;0.7" dur="2s" repeatCount="indefinite"/></path>
               </svg>
             </motion.div>
             <span className="font-bold text-lg gradient-text hidden sm:block">Mockzam</span>
           </motion.div>
           <div className="flex items-center gap-2">
+            <div className="hidden md:flex items-center gap-1 mr-2">
+              {NAV_SECTIONS.map((s) => (
+                <button key={s.id} onClick={() => document.getElementById(s.id)?.scrollIntoView({ behavior: "smooth" })} className="px-3 py-1.5 text-sm font-medium text-gray-600 dark:text-gray-400 hover:text-blue-600 dark:hover:text-blue-400 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors">{s.label}</button>
+              ))}
+            </div>
             <ThemeToggle />
-            <motion.button
-              whileHover={{ scale: 1.05 }}
-              whileTap={{ scale: 0.95 }}
-              onClick={() => navigate("/login")}
-              className="px-5 py-2.5 text-sm font-semibold text-white bg-gradient-to-r from-blue-500 to-indigo-600 rounded-xl shadow-lg shadow-blue-500/25 hover:shadow-blue-500/40 transition-all"
-            >
-              Get Started
-            </motion.button>
+            <button onClick={() => navigate("/login")} className="px-5 py-2.5 text-sm font-semibold text-white bg-gradient-to-r from-blue-500 to-indigo-600 rounded-xl shadow-lg shadow-blue-500/25 hover:shadow-blue-500/40 transition-all active:scale-[0.97]">Get Started</button>
           </div>
         </div>
       </motion.nav>
 
-      {/* ========== HERO ========== */}
-      <section className="relative pt-24 pb-8 md:pt-32 md:pb-16 px-4">
-        <motion.div style={{ y: heroY, opacity: heroOpacity }} className="relative">
-          <div className="max-w-7xl mx-auto">
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 lg:gap-8 items-center">
-              {/* Left: Text */}
-              <div className="text-center lg:text-left">
-                {/* Badge */}
-                <motion.div
-                  initial={{ opacity: 0, y: 20 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: 0.1 }}
-                  className="inline-flex items-center gap-2 px-4 py-1.5 bg-blue-50 dark:bg-blue-900/30 rounded-full mb-6 border border-blue-100 dark:border-blue-800"
-                >
-                  <motion.span
-                    className="w-2 h-2 bg-green-500 rounded-full"
-                    animate={{ scale: [1, 1.3, 1] }}
-                    transition={{ duration: 2, repeat: Infinity }}
-                  />
-                  <span className="text-sm font-medium text-blue-700 dark:text-blue-300">Free for all UPSC aspirants</span>
-                </motion.div>
+      {/* ===== 1. HERO — Headline + CTA ===== */}
+      <section className="relative pt-28 pb-16 md:pt-40 md:pb-24 px-4">
+        <FloatingParticles />
 
-                {/* Heading */}
-                <motion.h1
-                  initial={{ opacity: 0, y: 30 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: 0.2, duration: 0.6 }}
-                  className="text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-extrabold text-gray-900 dark:text-white leading-[1.1] mb-6"
-                >
-                  Crack UPSC{" "}
-                  <br className="hidden sm:block" />
-                  with{" "}
-                  <span className="gradient-text relative">
-                    Smart Practice
-                    <motion.div
-                      className="absolute -bottom-2 left-0 right-0 h-1 bg-gradient-to-r from-blue-500 via-purple-500 to-pink-500 rounded-full"
-                      initial={{ scaleX: 0 }}
-                      animate={{ scaleX: 1 }}
-                      transition={{ delay: 0.8, duration: 0.6 }}
-                    />
-                  </span>
-                </motion.h1>
-
-                {/* Subtitle */}
-                <motion.p
-                  initial={{ opacity: 0, y: 20 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: 0.35 }}
-                  className="text-lg md:text-xl text-gray-600 dark:text-gray-400 max-w-xl mx-auto lg:mx-0 mb-8 leading-relaxed"
-                >
-                  The most comprehensive mock test platform for UPSC Prelims. Real exam simulation, AI explanations, and performance analytics.
-                </motion.p>
-
-                {/* CTA */}
-                <motion.div
-                  initial={{ opacity: 0, y: 20 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: 0.5 }}
-                  className="flex flex-col sm:flex-row items-center gap-3 justify-center lg:justify-start"
-                >
-                  <motion.button
-                    whileHover={{ scale: 1.05, boxShadow: "0 20px 40px rgba(59,130,246,0.4)" }}
-                    whileTap={{ scale: 0.95 }}
-                    onClick={() => navigate("/login")}
-                    className="w-full sm:w-auto px-8 py-4 bg-gradient-to-r from-blue-500 via-blue-600 to-indigo-600 text-white font-bold text-lg rounded-2xl shadow-xl shadow-blue-500/30 transition-all relative overflow-hidden group"
-                  >
-                    <span className="relative z-10">Start Practicing — It&apos;s Free</span>
-                    <div className="absolute inset-0 bg-gradient-to-r from-indigo-600 via-blue-600 to-blue-500 opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
-                  </motion.button>
-                </motion.div>
-              </div>
-
-              {/* Right: Interactive Demo Quiz */}
-              <div className="hidden lg:block">
-                <DemoQuiz />
-              </div>
-            </div>
-          </div>
-        </motion.div>
-      </section>
-
-
-      {/* ========== MOBILE DEMO QUIZ ========== */}
-      <section className="lg:hidden py-8 px-4">
-        <div className="max-w-lg mx-auto">
-          <motion.p
-            initial={{ opacity: 0 }}
-            whileInView={{ opacity: 1 }}
-            viewport={{ once: true }}
-            className="text-sm font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-4 text-center"
-          >
-            <svg className="w-5 h-5 inline-block mr-1.5 -mt-0.5 text-gray-500 dark:text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M4.26 10.147a60.436 60.436 0 00-.491 6.347A48.627 48.627 0 0112 20.904a48.627 48.627 0 018.232-4.41 60.46 60.46 0 00-.491-6.347m-15.482 0a50.57 50.57 0 00-2.658-.813A59.905 59.905 0 0112 3.493a59.902 59.902 0 0110.399 5.84c-.896.248-1.783.52-2.658.814m-15.482 0A50.697 50.697 0 0112 13.489a50.702 50.702 0 017.74-3.342M6.75 15a.75.75 0 100-1.5.75.75 0 000 1.5zm0 0v-3.675A55.378 55.378 0 0112 8.443m-7.007 11.55A5.981 5.981 0 006.75 15.75v-1.5" /></svg>Try it now — no sign up needed
-          </motion.p>
-          <DemoQuiz />
-        </div>
-      </section>
-
-      {/* ========== STATS ========== */}
-      <section className="py-12 md:py-16 px-4">
-        <div className="max-w-5xl mx-auto grid grid-cols-2 md:grid-cols-4 gap-4">
-          <StatCard value="5000" suffix="+" label="Questions" icon={<svg className="w-7 h-7 text-blue-600 dark:text-blue-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}><path strokeLinecap="round" strokeLinejoin="round" d="M12 6.042A8.967 8.967 0 006 3.75c-1.052 0-2.062.18-3 .512v14.25A8.987 8.987 0 016 18c2.305 0 4.408.867 6 2.292m0-14.25a8.966 8.966 0 016-2.292c1.052 0 2.062.18 3 .512v14.25A8.987 8.987 0 0018 18a8.967 8.967 0 00-6 2.292m0-14.25v14.25" /></svg>} gradient="from-blue-500 to-indigo-600" delay={0} />
-          <StatCard value="1000" suffix="+" label="Aspirants" icon={<svg className="w-7 h-7 text-purple-600 dark:text-purple-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}><path strokeLinecap="round" strokeLinejoin="round" d="M15 19.128a9.38 9.38 0 002.625.372 9.337 9.337 0 004.121-.952 4.125 4.125 0 00-7.533-2.493M15 19.128v-.003c0-1.113-.285-2.16-.786-3.07M15 19.128v.106A12.318 12.318 0 018.624 21c-2.331 0-4.512-.645-6.374-1.766l-.001-.109a6.375 6.375 0 0111.964-3.07M12 6.375a3.375 3.375 0 11-6.75 0 3.375 3.375 0 016.75 0zm8.25 2.25a2.625 2.625 0 11-5.25 0 2.625 2.625 0 015.25 0z" /></svg>} gradient="from-purple-500 to-pink-600" delay={0.1} />
-          <StatCard value="4" suffix="" label="Exam Types" icon={<svg className="w-7 h-7 text-emerald-600 dark:text-emerald-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}><path strokeLinecap="round" strokeLinejoin="round" d="M16.862 4.487l1.687-1.688a1.875 1.875 0 112.652 2.652L10.582 16.07a4.5 4.5 0 01-1.897 1.13L6 18l.8-2.685a4.5 4.5 0 011.13-1.897l8.932-8.931zm0 0L19.5 7.125M18 14v4.75A2.25 2.25 0 0115.75 21H5.25A2.25 2.25 0 013 18.75V8.25A2.25 2.25 0 015.25 6H10" /></svg>} gradient="from-emerald-500 to-teal-600" delay={0.2} />
-          <StatCard value="98" suffix="%" label="Satisfaction" icon={<svg className="w-7 h-7 text-orange-600 dark:text-orange-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}><path strokeLinecap="round" strokeLinejoin="round" d="M11.48 3.499a.562.562 0 011.04 0l2.125 5.111a.563.563 0 00.475.345l5.518.442c.499.04.701.663.321.988l-4.204 3.602a.563.563 0 00-.182.557l1.285 5.385a.562.562 0 01-.84.61l-4.725-2.885a.563.563 0 00-.586 0L6.982 20.54a.562.562 0 01-.84-.61l1.285-5.386a.562.562 0 00-.182-.557l-4.204-3.602a.563.563 0 01.321-.988l5.518-.442a.563.563 0 00.475-.345L11.48 3.5z" /></svg>} gradient="from-orange-500 to-amber-600" delay={0.3} />
-        </div>
-      </section>
-
-      {/* ========== EXAM TYPES ========== */}
-      <section className="py-12 px-4">
-        <div className="max-w-4xl mx-auto text-center">
-          <motion.p
-            initial={{ opacity: 0 }}
-            whileInView={{ opacity: 1 }}
-            viewport={{ once: true }}
-            className="text-sm font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-6"
-          >
-            Covers all major UPSC exams
-          </motion.p>
-          <div className="flex flex-wrap justify-center gap-3">
-            {["IAS Prelims (GS)", "IAS Prelims (CSAT)", "CDS", "CSAT Aptitude", "Indian Polity", "Geography", "History", "Economics", "Science & Tech", "Environment"].map((exam, i) => (
-              <motion.span
-                key={exam}
-                initial={{ opacity: 0, scale: 0.8 }}
-                whileInView={{ opacity: 1, scale: 1 }}
-                viewport={{ once: true }}
-                transition={{ delay: i * 0.04, type: "spring" }}
-                whileHover={{ scale: 1.1, y: -2 }}
-                className="px-4 py-2 bg-white dark:bg-gray-800 rounded-full text-sm font-medium text-gray-700 dark:text-gray-300 border border-gray-200 dark:border-gray-600 shadow-sm cursor-default hover:shadow-md hover:border-blue-300 dark:hover:border-blue-600 transition-all"
-              >
-                {exam}
-              </motion.span>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      {/* ========== FEATURES ========== */}
-      <section className="py-16 md:py-24 px-4 relative">
-        <div className="max-w-6xl mx-auto relative">
+        <motion.div style={{ y: heroY }} className="relative z-10 max-w-4xl mx-auto text-center">
           <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true }}
-            className="text-center mb-14"
+            initial={{ opacity: 0, y: 30 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.7, type: "spring" }}
           >
             <motion.div
               initial={{ scale: 0 }}
-              whileInView={{ scale: 1 }}
-              viewport={{ once: true }}
-              className="inline-flex items-center gap-2 px-4 py-1.5 bg-purple-50 dark:bg-purple-900/30 rounded-full mb-4 border border-purple-100 dark:border-purple-800"
+              animate={{ scale: 1 }}
+              transition={{ delay: 0.2, type: "spring", stiffness: 200 }}
+              className="inline-flex items-center gap-2 px-4 py-1.5 bg-blue-50 dark:bg-blue-900/30 rounded-full mb-6 border border-blue-100 dark:border-blue-800"
             >
-              <span className="text-sm font-medium text-purple-700 dark:text-purple-300"><svg className="w-4 h-4 inline-block mr-1 -mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M3.75 13.5l10.5-11.25L12 10.5h8.25L9.75 21.75 12 13.5H3.75z" /></svg>Powerful Features</span>
+              <span className="relative flex h-2 w-2"><span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-blue-400 opacity-75" /><span className="relative inline-flex rounded-full h-2 w-2 bg-blue-500" /></span>
+              <span className="text-sm font-medium text-blue-700 dark:text-blue-300">Free for all UPSC aspirants</span>
             </motion.div>
-            <h2 className="text-3xl md:text-5xl font-extrabold text-gray-900 dark:text-white mb-4">
-              Everything you need to{" "}
-              <span className="gradient-text">ace UPSC</span>
-            </h2>
-            <p className="text-gray-600 dark:text-gray-400 max-w-xl mx-auto text-lg">
-              Built by aspirants, for aspirants.
-            </p>
-          </motion.div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {features.map((feature, i) => (
-              <FeatureCard key={i} {...feature} delay={i * 0.08} />
+            <h1 className="text-3xl sm:text-4xl md:text-6xl lg:text-7xl font-extrabold text-gray-900 dark:text-white leading-tight mb-6">
+              Your path to{" "}
+              <RotatingText />
+              <br className="hidden sm:block" />
+              <span className="text-gray-500 dark:text-gray-400 text-[0.85em]">starts here.</span>
+            </h1>
+
+            <p className="text-base sm:text-lg md:text-xl text-gray-600 dark:text-gray-400 max-w-2xl mx-auto mb-8 leading-relaxed">
+              Practice with 5000+ real exam questions, AI explanations, and detailed analytics. Built by aspirants, for aspirants.
+            </p>
+
+            <div className="flex flex-col sm:flex-row items-center justify-center gap-3">
+              <MagneticButton onClick={() => navigate("/login")} className="w-full sm:w-auto px-8 py-4 text-base font-semibold text-white bg-gradient-to-r from-blue-500 to-indigo-600 rounded-2xl shadow-lg shadow-blue-500/25 hover:shadow-blue-500/40 transition-all">
+                Start Practicing &mdash; It&apos;s Free
+              </MagneticButton>
+
+              <motion.button
+                onClick={() => navigate("/universe")}
+                className="w-full sm:w-auto px-6 py-4 text-base font-medium text-gray-700 dark:text-gray-300 bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm rounded-2xl border border-gray-200 dark:border-gray-700 hover:border-blue-300 dark:hover:border-blue-600 transition-all flex items-center justify-center gap-2 group"
+                whileHover={{ scale: 1.03 }}
+                whileTap={{ scale: 0.97 }}
+              >
+                <svg className="w-5 h-5 group-hover:rotate-12 transition-transform text-blue-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M12 21a9.004 9.004 0 008.716-6.747M12 21a9.004 9.004 0 01-8.716-6.747M12 21c2.485 0 4.5-4.03 4.5-9S14.485 3 12 3m0 18c-2.485 0-4.5-4.03-4.5-9S9.515 3 12 3m0 0a8.997 8.997 0 017.843 4.582M12 3a8.997 8.997 0 00-7.843 4.582m15.686 0A11.953 11.953 0 0112 10.5c-2.998 0-5.74-1.1-7.843-2.918m15.686 0A8.959 8.959 0 0121 12c0 .778-.099 1.533-.284 2.253m0 0A17.919 17.919 0 0112 16.5c-3.162 0-6.133-.815-8.716-2.247m0 0A9.015 9.015 0 013 12c0-1.605.42-3.113 1.157-4.418" />
+                </svg>
+                Explore the Universe
+                <svg className="w-3.5 h-3.5 opacity-50 group-hover:translate-x-1 transition-transform" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M13.5 4.5L21 12m0 0l-7.5 7.5M21 12H3" />
+                </svg>
+              </motion.button>
+            </div>
+          </motion.div>
+        </motion.div>
+      </section>
+
+      {/* ===== 2. TRUST BAR — Stats + social proof (immediately, no gap) ===== */}
+      <section id="stats-section" className="pt-10 pb-2 md:pt-14 md:pb-4 px-4">
+          <div className="max-w-5xl mx-auto grid grid-cols-2 md:grid-cols-4 gap-4">
+            {[
+              { value: "5000", suffix: "+", label: "Questions", gradient: "from-blue-500 to-indigo-600", iconPath: "M12 6.042A8.967 8.967 0 006 3.75c-1.052 0-2.062.18-3 .512v14.25A8.987 8.987 0 016 18c2.305 0 4.408.867 6 2.292m0-14.25a8.966 8.966 0 016-2.292c1.052 0 2.062.18 3 .512v14.25A8.987 8.987 0 0018 18a8.967 8.967 0 00-6 2.292m0-14.25v14.25", color: "text-blue-600 dark:text-blue-400" },
+              { value: "1000", suffix: "+", label: "Aspirants", gradient: "from-purple-500 to-pink-600", iconPath: "M15 19.128a9.38 9.38 0 002.625.372 9.337 9.337 0 004.121-.952 4.125 4.125 0 00-7.533-2.493M15 19.128v-.003c0-1.113-.285-2.16-.786-3.07M15 19.128v.106A12.318 12.318 0 018.624 21c-2.331 0-4.512-.645-6.374-1.766l-.001-.109a6.375 6.375 0 0111.964-3.07M12 6.375a3.375 3.375 0 11-6.75 0 3.375 3.375 0 016.75 0zm8.25 2.25a2.625 2.625 0 11-5.25 0 2.625 2.625 0 015.25 0z", color: "text-purple-600 dark:text-purple-400" },
+              { value: "4", suffix: "", label: "Exam Types", gradient: "from-emerald-500 to-teal-600", iconPath: "M16.862 4.487l1.687-1.688a1.875 1.875 0 112.652 2.652L10.582 16.07a4.5 4.5 0 01-1.897 1.13L6 18l.8-2.685a4.5 4.5 0 011.13-1.897l8.932-8.931zm0 0L19.5 7.125M18 14v4.75A2.25 2.25 0 0115.75 21H5.25A2.25 2.25 0 013 18.75V8.25A2.25 2.25 0 015.25 6H10", color: "text-emerald-600 dark:text-emerald-400" },
+              { value: "98", suffix: "%", label: "Satisfaction", gradient: "from-orange-500 to-amber-600", iconPath: "M11.48 3.499a.562.562 0 011.04 0l2.125 5.111a.563.563 0 00.475.345l5.518.442c.499.04.701.663.321.988l-4.204 3.602a.563.563 0 00-.182.557l1.285 5.385a.562.562 0 01-.84.61l-4.725-2.885a.563.563 0 00-.586 0L6.982 20.54a.562.562 0 01-.84-.61l1.285-5.386a.562.562 0 00-.182-.557l-4.204-3.602a.563.563 0 01.321-.988l5.518-.442a.563.563 0 00.475-.345L11.48 3.5z", color: "text-orange-600 dark:text-orange-400" },
+            ].map((stat, i) => (
+              <motion.div
+                key={i}
+                initial={{ opacity: 0, scale: 0.8, y: 20 }}
+                whileInView={{ opacity: 1, scale: 1, y: 0 }}
+                viewport={{ once: true }}
+                transition={{ delay: i * 0.1, type: "spring", stiffness: 100 }}
+              >
+                <SpotlightCard>
+                  <div className="relative bg-white dark:bg-gray-800/80 backdrop-blur-sm rounded-2xl p-3 sm:p-5 border border-gray-200/80 dark:border-gray-700/80 text-center overflow-hidden">
+                    <div className={`absolute -top-6 -right-6 w-20 h-20 bg-gradient-to-br ${stat.gradient} opacity-10 rounded-full`} />
+                    <div className="text-2xl mb-2 flex justify-center">
+                      <svg className={`w-7 h-7 ${stat.color}`} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}><path strokeLinecap="round" strokeLinejoin="round" d={stat.iconPath} /></svg>
+                    </div>
+                    <p className="text-2xl sm:text-3xl md:text-4xl font-extrabold mb-1">
+                      <span className="gradient-text"><MorphingNumber target={stat.value} suffix={stat.suffix} /></span>
+                    </p>
+                    <p className="text-xs sm:text-sm text-gray-500 dark:text-gray-400 font-medium">{stat.label}</p>
+                  </div>
+                </SpotlightCard>
+              </motion.div>
             ))}
+          </div>
+        </section>
+
+      {/* ===== 2b. SOCIAL PROOF TICKER ===== */}
+      <SocialProofTicker />
+
+      {/* ===== 3. PROBLEM — Why aspirants switch ===== */}
+      <ComparisonSection />
+
+      {/* ===== 4. FEATURES — Bento grid ===== */}
+      <section id="features-section" className="py-10 md:py-14 px-4 relative">
+        <div className="max-w-6xl mx-auto relative">
+          <RevealSection>
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true }}
+              className="text-center mb-10"
+            >
+              <motion.div
+                initial={{ scale: 0 }}
+                whileInView={{ scale: 1 }}
+                viewport={{ once: true }}
+                className="inline-flex items-center gap-2 px-4 py-1.5 bg-purple-50 dark:bg-purple-900/30 rounded-full mb-4 border border-purple-100 dark:border-purple-800"
+              >
+                <span className="text-sm font-medium text-purple-700 dark:text-purple-300"><svg className="w-4 h-4 inline-block mr-1 -mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M3.75 13.5l10.5-11.25L12 10.5h8.25L9.75 21.75 12 13.5H3.75z" /></svg>Built for serious aspirants</span>
+              </motion.div>
+              <h2 className="text-2xl sm:text-3xl md:text-5xl font-extrabold text-gray-900 dark:text-white mb-3">
+                <ScrollGradientText>Stop guessing. Start preparing.</ScrollGradientText>
+              </h2>
+              <p className="text-gray-600 dark:text-gray-400 max-w-xl mx-auto text-lg">
+                Every feature solves a real problem aspirants face daily.
+              </p>
+            </motion.div>
+          </RevealSection>
+
+          {/* Bento Grid — asymmetric layout */}
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            {/* Large featured card spanning 2 cols + 2 rows */}
+            <div className="lg:col-span-2 lg:row-span-2">
+              <LiftOff delay={0} hover={6} className="h-full">
+                <BentoCard large icon={features[0].icon} title={features[0].title} description={features[0].description} gradient={features[0].gradient} className="h-full" />
+              </LiftOff>
+            </div>
+            <LiftOff delay={0.08} hover={6} className="h-full">
+              <BentoCard icon={features[1].icon} title={features[1].title} description={features[1].description} gradient={features[1].gradient} className="h-full" />
+            </LiftOff>
+            <LiftOff delay={0.16} hover={6} className="h-full">
+              <BentoCard icon={features[2].icon} title={features[2].title} description={features[2].description} gradient={features[2].gradient} className="h-full" />
+            </LiftOff>
+            {/* Bottom row: Three equal */}
+            <LiftOff delay={0.24} hover={6} className="h-full">
+              <BentoCard icon={features[3].icon} title={features[3].title} description={features[3].description} gradient={features[3].gradient} className="h-full" />
+            </LiftOff>
+            <LiftOff delay={0.32} hover={6} className="h-full">
+              <BentoCard icon={features[4].icon} title={features[4].title} description={features[4].description} gradient={features[4].gradient} className="h-full" />
+            </LiftOff>
+            <LiftOff delay={0.4} hover={6} className="h-full">
+              <BentoCard icon={features[5].icon} title={features[5].title} description={features[5].description} gradient={features[5].gradient} className="h-full" />
+            </LiftOff>
           </div>
         </div>
       </section>
 
-      {/* ========== HOW IT WORKS ========== */}
-      <section className="py-16 md:py-24 px-4 relative">
+      {/* ===== 5. PRODUCT SHOWCASE — Auto-scroll cards ===== */}
+      <HorizontalShowcase />
+
+      {/* ===== 5b. EXAM CATEGORIES ===== */}
+      <TrustMarquee />
+
+      {/* ===== 6. HOW IT WORKS — 3 steps ===== */}
+      <RevealSection>
+        <section id="steps-section" className="py-10 md:py-14 px-4 relative">
         <div className="absolute inset-0 bg-gradient-to-b from-transparent via-blue-50/50 dark:via-blue-950/20 to-transparent pointer-events-none" />
         <div className="max-w-5xl mx-auto relative">
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true }}
-            className="text-center mb-14"
+            className="text-center mb-10"
           >
-            <h2 className="text-3xl md:text-5xl font-extrabold text-gray-900 dark:text-white mb-4">
-              Get started in{" "}
-              <span className="gradient-text">3 simple steps</span>
+            <h2 className="text-2xl sm:text-3xl md:text-5xl font-extrabold text-gray-900 dark:text-white mb-4">
+              <ScrollGradientText>Get started in 3 simple steps</ScrollGradientText>
             </h2>
           </motion.div>
 
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-            <StepCard step="01" title="Sign In" desc="Continue with Google — one click and you're in." icon={<svg className="w-7 h-7" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}><path strokeLinecap="round" strokeLinejoin="round" d="M15.75 5.25a3 3 0 013 3m3 0a6 6 0 01-7.029 5.912c-.563-.097-1.159.026-1.563.43L10.5 17.25H8.25v2.25H6v2.25H2.25v-2.818c0-.597.237-1.17.659-1.591l6.499-6.499c.404-.404.527-1 .43-1.563A6 6 0 1121.75 8.25z" /></svg>} gradient="from-blue-500 to-indigo-600" delay={0} />
-            <StepCard step="02" title="Choose Your Exam" desc="Select your target exam — CDS, CSAT, IAS GS, or IAS CSAT." icon={<svg className="w-7 h-7" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}><path strokeLinecap="round" strokeLinejoin="round" d="M3.75 12h16.5m-16.5 3.75h16.5M3.75 19.5h16.5M5.625 4.5h12.75a1.875 1.875 0 010 3.75H5.625a1.875 1.875 0 010-3.75z" /></svg>} gradient="from-purple-500 to-pink-600" delay={0.15} />
-            <StepCard step="03" title="Start Practicing" desc="Take mock tests, practice by topic, or build custom tests." icon={<svg className="w-7 h-7" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}><path strokeLinecap="round" strokeLinejoin="round" d="M15.59 14.37a6 6 0 01-5.84 7.38v-4.8m5.84-2.58a14.98 14.98 0 006.16-12.12A14.98 14.98 0 009.631 8.41m5.96 5.96a14.926 14.926 0 01-5.841 2.58m-.119-8.54a6 6 0 00-7.381 5.84h4.8m2.581-5.84a14.927 14.927 0 00-2.58 5.84m2.699 2.7c-.103.021-.207.041-.311.06a15.09 15.09 0 01-2.448-2.448 14.9 14.9 0 01.06-.312m-2.24 2.39a4.493 4.493 0 00-1.757 4.306 4.493 4.493 0 004.306-1.758M16.5 9a1.5 1.5 0 11-3 0 1.5 1.5 0 013 0z" /></svg>} gradient="from-emerald-500 to-teal-600" delay={0.3} />
+            <LiftOff delay={0} hover={6}><StepCard step="01" title="Sign In" desc="Continue with Google — one click and you're in." icon={<svg className="w-7 h-7" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}><path strokeLinecap="round" strokeLinejoin="round" d="M15.75 5.25a3 3 0 013 3m3 0a6 6 0 01-7.029 5.912c-.563-.097-1.159.026-1.563.43L10.5 17.25H8.25v2.25H6v2.25H2.25v-2.818c0-.597.237-1.17.659-1.591l6.499-6.499c.404-.404.527-1 .43-1.563A6 6 0 1121.75 8.25z" /></svg>} gradient="from-blue-500 to-indigo-600" delay={0} /></LiftOff>
+            <LiftOff delay={0.15} hover={6}><StepCard step="02" title="Choose Your Exam" desc="Select your target exam — CDS, CSAT, IAS GS, or IAS CSAT." icon={<svg className="w-7 h-7" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}><path strokeLinecap="round" strokeLinejoin="round" d="M3.75 12h16.5m-16.5 3.75h16.5M3.75 19.5h16.5M5.625 4.5h12.75a1.875 1.875 0 010 3.75H5.625a1.875 1.875 0 010-3.75z" /></svg>} gradient="from-purple-500 to-pink-600" delay={0} /></LiftOff>
+            <LiftOff delay={0.3} hover={6}><StepCard step="03" title="Start Practicing" desc="Take mock tests, practice by topic, or build custom tests." icon={<svg className="w-7 h-7" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}><path strokeLinecap="round" strokeLinejoin="round" d="M15.59 14.37a6 6 0 01-5.84 7.38v-4.8m5.84-2.58a14.98 14.98 0 006.16-12.12A14.98 14.98 0 009.631 8.41m5.96 5.96a14.926 14.926 0 01-5.841 2.58m-.119-8.54a6 6 0 00-7.381 5.84h4.8m2.581-5.84a14.927 14.927 0 00-2.58 5.84m2.699 2.7c-.103.021-.207.041-.311.06a15.09 15.09 0 01-2.448-2.448 14.9 14.9 0 01.06-.312m-2.24 2.39a4.493 4.493 0 00-1.757 4.306 4.493 4.493 0 004.306-1.758M16.5 9a1.5 1.5 0 11-3 0 1.5 1.5 0 013 0z" /></svg>} gradient="from-emerald-500 to-teal-600" delay={0} /></LiftOff>
           </div>
 
-          {/* Connecting line (desktop) */}
-          <div className="hidden md:block absolute top-1/2 left-[20%] right-[20%] h-0.5 bg-gradient-to-r from-blue-300 via-purple-300 to-emerald-300 dark:from-blue-700 dark:via-purple-700 dark:to-emerald-700 opacity-30 -z-10" />
+          {/* Scroll-drawn connecting line (desktop) */}
+          <DrawLine />
         </div>
       </section>
+      </RevealSection>
 
-
-      {/* ========== TESTIMONIALS ========== */}
-      <section className="py-16 md:py-24 px-4">
+      {/* ===== 7. TRY IT OUT — Interactive Demo Quiz ===== */}
+      <RevealSection>
+      <section id="testimonials-section" className="py-10 md:py-14 px-4">
         <div className="max-w-6xl mx-auto">
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true }}
-            className="text-center mb-14"
+            className="text-center mb-10"
           >
-            <h2 className="text-3xl md:text-5xl font-extrabold text-gray-900 dark:text-white mb-4">
-              Loved by{" "}
-              <span className="gradient-text">aspirants</span>
+            <h2 className="text-2xl sm:text-3xl md:text-5xl font-extrabold text-gray-900 dark:text-white mb-4">
+              <ScrollGradientText>Try it yourself</ScrollGradientText>
             </h2>
-            <p className="text-gray-600 dark:text-gray-400 text-lg">Real feedback from real users</p>
+            <p className="text-gray-600 dark:text-gray-400 text-lg">Take a quick 5-question demo — no sign up needed</p>
           </motion.div>
 
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-            <TestimonialCard
-              quote="The mock tests feel exactly like the real exam. The timer, negative marking, and section-wise analysis helped me identify my weak areas."
-              name="Ankita Yadav"
-              exam="UPSC CSE 2025 Aspirant"
-              avatar="from-blue-500 to-indigo-600"
-              delay={0}
-            />
-            <TestimonialCard
-              quote="AI explanations are a game-changer. Instead of just knowing the answer, I now understand the concept behind every question."
-              name="Chirag Mishra"
-              exam="CDS Aspirant"
-              avatar="from-emerald-500 to-teal-600"
-              delay={0.1}
-            />
-            <TestimonialCard
-              quote="The practice mode and bookmarks feature helped me revise efficiently. The leaderboard keeps me motivated every week."
-              name="Amit Yadav"
-              exam="UPSC Prelims 2025"
-              avatar="from-purple-500 to-pink-600"
-              delay={0.2}
-            />
-          </div>
+          <motion.div
+            initial={{ opacity: 0, y: 50 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true }}
+            transition={{ duration: 0.8, type: "spring" }}
+            className="max-w-xl mx-auto"
+          >
+            <GlowBorder>
+              <DemoQuiz />
+            </GlowBorder>
+          </motion.div>
         </div>
       </section>
+      </RevealSection>
 
-      {/* ========== FINAL CTA ========== */}
-      <section className="py-16 md:py-24 px-4">
-        <motion.div
-          initial={{ opacity: 0, y: 40, rotateX: 10 }}
-          whileInView={{ opacity: 1, y: 0, rotateX: 0 }}
-          viewport={{ once: true }}
-          transition={{ type: "spring", stiffness: 80 }}
-          className="max-w-4xl mx-auto perspective-1000"
-        >
-          <TiltCard>
-            <div className="relative overflow-hidden rounded-3xl">
-              <div className="relative bg-gradient-to-br from-blue-600 via-indigo-600 to-purple-700 rounded-3xl p-8 md:p-16 text-center overflow-hidden">
-                {/* Decorative elements */}
-                <div className="absolute top-0 right-0 w-80 h-80 bg-white/5 rounded-full -translate-y-1/2 translate-x-1/3" />
-                <div className="absolute bottom-0 left-0 w-60 h-60 bg-white/5 rounded-full translate-y-1/2 -translate-x-1/3" />
-                <motion.div
-                  className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] bg-gradient-to-r from-blue-400/10 to-purple-400/10 rounded-full"
-                  animate={{ rotate: 360 }}
-                  transition={{ duration: 30, repeat: Infinity, ease: "linear" }}
-                />
 
-                <div className="relative">
-                  <motion.div
-                    initial={{ scale: 0 }}
-                    whileInView={{ scale: 1 }}
-                    viewport={{ once: true }}
-                    className="inline-flex items-center gap-2 px-4 py-1.5 bg-white/10 rounded-full mb-6 border border-white/20"
-                  >
-                    <span className="text-sm font-medium text-white/90"><svg className="w-4 h-4 inline-block mr-1 -mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M4.26 10.147a60.436 60.436 0 00-.491 6.347A48.627 48.627 0 0112 20.904a48.627 48.627 0 018.232-4.41 60.46 60.46 0 00-.491-6.347m-15.482 0a50.57 50.57 0 00-2.658-.813A59.905 59.905 0 0112 3.493a59.902 59.902 0 0110.399 5.84c-.896.248-1.783.52-2.658.814m-15.482 0A50.697 50.697 0 0112 13.489a50.702 50.702 0 017.74-3.342M6.75 15a.75.75 0 100-1.5.75.75 0 000 1.5zm0 0v-3.675A55.378 55.378 0 0112 8.443m-7.007 11.55A5.981 5.981 0 006.75 15.75v-1.5" /></svg>Join the community</span>
-                  </motion.div>
-                  <h2 className="text-3xl md:text-5xl font-extrabold text-white mb-4 leading-tight">
-                    Your UPSC journey
-                    <br />
-                    starts here
-                  </h2>
-                  <p className="text-blue-100 text-lg mb-8 max-w-xl mx-auto">
-                    Join thousands of aspirants who are already practicing smarter. Completely free, no credit card needed.
-                  </p>
-                  <motion.button
-                    whileHover={{ scale: 1.05, boxShadow: "0 25px 50px rgba(0,0,0,0.3)" }}
-                    whileTap={{ scale: 0.95 }}
-                    onClick={() => navigate("/login")}
-                    className="px-10 py-4 bg-white text-indigo-600 font-bold text-lg rounded-2xl shadow-2xl hover:shadow-3xl transition-all relative overflow-hidden group"
-                  >
-                    <span className="relative z-10">Create Free Account</span>
-                    <div className="absolute inset-0 bg-gradient-to-r from-blue-50 to-purple-50 opacity-0 group-hover:opacity-100 transition-opacity" />
-                  </motion.button>
-                </div>
-              </div>
-            </div>
-          </TiltCard>
-        </motion.div>
-      </section>
-
-      {/* ========== FOOTER ========== */}
-      <footer className="py-8 px-4 border-t border-gray-200 dark:border-gray-800">
-        <div className="max-w-6xl mx-auto flex flex-col md:flex-row items-center justify-center gap-4">
+      {/* ===== 9. FOOTER — Minimal ===== */}
+      <footer className="relative pt-6 pb-8 px-4" role="contentinfo">
+        <div className="absolute top-0 left-1/2 -translate-x-1/2 w-2/3 max-w-md h-px bg-gradient-to-r from-transparent via-gray-300 dark:via-gray-700 to-transparent" />
+        <div className="max-w-6xl mx-auto flex flex-col items-center gap-4">
+          <nav className="flex flex-wrap justify-center gap-4" aria-label="Footer navigation">
+            {NAV_SECTIONS.map((s) => (
+              <button key={s.id} onClick={() => document.getElementById(s.id)?.scrollIntoView({ behavior: "smooth" })} className="text-sm text-gray-500 dark:text-gray-400 hover:text-blue-600 dark:hover:text-blue-400 transition-colors">{s.label}</button>
+            ))}
+            <button onClick={() => navigate("/privacy")} className="text-sm text-gray-500 dark:text-gray-400 hover:text-blue-600 dark:hover:text-blue-400 transition-colors">Privacy</button>
+            <button onClick={() => navigate("/terms")} className="text-sm text-gray-500 dark:text-gray-400 hover:text-blue-600 dark:hover:text-blue-400 transition-colors">Terms</button>
+          </nav>
           <div className="flex items-center gap-2">
-            <div className="w-8 h-8 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-lg flex items-center justify-center shadow-md overflow-hidden">
-              <svg className="w-8 h-8" viewBox="0 0 64 64" fill="none" xmlns="http://www.w3.org/2000/svg">
-                <defs>
-                  <linearGradient id="footerBolt" x1="0%" y1="0%" x2="100%" y2="100%">
-                    <stop offset="0%" stopColor="#fbbf24"/>
-                    <stop offset="100%" stopColor="#f59e0b"/>
-                  </linearGradient>
-                  <filter id="footerGlow">
-                    <feGaussianBlur stdDeviation="1.5" result="coloredBlur"/>
-                    <feMerge>
-                      <feMergeNode in="coloredBlur"/>
-                      <feMergeNode in="SourceGraphic"/>
-                    </feMerge>
-                  </filter>
-                </defs>
+            <div className="w-7 h-7 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-lg flex items-center justify-center overflow-hidden">
+              <svg className="w-7 h-7" viewBox="0 0 64 64" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <defs><linearGradient id="footerBolt" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" stopColor="#fbbf24"/><stop offset="100%" stopColor="#f59e0b"/></linearGradient></defs>
                 <path d="M16 48 L16 20 L26 35 L32 20 L38 35 L48 20 L48 48" fill="none" stroke="white" strokeWidth="5" strokeLinecap="round" strokeLinejoin="round"/>
-                <path d="M38 8 L30 24 L36 24 L28 40 L42 20 L36 20 L42 8 Z" fill="url(#footerBolt)" filter="url(#footerGlow)">
-                  <animate attributeName="opacity" values="0.7;1;0.7" dur="2s" repeatCount="indefinite"/>
-                </path>
-                <path d="M38 8 L30 24 L36 24 L28 40 L42 20 L36 20 L42 8 Z" fill="#fef3c7" opacity="0">
-                  <animate attributeName="opacity" values="0;0.5;0" dur="2s" repeatCount="indefinite"/>
-                </path>
+                <path d="M38 8 L30 24 L36 24 L28 40 L42 20 L36 20 L42 8 Z" fill="url(#footerBolt)"/>
               </svg>
             </div>
-            <span className="font-semibold text-sm text-gray-700 dark:text-gray-300">Mockzam</span>
+            <span className="text-sm text-gray-500 dark:text-gray-400">Mockzam &middot; Made with <svg className="w-3.5 h-3.5 inline-block mx-0.5 text-red-500" fill="currentColor" viewBox="0 0 24 24"><path d="M11.645 20.91l-.007-.003-.022-.012a15.247 15.247 0 01-.383-.218 25.18 25.18 0 01-4.244-3.17C4.688 15.36 2.25 12.174 2.25 8.25 2.25 5.322 4.714 3 7.688 3A5.5 5.5 0 0112 5.052 5.5 5.5 0 0116.313 3c2.973 0 5.437 2.322 5.437 5.25 0 3.925-2.438 7.111-4.739 9.256a25.175 25.175 0 01-4.244 3.17 15.247 15.247 0 01-.383.219l-.022.012-.007.004-.003.001a.752.752 0 01-.704 0l-.003-.001z" /></svg> for UPSC aspirants</span>
           </div>
-          <span className="text-gray-300 dark:text-gray-600 hidden md:block">•</span>
-          <p className="text-sm text-gray-500 dark:text-gray-400">
-            Made with <svg className="w-4 h-4 inline-block mx-1 text-red-500" fill="currentColor" viewBox="0 0 24 24"><path d="M11.645 20.91l-.007-.003-.022-.012a15.247 15.247 0 01-.383-.218 25.18 25.18 0 01-4.244-3.17C4.688 15.36 2.25 12.174 2.25 8.25 2.25 5.322 4.714 3 7.688 3A5.5 5.5 0 0112 5.052 5.5 5.5 0 0116.313 3c2.973 0 5.437 2.322 5.437 5.25 0 3.925-2.438 7.111-4.739 9.256a25.175 25.175 0 01-4.244 3.17 15.247 15.247 0 01-.383.219l-.022.012-.007.004-.003.001a.752.752 0 01-.704 0l-.003-.001z" /></svg> for UPSC Aspirants
-          </p>
         </div>
       </footer>
       </div>
