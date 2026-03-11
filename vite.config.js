@@ -292,7 +292,8 @@ export default defineConfig({
     devApiProxy(),
   ],
   optimizeDeps: {
-    esbuild: {
+    force: true,
+    esbuildOptions: {
       loader: { '.js': 'jsx' },
     },
     entries: ['index.html'],

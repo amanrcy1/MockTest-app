@@ -357,7 +357,7 @@ const RotatingText = () => {
   }, []);
 
   return (
-    <span className="gradient-text relative inline-block min-h-[1.2em]" role="status" aria-live="polite" aria-atomic="true">
+    <span className="relative inline-block min-h-[1.2em]" role="status" aria-live="polite" aria-atomic="true">
       <AnimatePresence mode="wait">
         <motion.span
           key={ROTATING_WORDS[index]}
@@ -365,7 +365,7 @@ const RotatingText = () => {
           animate={{ y: 0, opacity: 1, rotateX: 0 }}
           exit={{ y: -30, opacity: 0, rotateX: 40 }}
           transition={{ duration: 0.5, ease: "easeInOut" }}
-          className="inline-block"
+          className="inline-block gradient-text"
           style={{ perspective: 200 }}
         >
           {ROTATING_WORDS[index]}
@@ -1272,9 +1272,8 @@ const Landing = () => {
             </motion.div>
 
             <h1 className="text-3xl sm:text-4xl md:text-6xl lg:text-7xl font-extrabold text-gray-900 dark:text-white leading-tight mb-6">
-              Your path to{" "}
-              <RotatingText />
-              <br className="hidden sm:block" />
+              Your path to <RotatingText />
+              <br />
               <span className="text-gray-500 dark:text-gray-400 text-[0.85em]">starts here.</span>
             </h1>
 
