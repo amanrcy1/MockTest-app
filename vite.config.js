@@ -197,21 +197,33 @@ RULES:
           const body = await getBody(req);
           const { questionText, options, correctAnswer, userAnswer, subject, topic } = body;
 
-          if (!questionText || !options || !correctAnswer || !userAnswer) {
+          if (!questionText || !options || !correctAnswer) {
             res.statusCode = 400;
             res.setHeader('Content-Type', 'application/json');
             return res.end(JSON.stringify({ error: 'Missing required fields.' }));
           }
 
+          const isSkipped = !userAnswer;
           const safeSubject = (subject || 'General').slice(0, 100);
           const safeTopic = (topic || 'General').slice(0, 100);
           const isMath = /\b(math|arithmetic|algebra|geometry|trigonometry|percentage|ratio|profit|loss|interest|speed|distance|probability|number system|average|simplif)/i.test(`${safeSubject} ${safeTopic} ${questionText}`);
 
-          let systemContent = `You are an expert exam tutor. Explain why the student's answer is wrong and why the correct answer is right.
+          let systemContent = isSkipped
+            ? `You are an expert exam tutor. The student skipped this question. Explain the correct answer clearly.
+RULES: Be factually accurate. Use **bold** for key terms. Include a memory tip. Keep under 150 words.`
+            : `You are an expert exam tutor. Explain why the student's answer is wrong and why the correct answer is right.
 RULES: Be factually accurate. Use **bold** for key terms. Include a memory tip. Keep under 150 words.`;
           if (isMath) systemContent += '\nThis is a MATH question. Show step-by-step solution. Verify your arithmetic.';
 
-          const userPrompt = `**Question:** ${(questionText || '').slice(0, 2000)}
+          const userPrompt = isSkipped
+            ? `**Question:** ${(questionText || '').slice(0, 2000)}
+**Options:** A) ${(options.A || '').slice(0, 500)} B) ${(options.B || '').slice(0, 500)} C) ${(options.C || '').slice(0, 500)} D) ${(options.D || '').slice(0, 500)}
+**Student skipped this question.**
+**Correct answer:** ${correctAnswer}) ${(options[correctAnswer] || '').slice(0, 500)}
+**Subject:** ${safeSubject} | **Topic:** ${safeTopic}
+
+Explain: 1. Why **${correctAnswer}** is correct 2. Why the other options are wrong 3. A memory tip`
+            : `**Question:** ${(questionText || '').slice(0, 2000)}
 **Options:** A) ${(options.A || '').slice(0, 500)} B) ${(options.B || '').slice(0, 500)} C) ${(options.C || '').slice(0, 500)} D) ${(options.D || '').slice(0, 500)}
 **Student chose:** ${userAnswer}) ${(options[userAnswer] || '').slice(0, 500)}
 **Correct answer:** ${correctAnswer}) ${(options[correctAnswer] || '').slice(0, 500)}

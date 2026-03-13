@@ -158,7 +158,7 @@ export default async function handler(req, res) {
       subject, topic, learningProfile,
     } = req.body || {};
 
-    if (!questionText || !options || !correctAnswer || !userAnswer) {
+    if (!questionText || !options || !correctAnswer) {
       return res.status(400).json({ error: 'Missing required fields' });
     }
     if (typeof questionText !== 'string' || questionText.length > 2000) {
@@ -167,8 +167,11 @@ export default async function handler(req, res) {
     if (!validateOptions(options)) {
       return res.status(400).json({ error: 'options must have non-empty A, B, C, D values' });
     }
-    if (!['A','B','C','D'].includes(correctAnswer) || !['A','B','C','D'].includes(userAnswer)) {
-      return res.status(400).json({ error: 'Answers must be A, B, C, or D' });
+    if (!['A','B','C','D'].includes(correctAnswer)) {
+      return res.status(400).json({ error: 'correctAnswer must be A, B, C, or D' });
+    }
+    if (userAnswer && !['A','B','C','D'].includes(userAnswer)) {
+      return res.status(400).json({ error: 'userAnswer must be A, B, C, or D' });
     }
 
     const groqApiKey = process.env.GROQ_API_KEY;
@@ -184,7 +187,16 @@ export default async function handler(req, res) {
     const useMath = isMathQuestion(safeSubject, safeTopic, safeQ);
 
     // Build system prompt with few-shot example
-    let systemContent = `You are an expert exam tutor. Explain why the student's answer is wrong and why the correct answer is right.
+    const isSkipped = !userAnswer;
+    let systemContent = isSkipped
+      ? `You are an expert exam tutor. The student skipped this question. Explain the correct answer clearly.
+
+RULES:
+• Be factually accurate. Double-check every fact, date, formula.
+• Use **bold** for key terms. Use numbered steps for math.
+• Include a memory tip or mnemonic at the end.
+• Keep it under 150 words unless the topic needs more.`
+      : `You are an expert exam tutor. Explain why the student's answer is wrong and why the correct answer is right.
 
 RULES:
 • Be factually accurate. Double-check every fact, date, formula.
@@ -208,7 +220,24 @@ RULES:
       }
     } catch { /* ignore */ }
 
-    const userPrompt = `**Question:** ${safeQ}
+    const userPrompt = isSkipped
+      ? `**Question:** ${safeQ}
+
+**Options:**
+A) ${safeOpts.A}
+B) ${safeOpts.B}
+C) ${safeOpts.C}
+D) ${safeOpts.D}
+
+**Student skipped this question.**
+**Correct answer:** ${correctAnswer}) ${safeOpts[correctAnswer]}
+**Subject:** ${safeSubject} | **Topic:** ${safeTopic}
+
+Explain:
+1. Why **${correctAnswer}** is correct
+2. Why the other options are wrong
+3. A memory tip to remember this`
+      : `**Question:** ${safeQ}
 
 **Options:**
 A) ${safeOpts.A}

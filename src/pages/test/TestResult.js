@@ -158,6 +158,12 @@ const TestResult = () => {
   const handleGetAiExplanation = async (index, question, response) => {
     if (aiExplanations[index] || loadingAi[index]) return;
 
+    // Guard against missing question data
+    if (!question?.questionText || !question?.options || !question?.correctAnswer) {
+      toast.error("Question data is incomplete. Cannot generate explanation.");
+      return;
+    }
+
     setLoadingAi((prev) => ({ ...prev, [index]: true }));
 
     // Retrieve cached learning profile for adaptive explanations
