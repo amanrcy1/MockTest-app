@@ -89,8 +89,8 @@ export const generateExplanation = async ({
     }
 
     if (!response.ok) {
-      const error = await response.json();
-      throw new Error(error.message || 'Failed to generate explanation');
+      const errorData = await response.json();
+      throw new Error(errorData.error || errorData.message || 'Failed to generate explanation');
     }
 
     const data = await response.json();
