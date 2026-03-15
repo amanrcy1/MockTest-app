@@ -2,54 +2,54 @@
  * Firestore collection names
  */
 export const COLLECTIONS = {
-  USERS: "users",
-  QUESTIONS: "questions",
-  TESTS: "tests",
-  BOOKMARKS: "bookmarks",
-  ERROR_REPORTS: "errorReports",
+  USERS: 'users',
+  QUESTIONS: 'questions',
+  TESTS: 'tests',
+  BOOKMARKS: 'bookmarks',
+  ERROR_REPORTS: 'errorReports',
 };
 
 /**
  * Local storage keys
  */
 export const STORAGE_KEYS = {
-  THEME: "theme",
-  MOCK_TEST_SESSION: "mockTestSession",
-  PRACTICE_SESSION: "practiceSession",
-  CUSTOM_TEST_SESSION: "customTestSession",
-  ACTIVE_SESSION: "activeTestSession",
-  QUESTION_COUNTS: "questionCounts",
-  QUESTION_COUNTS_AT: "questionCountsAt",
+  THEME: 'theme',
+  MOCK_TEST_SESSION: 'mockTestSession',
+  PRACTICE_SESSION: 'practiceSession',
+  CUSTOM_TEST_SESSION: 'customTestSession',
+  ACTIVE_SESSION: 'activeTestSession',
+  QUESTION_COUNTS: 'questionCounts',
+  QUESTION_COUNTS_AT: 'questionCountsAt',
 };
 
 /**
  * Test modes
  */
 export const TEST_MODES = {
-  MOCK: "mock",
-  PRACTICE: "practice",
-  CUSTOM: "custom",
+  MOCK: 'mock',
+  PRACTICE: 'practice',
+  CUSTOM: 'custom',
 };
 
 /**
  * Question status
  */
 export const QUESTION_STATUS = {
-  NOT_VISITED: "not-visited",
-  ANSWERED: "answered",
-  NOT_ANSWERED: "not-answered",
-  MARKED: "marked",
-  ANSWERED_MARKED: "answered-marked",
+  NOT_VISITED: 'not-visited',
+  ANSWERED: 'answered',
+  NOT_ANSWERED: 'not-answered',
+  MARKED: 'marked',
+  ANSWERED_MARKED: 'answered-marked',
 };
 
 /**
  * Error report status
  */
 export const REPORT_STATUS = {
-  PENDING: "pending",
-  REVIEWED: "reviewed",
-  RESOLVED: "resolved",
-  REJECTED: "rejected",
+  PENDING: 'pending',
+  REVIEWED: 'reviewed',
+  RESOLVED: 'resolved',
+  REJECTED: 'rejected',
 };
 
 /**

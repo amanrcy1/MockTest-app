@@ -1,5 +1,13 @@
-import { createContext, useState, useEffect, useContext, useCallback, useMemo, useRef } from "react";
-import PropTypes from "prop-types";
+import {
+  createContext,
+  useState,
+  useEffect,
+  useContext,
+  useCallback,
+  useMemo,
+  useRef,
+} from 'react';
+import PropTypes from 'prop-types';
 import {
   signOut,
   onAuthStateChanged,
@@ -10,19 +18,14 @@ import {
   setPersistence,
   browserLocalPersistence,
   browserSessionPersistence,
-} from "firebase/auth";
-import {
-  doc,
-  setDoc,
-  getDoc,
-  deleteDoc,
-} from "firebase/firestore";
-import { auth, db } from "../config/firebase";
-import { useSessionTimeout } from "../hooks/useSessionTimeout";
-import logger from "../utils/logger";
+} from 'firebase/auth';
+import { doc, setDoc, getDoc, deleteDoc } from 'firebase/firestore';
+import { auth, db } from '../config/firebase';
+import { useSessionTimeout } from '../hooks/useSessionTimeout';
+import logger from '../utils/logger';
 
 const AuthContext = createContext();
-const AUTH_REDIRECT_INTENT_KEY = "auth.google.redirect.intent";
+const AUTH_REDIRECT_INTENT_KEY = 'auth.google.redirect.intent';
 
 export const useAuth = () => {
   return useContext(AuthContext);
@@ -37,39 +40,44 @@ export const useAuth = () => {
  */
 const getErrorMessage = (error) => {
   const errorMessages = {
-    "auth/too-many-requests": "Too many attempts. Please wait a few minutes and try again.",
-    "auth/network-request-failed": "Network error. Please check your internet connection.",
-    "auth/user-disabled": "This account is disabled. Please contact support.",
-    "auth/popup-blocked": "Popup was blocked. Please allow popups and try again.",
-    "auth/popup-closed-by-user": "Sign-in cancelled.",
-    "auth/cancelled-popup-request": "Sign-in cancelled.",
-    "auth/unauthorized-domain": "This domain is not authorized in Firebase Auth. Add it in Firebase Console > Authentication > Settings > Authorized domains.",
-    "auth/operation-not-supported-in-this-environment": "Google login is blocked in this browser context. Try a normal browser window.",
-    "auth/web-storage-unsupported": "Your browser is blocking cookies/storage. Enable cookies or use another browser.",
-    "auth/third-party-cookie-inaccessible": "Third-party cookies are blocked. Enable them or switch to a standard browser tab.",
-    "auth/third-party-cookies-blocked": "Third-party cookies are blocked. Enable them or switch to a standard browser tab.",
-    "permission-denied": "You do not have permission to perform this action.",
-    "unavailable": "Service temporarily unavailable. Please try again later.",
+    'auth/too-many-requests': 'Too many attempts. Please wait a few minutes and try again.',
+    'auth/network-request-failed': 'Network error. Please check your internet connection.',
+    'auth/user-disabled': 'This account is disabled. Please contact support.',
+    'auth/popup-blocked': 'Popup was blocked. Please allow popups and try again.',
+    'auth/popup-closed-by-user': 'Sign-in cancelled.',
+    'auth/cancelled-popup-request': 'Sign-in cancelled.',
+    'auth/unauthorized-domain':
+      'This domain is not authorized in Firebase Auth. Add it in Firebase Console > Authentication > Settings > Authorized domains.',
+    'auth/operation-not-supported-in-this-environment':
+      'Google login is blocked in this browser context. Try a normal browser window.',
+    'auth/web-storage-unsupported':
+      'Your browser is blocking cookies/storage. Enable cookies or use another browser.',
+    'auth/third-party-cookie-inaccessible':
+      'Third-party cookies are blocked. Enable them or switch to a standard browser tab.',
+    'auth/third-party-cookies-blocked':
+      'Third-party cookies are blocked. Enable them or switch to a standard browser tab.',
+    'permission-denied': 'You do not have permission to perform this action.',
+    unavailable: 'Service temporarily unavailable. Please try again later.',
   };
 
-  return errorMessages[error.code] || "An unexpected error occurred. Please try again.";
+  return errorMessages[error.code] || 'An unexpected error occurred. Please try again.';
 };
 
 /**
  * Sanitize Firestore key — strip characters that are illegal in doc IDs.
  */
 const sanitizeFirestoreKey = (value) => {
-  return value.replace(/[.#$[\]/]/g, "_");
+  return value.replace(/[.#$[\]/]/g, '_');
 };
 
 const isPermissionDenied = (error) =>
-  error?.code === "permission-denied" || error?.code === "firestore/permission-denied";
+  error?.code === 'permission-denied' || error?.code === 'firestore/permission-denied';
 
 const shouldPreferRedirectAuth = () => {
-  if (typeof window === "undefined") return false;
-  const ua = navigator.userAgent || "";
+  if (typeof window === 'undefined') return false;
+  const ua = navigator.userAgent || '';
   const isInAppBrowser = /FBAN|FBAV|Instagram|Line|wv\)/i.test(ua);
-  const isStandalonePwa = window.matchMedia?.("(display-mode: standalone)")?.matches;
+  const isStandalonePwa = window.matchMedia?.('(display-mode: standalone)')?.matches;
   // Prefer popup for regular browsers (desktop + mobile) because redirect
   // breaks when third-party storage is blocked. Redirect only where popups
   // are known to fail.
@@ -104,13 +112,16 @@ export const AuthProvider = ({ children }) => {
         persistenceConfiguredRef.current = true;
         return true;
       } catch (localErr) {
-        logger.warn("Local auth persistence unavailable, falling back to session persistence.", localErr);
+        logger.warn(
+          'Local auth persistence unavailable, falling back to session persistence.',
+          localErr
+        );
         try {
           await setPersistence(auth, browserSessionPersistence);
           persistenceConfiguredRef.current = true;
           return true;
         } catch (sessionErr) {
-          logger.error("Failed to configure Firebase auth persistence.", sessionErr);
+          logger.error('Failed to configure Firebase auth persistence.', sessionErr);
           return false;
         }
       }
@@ -124,11 +135,11 @@ export const AuthProvider = ({ children }) => {
   // ------------------------------------------
   const fetchUserDetails = useCallback(async (uid, retries = 3) => {
     try {
-      const userDoc = await getDoc(doc(db, "users", uid));
+      const userDoc = await getDoc(doc(db, 'users', uid));
       if (userDoc.exists()) {
         const data = userDoc.data();
         setUserDetails(data);
-        logger.info("User details fetched:", { name: data.name });
+        logger.info('User details fetched:', { name: data.name });
         return data;
       }
 
@@ -139,82 +150,93 @@ export const AuthProvider = ({ children }) => {
         return await fetchUserDetails(uid, retries - 1);
       }
 
-      logger.warn("User document not found after all retries");
+      logger.warn('User document not found after all retries');
       return null;
     } catch (error) {
-      logger.error("Error fetching user details:", error);
+      logger.error('Error fetching user details:', error);
       return null;
     }
   }, []);
 
-  const ensureGoogleUserProfile = useCallback(async (user) => {
-    const googleEmail = user?.email;
-    if (!googleEmail) {
-      await signOut(auth);
-      throw new Error("Could not retrieve email from Google.");
-    }
+  const ensureGoogleUserProfile = useCallback(
+    async (user) => {
+      const googleEmail = user?.email;
+      if (!googleEmail) {
+        await signOut(auth);
+        throw new Error('Could not retrieve email from Google.');
+      }
 
-    const userDocRef = doc(db, "users", user.uid);
-    let userDoc = null;
-    try {
-      userDoc = await getDoc(userDocRef);
-    } catch (readError) {
-      if (!isPermissionDenied(readError)) throw readError;
-      logger.warn("Permission denied reading user profile, attempting create/merge fallback.");
-    }
-
-    if (userDoc?.exists()) {
-      const userData = userDoc.data();
-      await setDoc(userDocRef, {
-        lastLoginAt: new Date().toISOString(),
-        loginCount: (userData.loginCount || 0) + 1,
-      }, { merge: true });
-      await fetchUserDetails(user.uid);
-      return { isNewUser: false };
-    }
-
-    const displayName = user.displayName || googleEmail.split("@")[0];
-    const createdDocs = [];
-
-    try {
-      const emailKey = sanitizeFirestoreKey(googleEmail.toLowerCase());
-      const emailDocRef = doc(db, "emails", emailKey);
+      const userDocRef = doc(db, 'users', user.uid);
+      let userDoc = null;
       try {
-        await setDoc(emailDocRef, {
+        userDoc = await getDoc(userDocRef);
+      } catch (readError) {
+        if (!isPermissionDenied(readError)) throw readError;
+        logger.warn('Permission denied reading user profile, attempting create/merge fallback.');
+      }
+
+      if (userDoc?.exists()) {
+        const userData = userDoc.data();
+        await setDoc(
+          userDocRef,
+          {
+            lastLoginAt: new Date().toISOString(),
+            loginCount: (userData.loginCount || 0) + 1,
+          },
+          { merge: true }
+        );
+        await fetchUserDetails(user.uid);
+        return { isNewUser: false };
+      }
+
+      const displayName = user.displayName || googleEmail.split('@')[0];
+      const createdDocs = [];
+
+      try {
+        const emailKey = sanitizeFirestoreKey(googleEmail.toLowerCase());
+        const emailDocRef = doc(db, 'emails', emailKey);
+        try {
+          await setDoc(emailDocRef, {
+            userId: user.uid,
+            email: googleEmail,
+            createdAt: new Date().toISOString(),
+          });
+          createdDocs.push({ ref: emailDocRef, type: 'email' });
+        } catch (emailError) {
+          if (!isPermissionDenied(emailError)) throw emailError;
+          logger.warn('Email mapping write denied by rules, continuing without /emails mapping.');
+        }
+
+        await setDoc(userDocRef, {
           userId: user.uid,
+          name: displayName,
           email: googleEmail,
+          photoURL: user.photoURL || null,
+          targetExam: 'CDS',
+          isAdmin: false,
+          onboardingComplete: false,
           createdAt: new Date().toISOString(),
+          lastLoginAt: new Date().toISOString(),
+          loginCount: 1,
         });
-        createdDocs.push({ ref: emailDocRef, type: "email" });
-      } catch (emailError) {
-        if (!isPermissionDenied(emailError)) throw emailError;
-        logger.warn("Email mapping write denied by rules, continuing without /emails mapping.");
+        createdDocs.push({ ref: userDocRef, type: 'user' });
+      } catch (docError) {
+        for (const docInfo of createdDocs) {
+          try {
+            await deleteDoc(docInfo.ref);
+          } catch {
+            /* best effort */
+          }
+        }
+        throw docError;
       }
 
-      await setDoc(userDocRef, {
-        userId: user.uid,
-        name: displayName,
-        email: googleEmail,
-        photoURL: user.photoURL || null,
-        targetExam: "CDS",
-        isAdmin: false,
-        onboardingComplete: false,
-        createdAt: new Date().toISOString(),
-        lastLoginAt: new Date().toISOString(),
-        loginCount: 1,
-      });
-      createdDocs.push({ ref: userDocRef, type: "user" });
-    } catch (docError) {
-      for (const docInfo of createdDocs) {
-        try { await deleteDoc(docInfo.ref); } catch { /* best effort */ }
-      }
-      throw docError;
-    }
-
-    await fetchUserDetails(user.uid);
-    logger.info("Google sign-in new user created:", { userId: user.uid });
-    return { isNewUser: true };
-  }, [fetchUserDetails]);
+      await fetchUserDetails(user.uid);
+      logger.info('Google sign-in new user created:', { userId: user.uid });
+      return { isNewUser: true };
+    },
+    [fetchUserDetails]
+  );
 
   // ------------------------------------------
   // LOGIN WITH GOOGLE (sign-in / sign-up)
@@ -224,10 +246,10 @@ export const AuthProvider = ({ children }) => {
       await configurePersistence();
 
       const provider = new GoogleAuthProvider();
-      provider.setCustomParameters({ prompt: "select_account" });
+      provider.setCustomParameters({ prompt: 'select_account' });
 
       if (shouldPreferRedirectAuth()) {
-        sessionStorage.setItem(AUTH_REDIRECT_INTENT_KEY, "1");
+        sessionStorage.setItem(AUTH_REDIRECT_INTENT_KEY, '1');
         await signInWithRedirect(auth, provider);
         return { success: true, redirected: true };
       }
@@ -238,20 +260,20 @@ export const AuthProvider = ({ children }) => {
         return { success: true, isNewUser: profileResult.isNewUser };
       } catch (popupError) {
         const popupFallbackCodes = new Set([
-          "auth/popup-blocked",
-          "auth/popup-closed-by-user",
-          "auth/cancelled-popup-request",
-          "auth/operation-not-supported-in-this-environment",
-          "auth/web-storage-unsupported",
-          "auth/third-party-cookie-inaccessible",
-          "auth/third-party-cookies-blocked",
+          'auth/popup-blocked',
+          'auth/popup-closed-by-user',
+          'auth/cancelled-popup-request',
+          'auth/operation-not-supported-in-this-environment',
+          'auth/web-storage-unsupported',
+          'auth/third-party-cookie-inaccessible',
+          'auth/third-party-cookies-blocked',
         ]);
 
         if (!popupFallbackCodes.has(popupError?.code)) {
           throw popupError;
         }
 
-        sessionStorage.setItem(AUTH_REDIRECT_INTENT_KEY, "1");
+        sessionStorage.setItem(AUTH_REDIRECT_INTENT_KEY, '1');
         try {
           await signInWithRedirect(auth, provider);
         } catch (redirectError) {
@@ -261,11 +283,11 @@ export const AuthProvider = ({ children }) => {
         return { success: true, redirected: true };
       }
     } catch (error) {
-      logger.error("Google sign-in error:", error);
-      if (error.code === "auth/cancelled-popup-request") {
-        return { success: false, error: "Sign-in cancelled." };
+      logger.error('Google sign-in error:', error);
+      if (error.code === 'auth/cancelled-popup-request') {
+        return { success: false, error: 'Sign-in cancelled.' };
       }
-      const code = error?.code ? ` [${error.code}]` : "";
+      const code = error?.code ? ` [${error.code}]` : '';
       return { success: false, error: `${getErrorMessage(error)}${code}` };
     }
   }, [configurePersistence, ensureGoogleUserProfile]);
@@ -277,10 +299,10 @@ export const AuthProvider = ({ children }) => {
     try {
       await signOut(auth);
       setUserDetails(null);
-      localStorage.removeItem("rememberMe");
+      localStorage.removeItem('rememberMe');
       return { success: true };
     } catch (error) {
-      logger.error("Logout error:", error);
+      logger.error('Logout error:', error);
       return { success: false, error: error.message };
     }
   }, []);
@@ -297,12 +319,12 @@ export const AuthProvider = ({ children }) => {
   // SESSION TIMEOUT (auto-logout after 30 min inactivity)
   // ------------------------------------------
   const handleSessionTimeout = useCallback(async () => {
-    logger.info("Session timed out due to inactivity");
+    logger.info('Session timed out due to inactivity');
     await signOut(auth);
     setUserDetails(null);
-    localStorage.removeItem("rememberMe");
-    const { toast } = await import("react-toastify");
-    toast.info("You were logged out due to inactivity.");
+    localStorage.removeItem('rememberMe');
+    const { toast } = await import('react-toastify');
+    toast.info('You were logged out due to inactivity.');
   }, []);
 
   useSessionTimeout(handleSessionTimeout, !!currentUser);
@@ -325,10 +347,10 @@ export const AuthProvider = ({ children }) => {
           await ensureGoogleUserProfile(result.user);
         }
       } catch (error) {
-        logger.error("Google redirect result error:", error);
+        logger.error('Google redirect result error:', error);
         try {
-          const { toast } = await import("react-toastify");
-          const code = error?.code ? ` [${error.code}]` : "";
+          const { toast } = await import('react-toastify');
+          const code = error?.code ? ` [${error.code}]` : '';
           toast.error(`${getErrorMessage(error)}${code}`);
         } catch {
           // noop
@@ -371,7 +393,7 @@ export const AuthProvider = ({ children }) => {
         // processRedirectResult will handle profile creation + fetch.
         // We'll get called again or redirectLoading will unblock the UI.
         if (!redirectProcessedRef.current) {
-          logger.info("Auth state changed during redirect processing, deferring fetch");
+          logger.info('Auth state changed during redirect processing, deferring fetch');
           setAuthLoading(false);
           return;
         }
@@ -390,20 +412,19 @@ export const AuthProvider = ({ children }) => {
   // ------------------------------------------
   const loading = authLoading || redirectLoading;
 
-  const value = useMemo(() => ({
-    currentUser,
-    userDetails,
-    loading,
-    logout,
-    loginWithGoogle,
-    refreshUserDetails,
-  }), [currentUser, userDetails, loading, logout, loginWithGoogle, refreshUserDetails]);
-
-  return (
-    <AuthContext.Provider value={value}>
-      {children}
-    </AuthContext.Provider>
+  const value = useMemo(
+    () => ({
+      currentUser,
+      userDetails,
+      loading,
+      logout,
+      loginWithGoogle,
+      refreshUserDetails,
+    }),
+    [currentUser, userDetails, loading, logout, loginWithGoogle, refreshUserDetails]
   );
+
+  return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 };
 
 AuthProvider.propTypes = {

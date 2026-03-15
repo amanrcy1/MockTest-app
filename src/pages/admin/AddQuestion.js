@@ -1,18 +1,18 @@
-import { useState, useEffect } from "react";
-import { useNavigate, Navigate } from "react-router-dom";
-import { collection, addDoc } from "firebase/firestore";
-import { db } from "../../config/firebase";
-import toast, { messages } from "../../utils/toast";
+import { useState, useEffect } from 'react';
+import { useNavigate, Navigate } from 'react-router-dom';
+import { collection, addDoc } from 'firebase/firestore';
+import { db } from '../../config/firebase';
+import toast, { messages } from '../../utils/toast';
 import {
   EXAM_PATTERNS,
   getSubjectsByExam,
   getTopicsBySubject,
   DIFFICULTY_LEVELS,
-} from "../../utils/examPatterns";
-import { sanitizeForStorage } from "../../utils/testUtils";
-import { useAuth } from "../../context/AuthContext";
-import { logAdminAction } from "../../utils/auditLog";
-import logger from "../../utils/logger";
+} from '../../utils/examPatterns';
+import { sanitizeForStorage } from '../../utils/testUtils';
+import { useAuth } from '../../context/AuthContext';
+import { logAdminAction } from '../../utils/auditLog';
+import logger from '../../utils/logger';
 
 const AddQuestion = () => {
   const navigate = useNavigate();
@@ -20,19 +20,19 @@ const AddQuestion = () => {
   const [loading, setLoading] = useState(false);
 
   const [formData, setFormData] = useState({
-    examType: "CDS",
-    subject: "",
-    topic: "",
-    subtopic: "",
-    difficulty: "Medium",
-    questionText: "",
-    optionA: "",
-    optionB: "",
-    optionC: "",
-    optionD: "",
-    correctAnswer: "A",
-    solution: "",
-    tags: "",
+    examType: 'CDS',
+    subject: '',
+    topic: '',
+    subtopic: '',
+    difficulty: 'Medium',
+    questionText: '',
+    optionA: '',
+    optionB: '',
+    optionC: '',
+    optionD: '',
+    correctAnswer: 'A',
+    solution: '',
+    tags: '',
   });
 
   const [availableSubjects, setAvailableSubjects] = useState([]);
@@ -46,8 +46,8 @@ const AddQuestion = () => {
       setFormData((prev) => ({
         ...prev,
         subject: subjects[0].value,
-        topic: "",
-        subtopic: "",
+        topic: '',
+        subtopic: '',
       }));
     }
   }, [formData.examType]);
@@ -58,7 +58,7 @@ const AddQuestion = () => {
       const topics = getTopicsBySubject(formData.subject);
       setAvailableTopics(topics);
       if (topics.length > 0) {
-        setFormData((prev) => ({ ...prev, topic: topics[0], subtopic: "" }));
+        setFormData((prev) => ({ ...prev, topic: topics[0], subtopic: '' }));
       }
     }
   }, [formData.subject]);
@@ -117,34 +117,34 @@ const AddQuestion = () => {
         correctAnswer: formData.correctAnswer,
         solution: sanitizeForStorage(formData.solution.trim()),
         tags: formData.tags
-          .split(",")
+          .split(',')
           .map((tag) => tag.trim())
           .filter((tag) => tag),
         createdAt: new Date().toISOString(),
-        createdBy: "admin", // You can update this with actual user ID
+        createdBy: 'admin', // You can update this with actual user ID
         isActive: true,
       };
 
       // Add to Firestore
-      const docRef = await addDoc(collection(db, "questions"), questionData);
-      logAdminAction({ adminId: userDetails?.userId, action: "addQuestion", targetId: docRef.id });
+      const docRef = await addDoc(collection(db, 'questions'), questionData);
+      logAdminAction({ adminId: userDetails?.userId, action: 'addQuestion', targetId: docRef.id });
       toast.success(messages.QUESTION_ADDED);
 
       // Reset form
       setFormData({
         ...formData,
-        questionText: "",
-        optionA: "",
-        optionB: "",
-        optionC: "",
-        optionD: "",
-        correctAnswer: "A",
-        solution: "",
-        subtopic: "",
-        tags: "",
+        questionText: '',
+        optionA: '',
+        optionB: '',
+        optionC: '',
+        optionD: '',
+        correctAnswer: 'A',
+        solution: '',
+        subtopic: '',
+        tags: '',
       });
     } catch (error) {
-      logger.error("Error adding question:", error);
+      logger.error('Error adding question:', error);
       toast.error(messages.QUESTION_ADD_FAILED);
     } finally {
       setLoading(false);
@@ -157,13 +157,11 @@ const AddQuestion = () => {
       <nav className="bg-white dark:bg-gray-900 shadow-md">
         <div className="max-w-7xl mx-auto px-4 py-4 flex justify-between items-center">
           <div>
-            <h1 className="text-2xl font-bold text-blue-600">
-              Add New Question
-            </h1>
+            <h1 className="text-2xl font-bold text-blue-600">Add New Question</h1>
             <p className="text-sm text-gray-600 dark:text-gray-400">Mockzam Admin</p>
           </div>
           <button
-            onClick={() => navigate("/admin/dashboard")}
+            onClick={() => navigate('/admin/dashboard')}
             className="bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-200 px-4 py-2 rounded-lg hover:bg-gray-300 dark:hover:bg-gray-600 transition-colors"
           >
             Back to Admin
@@ -292,7 +290,7 @@ const AddQuestion = () => {
             <div className="space-y-4">
               <h3 className="text-lg font-semibold text-gray-800 dark:text-gray-200">Options</h3>
 
-              {["A", "B", "C", "D"].map((option) => (
+              {['A', 'B', 'C', 'D'].map((option) => (
                 <div key={option}>
                   <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                     Option {option} <span className="text-red-500">*</span>
@@ -371,11 +369,11 @@ const AddQuestion = () => {
                 disabled={loading}
                 className="flex-1 bg-blue-600 text-white py-3 rounded-lg font-semibold hover:bg-blue-700 transition-colors disabled:bg-blue-300 disabled:cursor-not-allowed"
               >
-                {loading ? "Adding Question..." : "Add Question"}
+                {loading ? 'Adding Question...' : 'Add Question'}
               </button>
               <button
                 type="button"
-                onClick={() => navigate("/admin/dashboard")}
+                onClick={() => navigate('/admin/dashboard')}
                 className="px-8 bg-gray-200 text-gray-700 py-3 rounded-lg font-semibold hover:bg-gray-300 transition-colors"
                 disabled={loading}
               >

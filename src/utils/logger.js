@@ -12,23 +12,21 @@ const logger = {
       console.log(...args);
     }
   },
-  
+
   error: (message, error = null) => {
     if (isDev) {
-       
       console.error(message, error);
     }
     // In production, you could send to error tracking service
     // e.g., Sentry, LogRocket, etc.
   },
-  
+
   warn: (...args) => {
     if (isDev) {
-       
       console.warn(...args);
     }
   },
-  
+
   info: (...args) => {
     if (isDev) {
       // eslint-disable-next-line no-console

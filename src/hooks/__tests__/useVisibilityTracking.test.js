@@ -32,7 +32,9 @@ describe('useVisibilityTracking', () => {
 
   it('should reset violations', () => {
     const { result } = renderHook(() => useVisibilityTracking(true));
-    act(() => { result.current.resetViolations(); });
+    act(() => {
+      result.current.resetViolations();
+    });
     expect(result.current.violations).toBe(0);
   });
 

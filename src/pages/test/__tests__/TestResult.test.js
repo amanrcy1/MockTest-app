@@ -1,12 +1,26 @@
 import { vi } from 'vitest';
-import { render, screen, waitFor } from '@testing-library/react';
+import { render, waitFor } from '@testing-library/react';
 import TestResult from '../TestResult';
 import { getDocs } from 'firebase/firestore';
 import { __mockNavigate as mockNavigate, __mockLocation } from 'react-router-dom';
 
 const mockQuestions = [
-  { id: 'q1', questionText: 'Q1?', options: { A: 'A', B: 'B', C: 'C', D: 'D' }, correctAnswer: 'A', subject: 'English', topic: 'Grammar' },
-  { id: 'q2', questionText: 'Q2?', options: { A: 'A', B: 'B', C: 'C', D: 'D' }, correctAnswer: 'B', subject: 'Math', topic: 'Algebra' },
+  {
+    id: 'q1',
+    questionText: 'Q1?',
+    options: { A: 'A', B: 'B', C: 'C', D: 'D' },
+    correctAnswer: 'A',
+    subject: 'English',
+    topic: 'Grammar',
+  },
+  {
+    id: 'q2',
+    questionText: 'Q2?',
+    options: { A: 'A', B: 'B', C: 'C', D: 'D' },
+    correctAnswer: 'B',
+    subject: 'Math',
+    topic: 'Algebra',
+  },
 ];
 const mockResponses = [
   { selectedAnswer: 'A', timeTaken: 30, marksPerQuestion: 1, negativeMarking: -0.33 },
@@ -49,13 +63,6 @@ describe('TestResult Page', () => {
     await waitFor(() => {
       const body = document.body.textContent;
       expect(body.toLowerCase()).toMatch(/english/);
-    });
-  });
-
-  it('should show celebration effect', async () => {
-    render(<TestResult />);
-    await waitFor(() => {
-      expect(screen.getByTestId('celebration-effect')).toBeInTheDocument();
     });
   });
 });

@@ -25,8 +25,8 @@ describe('examPatterns', () => {
     });
 
     it('should have correct negative marking for all patterns', () => {
-      Object.values(EXAM_PATTERNS).forEach(pattern => {
-        pattern.sections.forEach(section => {
+      Object.values(EXAM_PATTERNS).forEach((pattern) => {
+        pattern.sections.forEach((section) => {
           expect(section.negativeMarking).toBeLessThan(0);
         });
       });
@@ -40,7 +40,7 @@ describe('examPatterns', () => {
     });
 
     it('should have topics for each subject', () => {
-      Object.values(SUBJECTS).forEach(subject => {
+      Object.values(SUBJECTS).forEach((subject) => {
         expect(Array.isArray(subject.topics)).toBe(true);
         expect(subject.topics.length).toBeGreaterThan(0);
       });
@@ -48,8 +48,8 @@ describe('examPatterns', () => {
 
     it('should have valid exam types', () => {
       const validExamTypes = ['CDS', 'CSAT', 'IAS-GS', 'IAS-CSAT'];
-      Object.values(SUBJECTS).forEach(subject => {
-        subject.examTypes.forEach(examType => {
+      Object.values(SUBJECTS).forEach((subject) => {
+        subject.examTypes.forEach((examType) => {
           expect(validExamTypes).toContain(examType);
         });
       });
@@ -86,10 +86,10 @@ describe('examPatterns', () => {
     it('should not return subjects from other exams', () => {
       const cdsSubjects = getSubjectsByExam('CDS');
       const iasSubjects = getSubjectsByExam('IAS-GS');
-      
-      const cdsValues = cdsSubjects.map(s => s.value);
-      const iasValues = iasSubjects.map(s => s.value);
-      
+
+      const cdsValues = cdsSubjects.map((s) => s.value);
+      const iasValues = iasSubjects.map((s) => s.value);
+
       // Should have different subjects
       expect(cdsValues).not.toEqual(iasValues);
     });

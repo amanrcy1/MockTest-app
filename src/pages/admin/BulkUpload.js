@@ -1,13 +1,13 @@
-import { useState } from "react";
-import { useNavigate, Navigate } from "react-router-dom";
-import { collection, addDoc } from "firebase/firestore";
-import { db } from "../../config/firebase";
-import toast, { messages } from "../../utils/toast";
-import Papa from "papaparse";
-import { sanitizeForStorage } from "../../utils/testUtils";
-import { useAuth } from "../../context/AuthContext";
-import { logAdminAction } from "../../utils/auditLog";
-import logger from "../../utils/logger";
+import { useState } from 'react';
+import { useNavigate, Navigate } from 'react-router-dom';
+import { collection, addDoc } from 'firebase/firestore';
+import { db } from '../../config/firebase';
+import toast, { messages } from '../../utils/toast';
+import Papa from 'papaparse';
+import { sanitizeForStorage } from '../../utils/testUtils';
+import { useAuth } from '../../context/AuthContext';
+import { logAdminAction } from '../../utils/auditLog';
+import logger from '../../utils/logger';
 
 const BulkUpload = () => {
   const navigate = useNavigate();
@@ -23,8 +23,8 @@ const BulkUpload = () => {
   const handleFileChange = (e) => {
     const selectedFile = e.target.files[0];
     if (selectedFile) {
-      const fileType = selectedFile.name.split(".").pop().toLowerCase();
-      if (fileType !== "csv") {
+      const fileType = selectedFile.name.split('.').pop().toLowerCase();
+      if (fileType !== 'csv') {
         toast.error(messages.CSV_REQUIRED);
         return;
       }
@@ -42,7 +42,7 @@ const BulkUpload = () => {
         processData(results.data);
       },
       error: (error) => {
-        logger.error("CSV Parse Error:", error);
+        logger.error('CSV Parse Error:', error);
         toast.error(messages.CSV_PARSE_FAILED);
       },
     });
@@ -53,16 +53,16 @@ const BulkUpload = () => {
     const formattedData = data.map((row, index) => {
       // Check required fields
       const requiredFields = [
-        "examType",
-        "subject",
-        "topic",
-        "questionText",
-        "optionA",
-        "optionB",
-        "optionC",
-        "optionD",
-        "correctAnswer",
-        "solution",
+        'examType',
+        'subject',
+        'topic',
+        'questionText',
+        'optionA',
+        'optionB',
+        'optionC',
+        'optionD',
+        'correctAnswer',
+        'solution',
       ];
 
       const missingFields = requiredFields.filter((field) => !row[field]);
@@ -70,16 +70,16 @@ const BulkUpload = () => {
       if (missingFields.length > 0) {
         return {
           row: index + 2, // +2 because CSV rows start at 1 and we have header
-          error: `Missing fields: ${missingFields.join(", ")}`,
+          error: `Missing fields: ${missingFields.join(', ')}`,
           valid: false,
         };
       }
 
       // Validate correct answer
-      if (!["A", "B", "C", "D"].includes(row.correctAnswer?.toUpperCase())) {
+      if (!['A', 'B', 'C', 'D'].includes(row.correctAnswer?.toUpperCase())) {
         return {
           row: index + 2,
-          error: "Correct answer must be A, B, C, or D",
+          error: 'Correct answer must be A, B, C, or D',
           valid: false,
         };
       }
@@ -89,8 +89,8 @@ const BulkUpload = () => {
         examType: row.examType,
         subject: row.subject,
         topic: row.topic,
-        subtopic: row.subtopic || "",
-        difficulty: row.difficulty || "Medium",
+        subtopic: row.subtopic || '',
+        difficulty: row.difficulty || 'Medium',
         questionText: sanitizeForStorage(row.questionText),
         options: {
           A: sanitizeForStorage(row.optionA),
@@ -100,7 +100,7 @@ const BulkUpload = () => {
         },
         correctAnswer: row.correctAnswer.toUpperCase(),
         solution: sanitizeForStorage(row.solution),
-        tags: row.tags ? row.tags.split(",").map((tag) => tag.trim()) : [],
+        tags: row.tags ? row.tags.split(',').map((tag) => tag.trim()) : [],
         valid: true,
       };
     });
@@ -127,10 +127,10 @@ const BulkUpload = () => {
         try {
           // eslint-disable-next-line no-unused-vars
           const { row, valid, ...questionData } = question;
-          await addDoc(collection(db, "questions"), {
+          await addDoc(collection(db, 'questions'), {
             ...questionData,
             createdAt: new Date().toISOString(),
-            createdBy: "admin",
+            createdBy: 'admin',
             isActive: true,
           });
           successCount++;
@@ -141,7 +141,11 @@ const BulkUpload = () => {
       }
 
       if (successCount > 0) {
-        logAdminAction({ adminId: userDetails?.userId, action: "bulkUploadQuestions", details: { successCount, errorCount } });
+        logAdminAction({
+          adminId: userDetails?.userId,
+          action: 'bulkUploadQuestions',
+          details: { successCount, errorCount },
+        });
         toast.success(messages.BULK_UPLOAD_SUCCESS(successCount));
       }
       if (errorCount > 0) {
@@ -153,7 +157,7 @@ const BulkUpload = () => {
       setPreview([]);
       setShowPreview(false);
     } catch (error) {
-      logger.error("Bulk upload error:", error);
+      logger.error('Bulk upload error:', error);
       toast.error(messages.BULK_UPLOAD_FAILED);
     } finally {
       setUploading(false);
@@ -163,38 +167,36 @@ const BulkUpload = () => {
   const downloadTemplate = () => {
     const template = [
       {
-        examType: "CDS",
-        subject: "English",
-        topic: "Grammar",
-        subtopic: "Tenses",
-        difficulty: "Medium",
-        questionText:
-          'Which tense is used in: "I have been working here for 5 years"?',
-        optionA: "Simple Present",
-        optionB: "Present Perfect Continuous",
-        optionC: "Past Perfect",
-        optionD: "Future Continuous",
-        correctAnswer: "B",
+        examType: 'CDS',
+        subject: 'English',
+        topic: 'Grammar',
+        subtopic: 'Tenses',
+        difficulty: 'Medium',
+        questionText: 'Which tense is used in: "I have been working here for 5 years"?',
+        optionA: 'Simple Present',
+        optionB: 'Present Perfect Continuous',
+        optionC: 'Past Perfect',
+        optionD: 'Future Continuous',
+        correctAnswer: 'B',
         solution:
-          "Present Perfect Continuous tense is used for actions that started in the past and are still continuing.",
-        tags: "grammar, tenses, important",
+          'Present Perfect Continuous tense is used for actions that started in the past and are still continuing.',
+        tags: 'grammar, tenses, important',
       },
       {
-        examType: "IAS-GS",
-        subject: "Indian Polity and Governance",
-        topic: "Constitution",
-        subtopic: "Fundamental Rights",
-        difficulty: "Easy",
-        questionText:
-          "Which article of the Indian Constitution deals with the Right to Equality?",
-        optionA: "Article 14",
-        optionB: "Article 19",
-        optionC: "Article 21",
-        optionD: "Article 32",
-        correctAnswer: "A",
+        examType: 'IAS-GS',
+        subject: 'Indian Polity and Governance',
+        topic: 'Constitution',
+        subtopic: 'Fundamental Rights',
+        difficulty: 'Easy',
+        questionText: 'Which article of the Indian Constitution deals with the Right to Equality?',
+        optionA: 'Article 14',
+        optionB: 'Article 19',
+        optionC: 'Article 21',
+        optionD: 'Article 32',
+        correctAnswer: 'A',
         solution:
-          "Article 14 of the Indian Constitution guarantees equality before law and equal protection of laws.",
-        tags: "polity, constitution, fundamental-rights",
+          'Article 14 of the Indian Constitution guarantees equality before law and equal protection of laws.',
+        tags: 'polity, constitution, fundamental-rights',
       },
     ];
 
@@ -209,7 +211,7 @@ const BulkUpload = () => {
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
-    
+
     toast.success(messages.TEMPLATE_DOWNLOADED);
   };
 
@@ -219,15 +221,13 @@ const BulkUpload = () => {
       <nav className="bg-white dark:bg-gray-900 shadow-md">
         <div className="max-w-7xl mx-auto px-4 py-4 flex justify-between items-center">
           <div>
-            <h1 className="text-2xl font-bold text-blue-600">
-              Bulk Upload Questions
-            </h1>
+            <h1 className="text-2xl font-bold text-blue-600">Bulk Upload Questions</h1>
             <p className="text-sm text-gray-600 dark:text-gray-400">
               Upload multiple questions via CSV
             </p>
           </div>
           <button
-            onClick={() => navigate("/admin/dashboard")}
+            onClick={() => navigate('/admin/dashboard')}
             className="bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-200 px-4 py-2 rounded-lg hover:bg-gray-300 dark:hover:bg-gray-600 transition-colors"
           >
             Back to Admin
@@ -246,15 +246,12 @@ const BulkUpload = () => {
             <p>
               3. Make sure all required fields are filled:
               <span className="font-semibold">
-                {" "}
-                examType, subject, topic, questionText, optionA-D,
-                correctAnswer, solution
+                {' '}
+                examType, subject, topic, questionText, optionA-D, correctAnswer, solution
               </span>
             </p>
             <p>4. correctAnswer must be A, B, C, or D (case-insensitive)</p>
-            <p>
-              5. difficulty should be Easy, Medium, or Hard (default: Medium)
-            </p>
+            <p>5. difficulty should be Easy, Medium, or Hard (default: Medium)</p>
             <p>6. Tags should be comma-separated (optional)</p>
             <p>7. Upload the completed file (CSV format)</p>
           </div>
@@ -263,12 +260,7 @@ const BulkUpload = () => {
             onClick={downloadTemplate}
             className="mt-6 bg-green-600 text-white px-6 py-3 rounded-lg hover:bg-green-700 transition-colors flex items-center gap-2"
           >
-            <svg
-              className="w-5 h-5"
-              fill="none"
-              stroke="currentColor"
-              viewBox="0 0 24 24"
-            >
+            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path
                 strokeLinecap="round"
                 strokeLinejoin="round"
@@ -312,9 +304,7 @@ const BulkUpload = () => {
               <p className="text-gray-700 dark:text-gray-300 font-medium mb-2">
                 Click to upload or drag and drop
               </p>
-              <p className="text-sm text-gray-500 dark:text-gray-400">
-                CSV format only (Max 5MB)
-              </p>
+              <p className="text-sm text-gray-500 dark:text-gray-400">CSV format only (Max 5MB)</p>
             </label>
           </div>
 
@@ -350,12 +340,7 @@ const BulkUpload = () => {
                 className="text-red-600 dark:text-red-400 hover:text-red-700 dark:hover:text-red-300"
                 disabled={uploading}
               >
-                <svg
-                  className="w-6 h-6"
-                  fill="none"
-                  stroke="currentColor"
-                  viewBox="0 0 24 24"
-                >
+                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path
                     strokeLinecap="round"
                     strokeLinejoin="round"
@@ -408,10 +393,7 @@ const BulkUpload = () => {
                     .filter((q) => !q.valid)
                     .map((question, index) => (
                       <div key={index} className="mb-2 text-sm text-gray-800 dark:text-gray-200">
-                        <span className="font-semibold">
-                          Row {question.row}:
-                        </span>{" "}
-                        {question.error}
+                        <span className="font-semibold">Row {question.row}:</span> {question.error}
                       </div>
                     ))}
                 </div>
@@ -448,18 +430,15 @@ const BulkUpload = () => {
                           {question.questionText}
                         </p>
                         <div className="text-xs text-gray-600 dark:text-gray-400">
-                          Correct Answer:{" "}
-                          <span className="font-semibold">
-                            {question.correctAnswer}
-                          </span>
+                          Correct Answer:{' '}
+                          <span className="font-semibold">{question.correctAnswer}</span>
                         </div>
                       </div>
                     ))}
                 </div>
                 {preview.filter((q) => q.valid).length > 3 && (
                   <p className="text-sm text-gray-500 dark:text-gray-400 mt-2">
-                    ... and {preview.filter((q) => q.valid).length - 3} more
-                    valid questions
+                    ... and {preview.filter((q) => q.valid).length - 3} more valid questions
                   </p>
                 )}
               </div>

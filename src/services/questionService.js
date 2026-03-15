@@ -9,10 +9,10 @@ import {
   query,
   where,
   limit,
-} from "firebase/firestore";
-import { db } from "../config/firebase";
-import { COLLECTIONS } from "../constants";
-import { logError } from "../utils/errorTracking";
+} from 'firebase/firestore';
+import { db } from '../config/firebase';
+import { COLLECTIONS } from '../constants';
+import { logError } from '../utils/errorTracking';
 
 // Simple in-memory cache with TTL
 const cache = new Map();
@@ -27,7 +27,7 @@ const getCached = (key, fetchFn) => {
   if (cached && Date.now() - cached.timestamp < CACHE_TTL) {
     return Promise.resolve(cached.data);
   }
-  
+
   return fetchFn().then((data) => {
     // Implement cache size limit (LRU-style)
     if (cache.size >= MAX_CACHE_SIZE) {
@@ -55,13 +55,10 @@ export const clearQuestionCache = (key = null) => {
  */
 export const fetchQuestionsByExam = async (examType) => {
   const cacheKey = `questions_${examType}`;
-  
+
   return getCached(cacheKey, async () => {
     try {
-      const q = query(
-        collection(db, COLLECTIONS.QUESTIONS),
-        where("examType", "==", examType)
-      );
+      const q = query(collection(db, COLLECTIONS.QUESTIONS), where('examType', '==', examType));
       const snapshot = await getDocs(q);
       return snapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() }));
     } catch (error) {
@@ -79,13 +76,13 @@ export const fetchQuestionsWithFilters = async (filters = {}) => {
   const constraints = [];
 
   if (filters.examType) {
-    constraints.push(where("examType", "==", filters.examType));
+    constraints.push(where('examType', '==', filters.examType));
   }
   if (filters.subject) {
-    constraints.push(where("subject", "==", filters.subject));
+    constraints.push(where('subject', '==', filters.subject));
   }
   if (filters.difficulty) {
-    constraints.push(where("difficulty", "==", filters.difficulty));
+    constraints.push(where('difficulty', '==', filters.difficulty));
   }
   if (filters.limit) {
     constraints.push(limit(filters.limit));
@@ -116,10 +113,10 @@ export const addQuestion = async (questionData) => {
     ...questionData,
     createdAt: new Date().toISOString(),
   });
-  
+
   // Clear cache when adding new question
   clearQuestionCache();
-  
+
   return docRef.id;
 };
 
@@ -132,7 +129,7 @@ export const updateQuestion = async (questionId, updates) => {
     ...updates,
     updatedAt: new Date().toISOString(),
   });
-  
+
   // Clear cache when updating question
   clearQuestionCache();
 };
@@ -142,7 +139,7 @@ export const updateQuestion = async (questionId, updates) => {
  */
 export const deleteQuestion = async (questionId) => {
   await deleteDoc(doc(db, COLLECTIONS.QUESTIONS, questionId));
-  
+
   // Clear cache when deleting question
   clearQuestionCache();
 };
@@ -153,7 +150,7 @@ export const deleteQuestion = async (questionId) => {
  */
 export const getQuestionCountsByExam = async () => {
   const cacheKey = 'question_counts_all';
-  
+
   return getCached(cacheKey, async () => {
     try {
       // Try to get from stats collection first (requires Cloud Function setup)
@@ -163,20 +160,19 @@ export const getQuestionCountsByExam = async () => {
       }
     } catch (_error) {
       if (import.meta.env.DEV) {
-         
         console.warn('Stats collection not available, falling back to manual count');
       }
     }
-    
+
     // Fallback: Manual count (less efficient but works without Cloud Functions)
     const snapshot = await getDocs(collection(db, COLLECTIONS.QUESTIONS));
     const counts = {};
-    
+
     snapshot.forEach((doc) => {
       const examType = doc.data().examType;
       counts[examType] = (counts[examType] || 0) + 1;
     });
-    
+
     return counts;
   });
 };

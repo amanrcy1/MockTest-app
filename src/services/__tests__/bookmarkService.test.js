@@ -24,7 +24,7 @@ describe('bookmarkService', () => {
       ];
 
       getDocs.mockResolvedValue({
-        docs: mockBookmarks.map(b => ({
+        docs: mockBookmarks.map((b) => ({
           id: b.id,
           data: () => ({ userId: b.userId, questionId: b.questionId }),
         })),
@@ -50,7 +50,7 @@ describe('bookmarkService', () => {
       ];
 
       getDocs.mockResolvedValue({
-        docs: mockBookmarks.map(b => ({
+        docs: mockBookmarks.map((b) => ({
           id: b.id,
           data: () => ({ questionId: b.questionId }),
         })),

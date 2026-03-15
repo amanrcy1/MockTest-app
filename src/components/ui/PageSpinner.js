@@ -1,10 +1,10 @@
-import PropTypes from "prop-types";
+import PropTypes from 'prop-types';
 
 /**
  * Full-page centered loading spinner.
  * Replaces the ~7-line pattern duplicated across 9+ pages.
  */
-const PageSpinner = ({ message = "Loading..." }) => (
+const PageSpinner = ({ message = 'Loading...' }) => (
   <div className="min-h-screen bg-gray-100 dark:bg-gray-950 flex items-center justify-center">
     <div className="text-center">
       <div

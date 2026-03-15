@@ -1,14 +1,14 @@
-import { memo } from "react";
-import { NavLink, useNavigate } from "react-router-dom";
-import { useAuth } from "../../context/AuthContext";
-import ThemeToggle from "../ui/ThemeToggle";
+import { memo } from 'react';
+import { NavLink, useNavigate } from 'react-router-dom';
+import { useAuth } from '../../context/AuthContext';
+import ThemeToggle from '../ui/ThemeToggle';
 
 const NAV_ITEMS = [
-  { path: "/dashboard", label: "Home" },
-  { path: "/test-selection", label: "Tests" },
-  { path: "/leaderboard", label: "Rank" },
-  { path: "/bookmarks", label: "Saved" },
-  { path: "/profile", label: "Profile" },
+  { path: '/dashboard', label: 'Home' },
+  { path: '/test-selection', label: 'Tests' },
+  { path: '/leaderboard', label: 'Rank' },
+  { path: '/bookmarks', label: 'Saved' },
+  { path: '/profile', label: 'Profile' },
 ];
 
 const TopNav = memo(() => {
@@ -27,8 +27,8 @@ const TopNav = memo(() => {
                 className={({ isActive }) =>
                   `relative px-4 py-2 rounded-xl text-sm font-semibold transition-colors ${
                     isActive
-                      ? "bg-blue-100 dark:bg-blue-900/40 text-blue-700 dark:text-blue-300"
-                      : "text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800 hover:text-gray-900 dark:hover:text-white"
+                      ? 'bg-blue-100 dark:bg-blue-900/40 text-blue-700 dark:text-blue-300'
+                      : 'text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800 hover:text-gray-900 dark:hover:text-white'
                   }`
                 }
               >
@@ -44,7 +44,7 @@ const TopNav = memo(() => {
           <div className="flex items-center gap-2">
             {userDetails?.isAdmin && (
               <button
-                onClick={() => navigate("/admin/dashboard")}
+                onClick={() => navigate('/admin/dashboard')}
                 className="px-4 py-2 min-h-11 text-sm font-semibold text-purple-600 dark:text-purple-400 hover:bg-purple-50 dark:hover:bg-purple-900/20 rounded-xl transition-colors"
               >
                 Admin
@@ -58,6 +58,6 @@ const TopNav = memo(() => {
   );
 });
 
-TopNav.displayName = "TopNav";
+TopNav.displayName = 'TopNav';
 
 export default TopNav;

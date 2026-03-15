@@ -28,7 +28,7 @@ export const sendToAnalytics = ({ name, delta, value, id }) => {
     // eslint-disable-next-line no-console
     console.log(`[Performance] ${name}:`, { delta, value, id });
   }
-  
+
   // Send to analytics in production
   if (import.meta.env.PROD) {
     logEvent('web_vital', {
@@ -36,7 +36,7 @@ export const sendToAnalytics = ({ name, delta, value, id }) => {
       value: Math.round(name === 'CLS' ? delta * 1000 : delta),
       id,
     });
-    
+
     // Send to Google Analytics if available
     if (window.gtag) {
       window.gtag('event', name, {
@@ -49,7 +49,6 @@ export const sendToAnalytics = ({ name, delta, value, id }) => {
   }
 };
 
-
 /**
  * Measure custom performance metrics
  */
@@ -58,22 +57,22 @@ export class PerformanceTracker {
     this.name = name;
     this.startTime = performance.now();
   }
-  
+
   end() {
     const duration = performance.now() - this.startTime;
-    
+
     if (import.meta.env.DEV) {
       // eslint-disable-next-line no-console
       console.log(`[Performance] ${this.name}: ${duration.toFixed(2)}ms`);
     }
-    
+
     if (import.meta.env.PROD) {
       logEvent('custom_metric', {
         name: this.name,
         duration: Math.round(duration),
       });
     }
-    
+
     return duration;
   }
 }
@@ -104,10 +103,10 @@ export const trackTestSubmission = () => {
  */
 export const getPerformanceMetrics = () => {
   if (!window.performance) return null;
-  
+
   const navigation = performance.getEntriesByType('navigation')[0];
   const paint = performance.getEntriesByType('paint');
-  
+
   return {
     // Navigation timing
     dns: navigation?.domainLookupEnd - navigation?.domainLookupStart,
@@ -116,16 +115,18 @@ export const getPerformanceMetrics = () => {
     response: navigation?.responseEnd - navigation?.responseStart,
     dom: navigation?.domContentLoadedEventEnd - navigation?.domContentLoadedEventStart,
     load: navigation?.loadEventEnd - navigation?.loadEventStart,
-    
+
     // Paint timing
-    fcp: paint.find(p => p.name === 'first-contentful-paint')?.startTime,
-    
+    fcp: paint.find((p) => p.name === 'first-contentful-paint')?.startTime,
+
     // Memory (if available)
-    memory: performance.memory ? {
-      used: Math.round(performance.memory.usedJSHeapSize / 1048576),
-      total: Math.round(performance.memory.totalJSHeapSize / 1048576),
-      limit: Math.round(performance.memory.jsHeapSizeLimit / 1048576),
-    } : null,
+    memory: performance.memory
+      ? {
+          used: Math.round(performance.memory.usedJSHeapSize / 1048576),
+          total: Math.round(performance.memory.totalJSHeapSize / 1048576),
+          limit: Math.round(performance.memory.jsHeapSizeLimit / 1048576),
+        }
+      : null,
   };
 };
 
@@ -134,7 +135,7 @@ export const getPerformanceMetrics = () => {
  */
 export const monitorLongTasks = () => {
   if (!window.PerformanceObserver) return;
-  
+
   try {
     const observer = new PerformanceObserver((list) => {
       for (const entry of list.getEntries()) {
@@ -142,7 +143,7 @@ export const monitorLongTasks = () => {
           if (import.meta.env.DEV) {
             console.warn(`Long task detected: ${entry.duration.toFixed(2)}ms`);
           }
-          
+
           if (import.meta.env.PROD) {
             logEvent('long_task', {
               duration: Math.round(entry.duration),
@@ -152,7 +153,7 @@ export const monitorLongTasks = () => {
         }
       }
     });
-    
+
     observer.observe({ entryTypes: ['longtask'] });
   } catch (_e) {
     // Long task API not supported
@@ -165,10 +166,10 @@ export const monitorLongTasks = () => {
 export const initPerformanceMonitoring = () => {
   // Report Web Vitals
   reportWebVitals(sendToAnalytics);
-  
+
   // Monitor long tasks
   monitorLongTasks();
-  
+
   // Log initial metrics after page load
   if (document.readyState === 'complete') {
     logInitialMetrics();

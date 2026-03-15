@@ -1,4 +1,4 @@
-import PropTypes from "prop-types";
+import PropTypes from 'prop-types';
 
 /**
  * Shared "Resume or Start Fresh" prompt shown when a saved session exists.
@@ -7,12 +7,8 @@ import PropTypes from "prop-types";
 const ResumePrompt = ({ title, description, onResume, onStartFresh }) => (
   <div className="min-h-screen bg-gray-100 dark:bg-gray-950 flex items-center justify-center p-4">
     <div className="bg-white dark:bg-gray-800 rounded-lg shadow-xl p-8 max-w-xl w-full">
-      <h1 className="text-2xl font-bold text-gray-800 dark:text-gray-100 mb-3">
-        {title}
-      </h1>
-      <p className="text-sm text-gray-600 dark:text-gray-400 mb-6">
-        {description}
-      </p>
+      <h1 className="text-2xl font-bold text-gray-800 dark:text-gray-100 mb-3">{title}</h1>
+      <p className="text-sm text-gray-600 dark:text-gray-400 mb-6">{description}</p>
       <div className="flex gap-3">
         <button
           onClick={onResume}

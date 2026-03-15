@@ -12,17 +12,15 @@ const isProd = import.meta.env.PROD;
 export const CSP_HEADERS = {
   'Content-Security-Policy': [
     "default-src 'self'",
-    isProd
-      ? "script-src 'self'"
-      : "script-src 'self' 'unsafe-inline' 'unsafe-eval'",
+    isProd ? "script-src 'self'" : "script-src 'self' 'unsafe-inline' 'unsafe-eval'",
     "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
     "img-src 'self' data: https:",
     "font-src 'self' data: https://fonts.gstatic.com",
     "connect-src 'self' https://*.googleapis.com https://*.firebaseio.com https://identitytoolkit.googleapis.com https://api.groq.com",
     "frame-ancestors 'none'",
     "base-uri 'self'",
-    "form-action 'self'"
-  ].join('; ')
+    "form-action 'self'",
+  ].join('; '),
 };
 
 /**
@@ -38,14 +36,14 @@ class RateLimiter {
   canMakeRequest(key) {
     const now = Date.now();
     const userRequests = this.requests.get(key) || [];
-    
+
     // Remove old requests outside the window
-    const validRequests = userRequests.filter(time => now - time < this.windowMs);
-    
+    const validRequests = userRequests.filter((time) => now - time < this.windowMs);
+
     if (validRequests.length >= this.maxRequests) {
       return false;
     }
-    
+
     validRequests.push(now);
     this.requests.set(key, validRequests);
     return true;
@@ -68,7 +66,7 @@ export const validateFileUpload = (file, options = {}) => {
   const {
     maxSize = 5 * 1024 * 1024, // 5MB default
     allowedTypes = ['image/jpeg', 'image/png', 'image/webp'],
-    allowedExtensions = ['.jpg', '.jpeg', '.png', '.webp']
+    allowedExtensions = ['.jpg', '.jpeg', '.png', '.webp'],
   } = options;
 
   // Check file size
@@ -102,12 +100,11 @@ export const secureStorage = {
     } catch (error) {
       if (error.name === 'QuotaExceededError') {
         if (import.meta.env.DEV) {
-           
           console.error('localStorage quota exceeded');
         }
         // Clear old data
         const keys = Object.keys(localStorage);
-        keys.forEach(k => {
+        keys.forEach((k) => {
           if (k.includes('Session') && k !== key) {
             localStorage.removeItem(k);
           }
@@ -119,7 +116,6 @@ export const secureStorage = {
           return true;
         } catch (_retryError) {
           if (import.meta.env.DEV) {
-             
             console.error('localStorage still full after cleanup');
           }
         }
@@ -134,7 +130,6 @@ export const secureStorage = {
       return item ? JSON.parse(item) : defaultValue;
     } catch (error) {
       if (import.meta.env.DEV) {
-         
         console.error('Error reading from localStorage:', error);
       }
       return defaultValue;
@@ -147,7 +142,6 @@ export const secureStorage = {
       return true;
     } catch (error) {
       if (import.meta.env.DEV) {
-         
         console.error('Error removing from localStorage:', error);
       }
       return false;
@@ -160,12 +154,11 @@ export const secureStorage = {
       return true;
     } catch (error) {
       if (import.meta.env.DEV) {
-         
         console.error('Error clearing localStorage:', error);
       }
       return false;
     }
-  }
+  },
 };
 
 /**
@@ -175,12 +168,12 @@ export const constantTimeCompare = (a, b) => {
   if (a.length !== b.length) {
     return false;
   }
-  
+
   let result = 0;
   for (let i = 0; i < a.length; i++) {
     result |= a.charCodeAt(i) ^ b.charCodeAt(i);
   }
-  
+
   return result === 0;
 };
 
@@ -190,5 +183,5 @@ export const constantTimeCompare = (a, b) => {
 export const generateSecureToken = (length = 32) => {
   const array = new Uint8Array(length);
   crypto.getRandomValues(array);
-  return Array.from(array, byte => byte.toString(16).padStart(2, '0')).join('');
+  return Array.from(array, (byte) => byte.toString(16).padStart(2, '0')).join('');
 };

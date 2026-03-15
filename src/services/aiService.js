@@ -1,6 +1,6 @@
-import { aiRequestLimiter } from "../utils/securityUtils";
-import { logError } from "../utils/errorTracking";
-import { auth } from "../config/firebase";
+import { aiRequestLimiter } from '../utils/securityUtils';
+import { logError } from '../utils/errorTracking';
+import { auth } from '../config/firebase';
 
 // Cache for AI explanations to avoid repeated API calls
 const explanationCache = new Map();
@@ -31,12 +31,12 @@ export const generateExplanation = async ({
 }) => {
   // Rate limiting (client-side check)
   if (!aiRequestLimiter.canMakeRequest('ai-explanation')) {
-    throw new Error("Too many requests. Wait a moment.");
+    throw new Error('Too many requests. Wait a moment.');
   }
 
   // Create cache key
   const cacheKey = `${questionText}_${userAnswer}_${correctAnswer}`;
-  
+
   // Return cached explanation if available
   if (explanationCache.has(cacheKey)) {
     return explanationCache.get(cacheKey);
@@ -45,19 +45,19 @@ export const generateExplanation = async ({
   try {
     // Call Vercel serverless function
     const apiUrl = import.meta.env.VITE_API_URL || '/api';
-    
+
     // Add timeout to prevent hanging requests
     const controller = new AbortController();
     const timeoutId = setTimeout(() => controller.abort(), 35000); // 35s timeout for 70B model
-    
+
     // Get Firebase auth token for server-side verification
     const idToken = auth.currentUser ? await auth.currentUser.getIdToken() : null;
-    
+
     const response = await fetch(`${apiUrl}/ai-explanation`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        ...(idToken && { 'Authorization': `Bearer ${idToken}` }),
+        ...(idToken && { Authorization: `Bearer ${idToken}` }),
       },
       body: JSON.stringify({
         questionText,
@@ -89,8 +89,14 @@ export const generateExplanation = async ({
     }
 
     if (!response.ok) {
-      const errorData = await response.json();
-      throw new Error(errorData.error || errorData.message || 'Failed to generate explanation');
+      let errorMsg = 'Failed to generate explanation';
+      try {
+        const errorData = await response.json();
+        errorMsg = errorData.error || errorData.message || errorMsg;
+      } catch {
+        // Response body is not valid JSON
+      }
+      throw new Error(errorMsg);
     }
 
     const data = await response.json();
@@ -108,19 +114,18 @@ export const generateExplanation = async ({
   } catch (error) {
     // Log error in development, track in production
     if (import.meta.env.DEV) {
-       
-      console.error("AI Explanation Error:", error);
+      console.error('AI Explanation Error:', error);
     }
     logError(error, { context: 'getAIExplanation' });
-    
+
     // Handle specific errors
     if (error.name === 'AbortError') {
-      throw new Error("Request timeout. Try again.");
+      throw new Error('Request timeout. Try again.');
     }
-    if (error.message?.includes("rate limit")) {
-      throw new Error("Too many AI requests. Wait a moment.");
+    if (error.message?.includes('rate limit')) {
+      throw new Error('Too many AI requests. Wait a moment.');
     }
-    if (error.message?.includes("network") || error.message?.includes("fetch")) {
+    if (error.message?.includes('network') || error.message?.includes('fetch')) {
       // Network error - use fallback
       const fallbackExplanation = generateFallbackExplanation({
         questionText,
@@ -133,8 +138,8 @@ export const generateExplanation = async ({
       });
       return fallbackExplanation;
     }
-    
-    throw new Error("Failed to generate explanation. Try again.");
+
+    throw new Error('Failed to generate explanation. Try again.');
   }
 };
 
@@ -142,29 +147,24 @@ export const generateExplanation = async ({
  * Generate a fallback explanation when AI API is not available
  * Uses the existing solution and formats it nicely
  */
-const generateFallbackExplanation = ({
-  options,
-  correctAnswer,
-  userAnswer,
-  existingSolution,
-}) => {
+const generateFallbackExplanation = ({ options, correctAnswer, userAnswer, existingSolution }) => {
   const correctOption = options?.[correctAnswer] || 'the correct option';
   const userOption = options?.[userAnswer] || 'your selected option';
-  
+
   let explanation = `**Why ${correctAnswer} is correct:**\n`;
   explanation += `The correct answer is "${correctOption}".\n\n`;
-  
+
   if (userAnswer !== correctAnswer) {
     explanation += `**Why ${userAnswer} is incorrect:**\n`;
     explanation += `You selected "${userOption}", which is not the right answer.\n\n`;
   }
-  
+
   if (existingSolution) {
     explanation += `**Detailed Explanation:**\n${existingSolution}`;
   } else {
     explanation += `**Tip:** Review this topic to better understand the concept.`;
   }
-  
+
   return explanation;
 };
 

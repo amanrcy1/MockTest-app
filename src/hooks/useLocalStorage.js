@@ -1,4 +1,4 @@
-import { useState, useCallback } from "react";
+import { useState, useCallback } from 'react';
 
 /**
  * Custom hook for syncing state with localStorage
@@ -14,26 +14,27 @@ export const useLocalStorage = (key, initialValue) => {
     } catch (error) {
       // Only log in development
       if (import.meta.env.DEV) {
-         
         console.error(`Error reading localStorage key "${key}":`, error);
       }
       return initialValue;
     }
   });
 
-  const setValue = useCallback((value) => {
-    try {
-      const valueToStore = value instanceof Function ? value(storedValue) : value;
-      setStoredValue(valueToStore);
-      localStorage.setItem(key, JSON.stringify(valueToStore));
-    } catch (error) {
-      // Only log in development
-      if (import.meta.env.DEV) {
-         
-        console.error(`Error setting localStorage key "${key}":`, error);
+  const setValue = useCallback(
+    (value) => {
+      try {
+        const valueToStore = value instanceof Function ? value(storedValue) : value;
+        setStoredValue(valueToStore);
+        localStorage.setItem(key, JSON.stringify(valueToStore));
+      } catch (error) {
+        // Only log in development
+        if (import.meta.env.DEV) {
+          console.error(`Error setting localStorage key "${key}":`, error);
+        }
       }
-    }
-  }, [key, storedValue]);
+    },
+    [key, storedValue]
+  );
 
   const removeValue = useCallback(() => {
     try {
@@ -42,7 +43,6 @@ export const useLocalStorage = (key, initialValue) => {
     } catch (error) {
       // Only log in development
       if (import.meta.env.DEV) {
-         
         console.error(`Error removing localStorage key "${key}":`, error);
       }
     }

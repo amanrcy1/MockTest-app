@@ -1,26 +1,15 @@
-import {
-  collection,
-  doc,
-  getDocs,
-  addDoc,
-  deleteDoc,
-  query,
-  where,
-} from "firebase/firestore";
-import { db } from "../config/firebase";
-import { COLLECTIONS } from "../constants";
+import { collection, doc, getDocs, addDoc, deleteDoc, query, where } from 'firebase/firestore';
+import { db } from '../config/firebase';
+import { COLLECTIONS } from '../constants';
 
 /**
  * Get user bookmarks
  */
 export const getUserBookmarks = async (userId, examType = null) => {
-  let q = query(
-    collection(db, COLLECTIONS.BOOKMARKS),
-    where("userId", "==", userId)
-  );
+  let q = query(collection(db, COLLECTIONS.BOOKMARKS), where('userId', '==', userId));
 
   if (examType) {
-    q = query(q, where("examType", "==", examType));
+    q = query(q, where('examType', '==', examType));
   }
 
   const snapshot = await getDocs(q);
@@ -42,7 +31,7 @@ export const getBookmarkMap = async (userId, examType) => {
 /**
  * Add bookmark
  */
-export const addBookmark = async (userId, questionId, examType, note = "") => {
+export const addBookmark = async (userId, questionId, examType, note = '') => {
   const docRef = await addDoc(collection(db, COLLECTIONS.BOOKMARKS), {
     userId,
     questionId,
@@ -66,11 +55,11 @@ export const removeBookmark = async (bookmarkId) => {
 export const toggleBookmark = async (userId, questionId, examType, existingId = null) => {
   if (existingId) {
     await removeBookmark(existingId);
-    return { action: "removed", id: null };
+    return { action: 'removed', id: null };
   }
-  
+
   const id = await addBookmark(userId, questionId, examType);
-  return { action: "added", id };
+  return { action: 'added', id };
 };
 
 /**
@@ -82,7 +71,7 @@ export const submitErrorReport = async (userId, questionId, examType, reportText
     questionId,
     examType,
     reportText: reportText.trim(),
-    status: "pending",
+    status: 'pending',
     createdAt: new Date().toISOString(),
   });
   return docRef.id;
@@ -93,9 +82,9 @@ export const submitErrorReport = async (userId, questionId, examType, reportText
  */
 export const getErrorReports = async (status = null) => {
   let q = collection(db, COLLECTIONS.ERROR_REPORTS);
-  
+
   if (status) {
-    q = query(q, where("status", "==", status));
+    q = query(q, where('status', '==', status));
   }
 
   const snapshot = await getDocs(q);

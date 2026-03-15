@@ -1,13 +1,6 @@
-import {
-  collection,
-  doc,
-  getDocs,
-  getDoc,
-  setDoc,
-  updateDoc,
-} from "firebase/firestore";
-import { db } from "../config/firebase";
-import { COLLECTIONS } from "../constants";
+import { collection, doc, getDocs, getDoc, setDoc, updateDoc } from 'firebase/firestore';
+import { db } from '../config/firebase';
+import { COLLECTIONS } from '../constants';
 
 /**
  * Get user by ID
@@ -48,7 +41,7 @@ export const updateUserProfile = async (userId, updates) => {
 export const updateLoginStats = async (userId) => {
   const docRef = doc(db, COLLECTIONS.USERS, userId);
   const docSnap = await getDoc(docRef);
-  
+
   if (docSnap.exists()) {
     const currentCount = docSnap.data().loginCount || 0;
     await updateDoc(docRef, {

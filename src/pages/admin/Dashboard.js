@@ -1,10 +1,10 @@
-import { useEffect, useState } from "react";
-import { useNavigate, Navigate } from "react-router-dom";
-import { useAuth } from "../../context/AuthContext";
-import { collection, getDocs } from "firebase/firestore";
-import { db } from "../../config/firebase";
-import { ThemeToggle } from "../../components";
-import logger from "../../utils/logger";
+import { useEffect, useState } from 'react';
+import { useNavigate, Navigate } from 'react-router-dom';
+import { useAuth } from '../../context/AuthContext';
+import { collection, getDocs } from 'firebase/firestore';
+import { db } from '../../config/firebase';
+import { ThemeToggle } from '../../components';
+import logger from '../../utils/logger';
 
 const AdminDashboard = () => {
   const { userDetails, logout } = useAuth();
@@ -17,16 +17,16 @@ const AdminDashboard = () => {
 
   const handleLogout = async () => {
     await logout();
-    navigate("/", { replace: true });
+    navigate('/', { replace: true });
   };
 
   useEffect(() => {
     const fetchStats = async () => {
       try {
         const [questionsSnap, usersSnap, testsSnap] = await Promise.all([
-          getDocs(collection(db, "questions")),
-          getDocs(collection(db, "users")),
-          getDocs(collection(db, "tests")),
+          getDocs(collection(db, 'questions')),
+          getDocs(collection(db, 'users')),
+          getDocs(collection(db, 'tests')),
         ]);
 
         setStats({
@@ -35,7 +35,7 @@ const AdminDashboard = () => {
           testsTaken: testsSnap.size,
         });
       } catch (error) {
-        logger.error("Error loading admin stats:", error);
+        logger.error('Error loading admin stats:', error);
       }
     };
 
@@ -47,27 +47,12 @@ const AdminDashboard = () => {
 
   const iconMap = {
     add: (
-      <svg
-        className="w-12 h-12 mx-auto"
-        fill="none"
-        stroke="currentColor"
-        viewBox="0 0 24 24"
-      >
-        <path
-          strokeLinecap="round"
-          strokeLinejoin="round"
-          strokeWidth={2}
-          d="M12 4v16m8-8H4"
-        />
+      <svg className="w-12 h-12 mx-auto" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
       </svg>
     ),
     manage: (
-      <svg
-        className="w-12 h-12 mx-auto"
-        fill="none"
-        stroke="currentColor"
-        viewBox="0 0 24 24"
-      >
+      <svg className="w-12 h-12 mx-auto" fill="none" stroke="currentColor" viewBox="0 0 24 24">
         <path
           strokeLinecap="round"
           strokeLinejoin="round"
@@ -77,12 +62,7 @@ const AdminDashboard = () => {
       </svg>
     ),
     upload: (
-      <svg
-        className="w-12 h-12 mx-auto"
-        fill="none"
-        stroke="currentColor"
-        viewBox="0 0 24 24"
-      >
+      <svg className="w-12 h-12 mx-auto" fill="none" stroke="currentColor" viewBox="0 0 24 24">
         <path
           strokeLinecap="round"
           strokeLinejoin="round"
@@ -92,12 +72,7 @@ const AdminDashboard = () => {
       </svg>
     ),
     users: (
-      <svg
-        className="w-12 h-12 mx-auto"
-        fill="none"
-        stroke="currentColor"
-        viewBox="0 0 24 24"
-      >
+      <svg className="w-12 h-12 mx-auto" fill="none" stroke="currentColor" viewBox="0 0 24 24">
         <path
           strokeLinecap="round"
           strokeLinejoin="round"
@@ -107,12 +82,7 @@ const AdminDashboard = () => {
       </svg>
     ),
     reports: (
-      <svg
-        className="w-12 h-12 mx-auto"
-        fill="none"
-        stroke="currentColor"
-        viewBox="0 0 24 24"
-      >
+      <svg className="w-12 h-12 mx-auto" fill="none" stroke="currentColor" viewBox="0 0 24 24">
         <path
           strokeLinecap="round"
           strokeLinejoin="round"
@@ -122,12 +92,7 @@ const AdminDashboard = () => {
       </svg>
     ),
     bookmarks: (
-      <svg
-        className="w-12 h-12 mx-auto"
-        fill="none"
-        stroke="currentColor"
-        viewBox="0 0 24 24"
-      >
+      <svg className="w-12 h-12 mx-auto" fill="none" stroke="currentColor" viewBox="0 0 24 24">
         <path
           strokeLinecap="round"
           strokeLinejoin="round"
@@ -140,46 +105,46 @@ const AdminDashboard = () => {
 
   const adminCards = [
     {
-      title: "Add Questions",
-      description: "Add new questions to the question bank",
-      icon: "add",
-      color: "from-blue-500 to-blue-600",
-      route: "/admin/add-question",
+      title: 'Add Questions',
+      description: 'Add new questions to the question bank',
+      icon: 'add',
+      color: 'from-blue-500 to-blue-600',
+      route: '/admin/add-question',
     },
     {
-      title: "Manage Questions",
-      description: "View, edit, and delete existing questions",
-      icon: "manage",
-      color: "from-green-500 to-green-600",
-      route: "/admin/manage-questions",
+      title: 'Manage Questions',
+      description: 'View, edit, and delete existing questions',
+      icon: 'manage',
+      color: 'from-green-500 to-green-600',
+      route: '/admin/manage-questions',
     },
     {
-      title: "Bulk Upload",
-      description: "Upload multiple questions via Excel/CSV",
-      icon: "upload",
-      color: "from-purple-500 to-purple-600",
-      route: "/admin/bulk-upload",
+      title: 'Bulk Upload',
+      description: 'Upload multiple questions via Excel/CSV',
+      icon: 'upload',
+      color: 'from-purple-500 to-purple-600',
+      route: '/admin/bulk-upload',
     },
     {
-      title: "User Management",
-      description: "Manage users and permissions",
-      icon: "users",
-      color: "from-orange-500 to-orange-600",
-      route: "/admin/users",
+      title: 'User Management',
+      description: 'Manage users and permissions',
+      icon: 'users',
+      color: 'from-orange-500 to-orange-600',
+      route: '/admin/users',
     },
     {
-      title: "Error Reports",
-      description: "Review reported questions and issues",
-      icon: "reports",
-      color: "from-red-500 to-red-600",
-      route: "/admin/error-reports",
+      title: 'Error Reports',
+      description: 'Review reported questions and issues',
+      icon: 'reports',
+      color: 'from-red-500 to-red-600',
+      route: '/admin/error-reports',
     },
     {
-      title: "Bookmarks Review",
-      description: "Review saved questions and notes",
-      icon: "bookmarks",
-      color: "from-teal-500 to-teal-600",
-      route: "/admin/bookmarks",
+      title: 'Bookmarks Review',
+      description: 'Review saved questions and notes',
+      icon: 'bookmarks',
+      color: 'from-teal-500 to-teal-600',
+      route: '/admin/bookmarks',
     },
   ];
 
@@ -195,7 +160,7 @@ const AdminDashboard = () => {
           <div className="flex items-center gap-4">
             <ThemeToggle />
             <button
-              onClick={() => navigate("/dashboard")}
+              onClick={() => navigate('/dashboard')}
               className="bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-200 px-4 py-2 rounded-lg hover:bg-gray-300 dark:hover:bg-gray-600 transition-colors"
             >
               User View
@@ -230,12 +195,8 @@ const AdminDashboard = () => {
               onClick={() => navigate(card.route)}
               className="bg-white dark:bg-gray-800 rounded-lg shadow-md hover:shadow-xl transition-shadow cursor-pointer overflow-hidden"
             >
-              <div
-                className={`bg-gradient-to-r ${card.color} p-6 text-white text-center`}
-              >
-                <div className="text-5xl mb-2">
-                  {iconMap[card.icon] || null}
-                </div>
+              <div className={`bg-gradient-to-r ${card.color} p-6 text-white text-center`}>
+                <div className="text-5xl mb-2">{iconMap[card.icon] || null}</div>
                 <h3 className="text-xl font-bold">{card.title}</h3>
               </div>
               <div className="p-4">
@@ -253,9 +214,7 @@ const AdminDashboard = () => {
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-gray-600 dark:text-gray-400 text-sm">Total Questions</p>
-                <p className="text-3xl font-bold text-blue-600">
-                  {stats.totalQuestions}
-                </p>
+                <p className="text-3xl font-bold text-blue-600">{stats.totalQuestions}</p>
               </div>
               <div className="bg-blue-100 dark:bg-blue-900/30 p-3 rounded-full">
                 <svg
@@ -279,9 +238,7 @@ const AdminDashboard = () => {
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-gray-600 dark:text-gray-400 text-sm">Total Users</p>
-                <p className="text-3xl font-bold text-green-600">
-                  {stats.totalUsers}
-                </p>
+                <p className="text-3xl font-bold text-green-600">{stats.totalUsers}</p>
               </div>
               <div className="bg-green-100 dark:bg-green-900/30 p-3 rounded-full">
                 <svg
@@ -305,9 +262,7 @@ const AdminDashboard = () => {
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-gray-600 dark:text-gray-400 text-sm">Tests Taken</p>
-                <p className="text-3xl font-bold text-purple-600">
-                  {stats.testsTaken}
-                </p>
+                <p className="text-3xl font-bold text-purple-600">{stats.testsTaken}</p>
               </div>
               <div className="bg-purple-100 dark:bg-purple-900/30 p-3 rounded-full">
                 <svg

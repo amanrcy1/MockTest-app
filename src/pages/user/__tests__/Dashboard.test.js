@@ -25,7 +25,7 @@ describe('Dashboard Page', () => {
 
   beforeEach(async () => {
     vi.clearAllMocks();
-    
+
     useAuth.mockReturnValue({
       currentUser: { uid: `user-${Date.now()}`, email: 'test@example.com', emailVerified: true },
       userDetails: { name: 'Test User', targetExam: 'CDS', isAdmin: false },
@@ -38,9 +38,12 @@ describe('Dashboard Page', () => {
   // Helper to render and wait for loading to complete
   const renderAndWait = async () => {
     render(<Dashboard />);
-    await waitFor(() => {
-      expect(screen.getByText('Test')).toBeInTheDocument();
-    }, { timeout: 3000 });
+    await waitFor(
+      () => {
+        expect(screen.getByText('Test')).toBeInTheDocument();
+      },
+      { timeout: 3000 }
+    );
   };
 
   it('should render user first name in mobile header', async () => {
@@ -94,9 +97,12 @@ describe('Dashboard Page', () => {
       logout: mockLogout,
     });
     render(<Dashboard />);
-    await waitFor(() => {
-      expect(screen.getByText('Admin Panel')).toBeInTheDocument();
-    }, { timeout: 3000 });
+    await waitFor(
+      () => {
+        expect(screen.getByText('Admin Panel')).toBeInTheDocument();
+      },
+      { timeout: 3000 }
+    );
   });
 
   it('should hide admin panel for regular users', async () => {
@@ -125,14 +131,42 @@ describe('Dashboard Page', () => {
 
   it('should load test stats', async () => {
     useAuth.mockReturnValue({
-      currentUser: { uid: `stats-user-${Date.now()}`, email: 'stats@example.com', emailVerified: true },
+      currentUser: {
+        uid: `stats-user-${Date.now()}`,
+        email: 'stats@example.com',
+        emailVerified: true,
+      },
       userDetails: { name: 'Stats User', targetExam: 'NDA', isAdmin: false },
       logout: mockLogout,
     });
     getDocs.mockResolvedValue({
       docs: [
-        { id: 'test1', data: () => ({ accuracy: 80, timeTaken: 3600, completed: true, userId: 'stats-user-999', endTime: new Date().toISOString(), correct: 8, incorrect: 2, skipped: 0 }) },
-        { id: 'test2', data: () => ({ accuracy: 90, timeTaken: 3000, completed: true, userId: 'stats-user-999', endTime: new Date().toISOString(), correct: 9, incorrect: 1, skipped: 0 }) },
+        {
+          id: 'test1',
+          data: () => ({
+            accuracy: 80,
+            timeTaken: 3600,
+            completed: true,
+            userId: 'stats-user-999',
+            endTime: new Date().toISOString(),
+            correct: 8,
+            incorrect: 2,
+            skipped: 0,
+          }),
+        },
+        {
+          id: 'test2',
+          data: () => ({
+            accuracy: 90,
+            timeTaken: 3000,
+            completed: true,
+            userId: 'stats-user-999',
+            endTime: new Date().toISOString(),
+            correct: 9,
+            incorrect: 1,
+            skipped: 0,
+          }),
+        },
       ],
       empty: false,
       size: 2,
@@ -144,9 +178,12 @@ describe('Dashboard Page', () => {
       }),
     });
     render(<Dashboard />);
-    await waitFor(() => {
-      expect(screen.getByText('Stats')).toBeInTheDocument();
-    }, { timeout: 3000 });
+    await waitFor(
+      () => {
+        expect(screen.getByText('Stats')).toBeInTheDocument();
+      },
+      { timeout: 3000 }
+    );
     expect(screen.getByText('2')).toBeInTheDocument();
   });
 

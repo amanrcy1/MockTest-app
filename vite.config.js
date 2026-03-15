@@ -335,9 +335,12 @@ export default defineConfig({
           'vendor-firebase': ['firebase/app', 'firebase/auth', 'firebase/firestore', 'firebase/storage'],
           'vendor-ui': ['framer-motion', 'react-toastify', 'react-markdown'],
           'vendor-date': ['date-fns'],
-          'vendor-utils': ['prop-types', 'web-vitals', 'react-ga4', 'papaparse'],
+          'vendor-utils': ['prop-types', 'web-vitals', 'papaparse'],
         },
       },
     },
+    // Use esbuild for faster minification
+    minify: 'esbuild',
+    target: 'es2015',
   },
 });

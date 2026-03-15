@@ -1,25 +1,16 @@
-import PropTypes from "prop-types";
+import PropTypes from 'prop-types';
 
 /**
  * Shared error-report modal for test pages.
  * Replaces the ~40-line inline modal duplicated across 3 test pages.
  */
-const ReportModal = ({
-  isOpen,
-  reportText,
-  onChangeText,
-  onSubmit,
-  onClose,
-  submitting,
-}) => {
+const ReportModal = ({ isOpen, reportText, onChangeText, onSubmit, onClose, submitting }) => {
   if (!isOpen) return null;
 
   return (
     <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50">
       <div className="bg-white dark:bg-gray-800 rounded-lg shadow-xl p-6 max-w-md w-full">
-        <h3 className="text-lg font-bold text-gray-800 dark:text-gray-100 mb-4">
-          Report an Error
-        </h3>
+        <h3 className="text-lg font-bold text-gray-800 dark:text-gray-100 mb-4">Report an Error</h3>
         <textarea
           value={reportText}
           onChange={(e) => onChangeText(e.target.value)}
@@ -38,7 +29,7 @@ const ReportModal = ({
             disabled={submitting}
             className="flex-1 bg-red-600 text-white py-2 rounded-lg font-semibold hover:bg-red-700 transition-colors disabled:bg-red-300 disabled:cursor-not-allowed"
           >
-            {submitting ? "Submitting..." : "Submit Report"}
+            {submitting ? 'Submitting...' : 'Submit Report'}
           </button>
         </div>
       </div>

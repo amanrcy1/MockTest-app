@@ -4,33 +4,25 @@ import StatsCard from '../StatsCard';
 describe('StatsCard Component', () => {
   it('should render with title and value', () => {
     render(<StatsCard title="Total Tests" value={42} />);
-    
+
     expect(screen.getByText('Total Tests')).toBeInTheDocument();
     expect(screen.getByText('42')).toBeInTheDocument();
   });
 
   it('should render with icon when provided', () => {
-    render(
-      <StatsCard
-        title="Score"
-        value={85}
-        icon={<span>🎯</span>}
-      />
-    );
-    
+    render(<StatsCard title="Score" value={85} icon={<span>🎯</span>} />);
+
     expect(screen.getByText('🎯')).toBeInTheDocument();
   });
 
   it('should apply color variant classes', () => {
-    const { rerender } = render(
-      <StatsCard title="Test" value={100} color="green" />
-    );
-    
+    const { rerender } = render(<StatsCard title="Test" value={100} color="green" />);
+
     expect(screen.getByText('100').closest('[class*="green"]')).toBeTruthy();
-    
+
     rerender(<StatsCard title="Test" value={100} color="red" />);
     expect(screen.getByText('100').closest('[class*="red"]')).toBeTruthy();
-    
+
     rerender(<StatsCard title="Test" value={100} color="yellow" />);
     expect(screen.getByText('100').closest('[class*="yellow"]')).toBeTruthy();
   });
@@ -68,8 +60,8 @@ describe('StatsCard Component', () => {
 
   it('should handle all color variants', () => {
     const colors = ['blue', 'green', 'purple', 'red', 'yellow', 'orange'];
-    
-    colors.forEach(color => {
+
+    colors.forEach((color) => {
       render(<StatsCard title={`Test-${color}`} value={100} color={color} />);
       expect(screen.getByText(`Test-${color}`)).toBeInTheDocument();
     });

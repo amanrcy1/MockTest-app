@@ -148,9 +148,7 @@ vi.mock('firebase/storage', () => ({
     resume: vi.fn(),
     cancel: vi.fn(),
   })),
-  getDownloadURL: vi.fn(() =>
-    Promise.resolve('https://example.com/test-image.jpg')
-  ),
+  getDownloadURL: vi.fn(() => Promise.resolve('https://example.com/test-image.jpg')),
   deleteObject: vi.fn(() => Promise.resolve()),
   listAll: vi.fn(() =>
     Promise.resolve({
@@ -174,20 +172,14 @@ vi.mock('./components', () => {
     ThemeToggle: () => React.createElement('div', { 'data-testid': 'theme-toggle' }, 'ThemeToggle'),
     BottomNav: () => React.createElement('div', { 'data-testid': 'bottom-nav' }, 'BottomNav'),
     ErrorBoundary: ({ children }) => children,
-    ViolationModal: () => React.createElement('div', { 'data-testid': 'violation-modal' }, 'ViolationModal'),
+    ViolationModal: () =>
+      React.createElement('div', { 'data-testid': 'violation-modal' }, 'ViolationModal'),
     PageSpinner: ({ message }) => message || '',
-    ResumePrompt: () => React.createElement('div', { 'data-testid': 'resume-prompt' }, 'ResumePrompt'),
+    ResumePrompt: () =>
+      React.createElement('div', { 'data-testid': 'resume-prompt' }, 'ResumePrompt'),
     ReportModal: () => React.createElement('div', { 'data-testid': 'report-modal' }, 'ReportModal'),
-    ConfirmModal: () => React.createElement('div', { 'data-testid': 'confirm-modal' }, 'ConfirmModal'),
-  };
-});
-
-vi.mock('./components/3d', () => {
-  const React = require('react');
-  return {
-    CelebrationEffect: () => React.createElement('div', { 'data-testid': 'celebration-effect' }, 'CelebrationEffect'),
-    LeaderboardPodium: () => React.createElement('div', { 'data-testid': 'leaderboard-podium' }, 'LeaderboardPodium'),
-    Timer3D: () => React.createElement('div', { 'data-testid': 'timer-3d' }, 'Timer3D'),
+    ConfirmModal: () =>
+      React.createElement('div', { 'data-testid': 'confirm-modal' }, 'ConfirmModal'),
   };
 });
 
@@ -198,15 +190,38 @@ vi.mock('./components/3d', () => {
 vi.mock('framer-motion', () => {
   const React = require('react');
   return {
-    motion: new Proxy({}, {
-      get: (_target, prop) => {
-        const MotionComponent = React.forwardRef(({ children, initial: _initial, animate: _animate, exit: _exit, transition: _transition, whileHover: _whileHover, whileTap: _whileTap, whileFocus: _whileFocus, whileDrag: _whileDrag, whileInView: _whileInView, variants: _variants, layout: _layout, layoutId: _layoutId, ...rest }, ref) => {
-          return React.createElement(prop, { ...rest, ref }, children);
-        });
-        MotionComponent.displayName = `motion.${prop}`;
-        return MotionComponent;
-      },
-    }),
+    motion: new Proxy(
+      {},
+      {
+        get: (_target, prop) => {
+          const MotionComponent = React.forwardRef(
+            (
+              {
+                children,
+                initial: _initial,
+                animate: _animate,
+                exit: _exit,
+                transition: _transition,
+                whileHover: _whileHover,
+                whileTap: _whileTap,
+                whileFocus: _whileFocus,
+                whileDrag: _whileDrag,
+                whileInView: _whileInView,
+                variants: _variants,
+                layout: _layout,
+                layoutId: _layoutId,
+                ...rest
+              },
+              ref
+            ) => {
+              return React.createElement(prop, { ...rest, ref }, children);
+            }
+          );
+          MotionComponent.displayName = `motion.${prop}`;
+          return MotionComponent;
+        },
+      }
+    ),
     AnimatePresence: ({ children }) => children,
     useAnimation: () => ({
       start: vi.fn(),
@@ -234,7 +249,8 @@ vi.mock('react-toastify', () => {
       warning: vi.fn(),
       warn: vi.fn(),
     },
-    ToastContainer: () => React.createElement('div', { 'data-testid': 'toast-container' }, 'ToastContainer'),
+    ToastContainer: () =>
+      React.createElement('div', { 'data-testid': 'toast-container' }, 'ToastContainer'),
   };
 });
 
@@ -249,87 +265,91 @@ vi.mock('./utils/toast', () => ({
     info: vi.fn(),
     warning: vi.fn(),
     messages: {
-      LOGIN_REQUIRED: "Please log in to continue",
-      LOGOUT_SUCCESS: "Logged out successfully",
-      LOGOUT_FAILED: "Failed to log out",
-      PROFILE_UPDATED: "Profile updated",
-      PROFILE_UPDATE_FAILED: "Failed to update profile",
-      PHOTO_UPDATED: "Photo updated",
-      PHOTO_REMOVED: "Photo removed",
-      PHOTO_SAVE_FAILED: "Failed to save photo",
-      PHOTO_REMOVE_FAILED: "Failed to remove photo",
-      INVALID_IMAGE: "Please select a valid image file",
-      IMAGE_TOO_LARGE: "Image must be less than 5MB",
-      NAME_REQUIRED: "Please enter your name (at least 2 characters)",
-      EXAM_REQUIRED: "Please select your target exam",
+      LOGIN_REQUIRED: 'Please log in to continue',
+      LOGOUT_SUCCESS: 'Logged out successfully',
+      LOGOUT_FAILED: 'Failed to log out',
+      PROFILE_UPDATED: 'Profile updated',
+      PROFILE_UPDATE_FAILED: 'Failed to update profile',
+      PHOTO_UPDATED: 'Photo updated',
+      PHOTO_REMOVED: 'Photo removed',
+      PHOTO_SAVE_FAILED: 'Failed to save photo',
+      PHOTO_REMOVE_FAILED: 'Failed to remove photo',
+      INVALID_IMAGE: 'Please select a valid image file',
+      IMAGE_TOO_LARGE: 'Image must be less than 5MB',
+      NAME_REQUIRED: 'Please enter your name (at least 2 characters)',
+      EXAM_REQUIRED: 'Please select your target exam',
       ONBOARDING_SUCCESS: "You're all set! Let's go!",
-      ONBOARDING_FAILED: "Something went wrong. Please try again",
-      TEST_SUBMIT_FAILED: "Failed to submit test",
-      TEST_LOAD_FAILED: "Failed to load questions",
-      NO_TEST_CONFIG: "No test configuration found",
-      NO_EXAM_SELECTED: "No exam type selected",
+      ONBOARDING_FAILED: 'Something went wrong. Please try again',
+      TEST_SUBMIT_FAILED: 'Failed to submit test',
+      TEST_LOAD_FAILED: 'Failed to load questions',
+      NO_TEST_CONFIG: 'No test configuration found',
+      NO_EXAM_SELECTED: 'No exam type selected',
       TIME_UP: "Time's up! Auto-submitting test...",
-      VIOLATION_AUTO_SUBMIT: "Test auto-submitted due to multiple fullscreen violations",
-      INSUFFICIENT_QUESTIONS: vi.fn((need, have) => `Insufficient questions. Need ${need}, have ${have}`),
-      NO_QUESTIONS_AVAILABLE: "No questions available for this exam type",
-      NO_PRACTICE_QUESTIONS: "No practice questions available for this exam type",
+      VIOLATION_AUTO_SUBMIT: 'Test auto-submitted due to multiple fullscreen violations',
+      INSUFFICIENT_QUESTIONS: vi.fn(
+        (need, have) => `Insufficient questions. Need ${need}, have ${have}`
+      ),
+      NO_QUESTIONS_AVAILABLE: 'No questions available for this exam type',
+      NO_PRACTICE_QUESTIONS: 'No practice questions available for this exam type',
       ANSWER_LOCKED: vi.fn((num) => `Answer locked for Q${num}`),
-      NO_TEST_DATA: "No test data available",
-      TEST_DETAILS_INCOMPLETE: "Test details are incomplete",
-      TEST_RESULT_LOAD_FAILED: "Failed to load test result",
-      NO_QUESTIONS_WITH_FILTERS: "No questions available with selected filters",
-      REDUCE_QUESTIONS: vi.fn((available) => `Only ${available} questions available. Please reduce the number`),
-      SELECT_SUBJECT: "Please select at least one subject",
-      BOOKMARK_ADDED: "Question bookmarked",
-      BOOKMARK_REMOVED: "Bookmark removed",
-      BOOKMARKS_LOAD_FAILED: "Failed to load bookmarks",
-      BOOKMARK_REMOVE_FAILED: "Failed to remove bookmark",
-      REPORT_EMPTY: "Please enter a report message",
-      REPORT_SUBMITTED: "Report submitted",
-      REPORT_FAILED: "Failed to submit report",
-      AI_EXPLANATION_FAILED: "Failed to generate AI explanation",
-      QUESTION_ADDED: "Question added successfully",
-      QUESTION_ADD_FAILED: "Failed to add question",
-      QUESTION_UPDATED: "Question updated successfully",
-      QUESTION_UPDATE_FAILED: "Failed to update question",
-      QUESTION_DELETED: "Question deleted successfully",
-      QUESTION_DELETE_FAILED: "Failed to delete question",
-      QUESTIONS_LOAD_FAILED: "Failed to load questions",
-      QUESTION_TEXT_REQUIRED: "Question text is required",
-      OPTIONS_REQUIRED: "All options are required",
-      SOLUTION_REQUIRED: "Solution is required",
-      CSV_REQUIRED: "Please upload a CSV file",
-      CSV_PARSE_FAILED: "Failed to parse CSV file",
-      NO_VALID_QUESTIONS: "No valid questions to upload",
+      NO_TEST_DATA: 'No test data available',
+      TEST_DETAILS_INCOMPLETE: 'Test details are incomplete',
+      TEST_RESULT_LOAD_FAILED: 'Failed to load test result',
+      NO_QUESTIONS_WITH_FILTERS: 'No questions available with selected filters',
+      REDUCE_QUESTIONS: vi.fn(
+        (available) => `Only ${available} questions available. Please reduce the number`
+      ),
+      SELECT_SUBJECT: 'Please select at least one subject',
+      BOOKMARK_ADDED: 'Question bookmarked',
+      BOOKMARK_REMOVED: 'Bookmark removed',
+      BOOKMARKS_LOAD_FAILED: 'Failed to load bookmarks',
+      BOOKMARK_REMOVE_FAILED: 'Failed to remove bookmark',
+      REPORT_EMPTY: 'Please enter a report message',
+      REPORT_SUBMITTED: 'Report submitted',
+      REPORT_FAILED: 'Failed to submit report',
+      AI_EXPLANATION_FAILED: 'Failed to generate AI explanation',
+      QUESTION_ADDED: 'Question added successfully',
+      QUESTION_ADD_FAILED: 'Failed to add question',
+      QUESTION_UPDATED: 'Question updated successfully',
+      QUESTION_UPDATE_FAILED: 'Failed to update question',
+      QUESTION_DELETED: 'Question deleted successfully',
+      QUESTION_DELETE_FAILED: 'Failed to delete question',
+      QUESTIONS_LOAD_FAILED: 'Failed to load questions',
+      QUESTION_TEXT_REQUIRED: 'Question text is required',
+      OPTIONS_REQUIRED: 'All options are required',
+      SOLUTION_REQUIRED: 'Solution is required',
+      CSV_REQUIRED: 'Please upload a CSV file',
+      CSV_PARSE_FAILED: 'Failed to parse CSV file',
+      NO_VALID_QUESTIONS: 'No valid questions to upload',
       BULK_UPLOAD_SUCCESS: vi.fn((count) => `Successfully uploaded ${count} questions`),
       BULK_UPLOAD_PARTIAL: vi.fn((failed) => `Failed to upload ${failed} questions`),
-      BULK_UPLOAD_FAILED: "Failed to upload questions",
-      TEMPLATE_DOWNLOADED: "Template downloaded",
-      USERS_LOAD_FAILED: "Failed to load users",
-      USER_PROMOTED: "User promoted to admin",
-      USER_DEMOTED: "User demoted from admin",
-      USER_UPDATE_FAILED: "Failed to update user",
-      USER_DELETED: "User deleted. Remember to also delete from Firebase Authentication console",
-      USER_DELETE_FAILED: "Failed to delete user",
-      CANNOT_DEMOTE_SELF: "You cannot demote yourself",
-      CANNOT_DELETE_SELF: "You cannot delete yourself",
-      CANNOT_DEMOTE_SUPER_ADMIN: "Cannot demote the super admin",
-      CANNOT_DELETE_SUPER_ADMIN: "Cannot delete the super admin",
-      ADMIN_ONLY: "Only super admin can manage user roles",
-      DELETE_ADMIN_ONLY: "Only super admin can delete users",
-      REPORTS_LOAD_FAILED: "Failed to load error reports",
-      REPORT_RESOLVED: "Report marked as resolved",
-      REPORT_UPDATE_FAILED: "Failed to update report",
-      NOTE_REQUIRED: "Please enter a note before saving",
-      NOTE_SAVED: "Note saved",
-      NOTE_SAVE_FAILED: "Failed to save note",
-      REPORT_DELETED: "Error report deleted",
-      REPORT_DELETE_FAILED: "Failed to delete report",
-      ADMIN_BOOKMARKS_LOAD_FAILED: "Failed to load bookmarks",
-      BOOKMARK_REVIEWED: "Bookmark marked as reviewed",
-      BOOKMARK_UPDATE_FAILED: "Failed to update bookmark",
-      BOOKMARK_DELETED: "Bookmark deleted",
-      BOOKMARK_DELETE_FAILED: "Failed to delete bookmark",
+      BULK_UPLOAD_FAILED: 'Failed to upload questions',
+      TEMPLATE_DOWNLOADED: 'Template downloaded',
+      USERS_LOAD_FAILED: 'Failed to load users',
+      USER_PROMOTED: 'User promoted to admin',
+      USER_DEMOTED: 'User demoted from admin',
+      USER_UPDATE_FAILED: 'Failed to update user',
+      USER_DELETED: 'User deleted. Remember to also delete from Firebase Authentication console',
+      USER_DELETE_FAILED: 'Failed to delete user',
+      CANNOT_DEMOTE_SELF: 'You cannot demote yourself',
+      CANNOT_DELETE_SELF: 'You cannot delete yourself',
+      CANNOT_DEMOTE_SUPER_ADMIN: 'Cannot demote the super admin',
+      CANNOT_DELETE_SUPER_ADMIN: 'Cannot delete the super admin',
+      ADMIN_ONLY: 'Only super admin can manage user roles',
+      DELETE_ADMIN_ONLY: 'Only super admin can delete users',
+      REPORTS_LOAD_FAILED: 'Failed to load error reports',
+      REPORT_RESOLVED: 'Report marked as resolved',
+      REPORT_UPDATE_FAILED: 'Failed to update report',
+      NOTE_REQUIRED: 'Please enter a note before saving',
+      NOTE_SAVED: 'Note saved',
+      NOTE_SAVE_FAILED: 'Failed to save note',
+      REPORT_DELETED: 'Error report deleted',
+      REPORT_DELETE_FAILED: 'Failed to delete report',
+      ADMIN_BOOKMARKS_LOAD_FAILED: 'Failed to load bookmarks',
+      BOOKMARK_REVIEWED: 'Bookmark marked as reviewed',
+      BOOKMARK_UPDATE_FAILED: 'Failed to update bookmark',
+      BOOKMARK_DELETED: 'Bookmark deleted',
+      BOOKMARK_DELETE_FAILED: 'Failed to delete bookmark',
     },
   },
   showSuccess: vi.fn(),
@@ -370,7 +390,9 @@ global.IntersectionObserver = class IntersectionObserver {
   constructor() {}
   disconnect() {}
   observe() {}
-  takeRecords() { return []; }
+  takeRecords() {
+    return [];
+  }
   unobserve() {}
 };
 
@@ -383,7 +405,7 @@ global.ResizeObserver = class ResizeObserver {
 
 Object.defineProperty(window, 'matchMedia', {
   writable: true,
-  value: vi.fn().mockImplementation(query => ({
+  value: vi.fn().mockImplementation((query) => ({
     matches: false,
     media: query,
     onchange: null,
@@ -400,9 +422,15 @@ const localStorageMock = (() => {
   const store = _storage;
   return {
     getItem: vi.fn((key) => (key in store ? store[key] : null)),
-    setItem: vi.fn((key, value) => { store[key] = String(value); }),
-    removeItem: vi.fn((key) => { delete store[key]; }),
-    clear: vi.fn(() => { Object.keys(store).forEach(k => delete store[k]); }),
+    setItem: vi.fn((key, value) => {
+      store[key] = String(value);
+    }),
+    removeItem: vi.fn((key) => {
+      delete store[key];
+    }),
+    clear: vi.fn(() => {
+      Object.keys(store).forEach((k) => delete store[k]);
+    }),
     length: 0,
     key: vi.fn(),
   };
@@ -413,9 +441,15 @@ global.sessionStorage = localStorageMock;
 // Re-apply localStorage mock implementations after vi.clearAllMocks()
 afterEach(() => {
   localStorageMock.getItem.mockImplementation((key) => (key in _storage ? _storage[key] : null));
-  localStorageMock.setItem.mockImplementation((key, value) => { _storage[key] = String(value); });
-  localStorageMock.removeItem.mockImplementation((key) => { delete _storage[key]; });
-  localStorageMock.clear.mockImplementation(() => { Object.keys(_storage).forEach(k => delete _storage[k]); });
+  localStorageMock.setItem.mockImplementation((key, value) => {
+    _storage[key] = String(value);
+  });
+  localStorageMock.removeItem.mockImplementation((key) => {
+    delete _storage[key];
+  });
+  localStorageMock.clear.mockImplementation(() => {
+    Object.keys(_storage).forEach((k) => delete _storage[k]);
+  });
 });
 
 global.scrollTo = vi.fn();
@@ -434,11 +468,11 @@ beforeAll(() => {
     if (
       typeof args[0] === 'string' &&
       (args[0].includes('Warning: ReactDOM.render') ||
-       args[0].includes('Not implemented: HTMLFormElement.prototype.submit') ||
-       args[0].includes('Warning: useLayoutEffect') ||
-       args[0].includes('Warning: An update to') ||
-       args[0].includes('act(...)') ||
-       args[0].includes('React does not recognize the'))
+        args[0].includes('Not implemented: HTMLFormElement.prototype.submit') ||
+        args[0].includes('Warning: useLayoutEffect') ||
+        args[0].includes('Warning: An update to') ||
+        args[0].includes('act(...)') ||
+        args[0].includes('React does not recognize the'))
     ) {
       return;
     }
@@ -447,8 +481,7 @@ beforeAll(() => {
   console.warn = (...args) => {
     if (
       typeof args[0] === 'string' &&
-      (args[0].includes('componentWillReceiveProps') ||
-       args[0].includes('componentWillMount'))
+      (args[0].includes('componentWillReceiveProps') || args[0].includes('componentWillMount'))
     ) {
       return;
     }
@@ -465,7 +498,7 @@ afterAll(() => {
 // TEST UTILITIES
 // ============================================
 
-global.flushPromises = () => new Promise(resolve => setTimeout(resolve, 0));
+global.flushPromises = () => new Promise((resolve) => setTimeout(resolve, 0));
 
 global.createMockFirestoreDoc = (id, data) => ({
   id,
@@ -475,10 +508,9 @@ global.createMockFirestoreDoc = (id, data) => ({
 });
 
 global.createMockQuerySnapshot = (docs) => ({
-  docs: docs.map(doc => global.createMockFirestoreDoc(doc.id, doc.data)),
+  docs: docs.map((doc) => global.createMockFirestoreDoc(doc.id, doc.data)),
   empty: docs.length === 0,
   size: docs.length,
-  forEach: (callback) => docs.forEach((doc, index) =>
-    callback(global.createMockFirestoreDoc(doc.id, doc.data), index)
-  ),
+  forEach: (callback) =>
+    docs.forEach((doc, index) => callback(global.createMockFirestoreDoc(doc.id, doc.data), index)),
 });

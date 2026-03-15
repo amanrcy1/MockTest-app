@@ -1,4 +1,4 @@
-import { Link } from "react-router-dom";
+import { Link } from 'react-router-dom';
 
 const PrivacyPolicy = () => {
   return (
@@ -14,18 +14,20 @@ const PrivacyPolicy = () => {
             <section>
               <h2 className="text-lg font-semibold text-gray-900 dark:text-white">1. Scope</h2>
               <p>
-                This policy explains how Mockzam collects, uses, stores, and protects your data
-                when you use the web app and its related AI features.
+                This policy explains how Mockzam collects, uses, stores, and protects your data when
+                you use the web app and its related AI features.
               </p>
             </section>
 
             <section>
-              <h2 className="text-lg font-semibold text-gray-900 dark:text-white">2. Data We Collect</h2>
+              <h2 className="text-lg font-semibold text-gray-900 dark:text-white">
+                2. Data We Collect
+              </h2>
               <p>Based on current app behavior, we process the following categories:</p>
               <ul className="list-disc pl-6 space-y-1">
                 <li>
-                  <strong>Account data</strong>: Firebase UID, name, email, and optional profile photo
-                  from Google Sign-In.
+                  <strong>Account data</strong>: Firebase UID, name, email, and optional profile
+                  photo from Google Sign-In.
                 </li>
                 <li>
                   <strong>Profile data</strong>: target exam, onboarding status, login metadata, and
@@ -36,20 +38,24 @@ const PrivacyPolicy = () => {
                   completion status, and derived analytics.
                 </li>
                 <li>
-                  <strong>User-generated data</strong>: bookmarks, notes, and question error reports.
+                  <strong>User-generated data</strong>: bookmarks, notes, and question error
+                  reports.
                 </li>
                 <li>
                   <strong>Admin operation data</strong>: audit log entries for admin actions.
                 </li>
                 <li>
                   <strong>AI interaction data</strong>: chat messages, limited conversation history,
-                  question/explanation context, and performance context used to improve AI responses.
+                  question/explanation context, and performance context used to improve AI
+                  responses.
                 </li>
               </ul>
             </section>
 
             <section>
-              <h2 className="text-lg font-semibold text-gray-900 dark:text-white">3. Browser Storage</h2>
+              <h2 className="text-lg font-semibold text-gray-900 dark:text-white">
+                3. Browser Storage
+              </h2>
               <p>
                 The app uses local and session storage for UX and reliability, including theme
                 preference, active test session recovery, install banner state, cached question
@@ -58,7 +64,9 @@ const PrivacyPolicy = () => {
             </section>
 
             <section>
-              <h2 className="text-lg font-semibold text-gray-900 dark:text-white">4. How We Use Data</h2>
+              <h2 className="text-lg font-semibold text-gray-900 dark:text-white">
+                4. How We Use Data
+              </h2>
               <ul className="list-disc pl-6 space-y-1">
                 <li>authenticate users and maintain account access;</li>
                 <li>deliver test-taking features, scoring, and results;</li>
@@ -70,7 +78,9 @@ const PrivacyPolicy = () => {
             </section>
 
             <section>
-              <h2 className="text-lg font-semibold text-gray-900 dark:text-white">5. Third-Party Services</h2>
+              <h2 className="text-lg font-semibold text-gray-900 dark:text-white">
+                5. Third-Party Services
+              </h2>
               <p>Mockzam integrates with:</p>
               <ul className="list-disc pl-6 space-y-1">
                 <li>Firebase (Authentication, Firestore, Storage, App Check);</li>
@@ -84,19 +94,23 @@ const PrivacyPolicy = () => {
             </section>
 
             <section>
-              <h2 className="text-lg font-semibold text-gray-900 dark:text-white">6. Data Sharing</h2>
+              <h2 className="text-lg font-semibold text-gray-900 dark:text-white">
+                6. Data Sharing
+              </h2>
               <p>
-                We do not sell your personal data. Data is shared only with service providers
-                needed to run the platform (for example Firebase/Vercel/Groq) and as required by law.
+                We do not sell your personal data. Data is shared only with service providers needed
+                to run the platform (for example Firebase/Vercel/Groq) and as required by law.
               </p>
             </section>
 
             <section>
-              <h2 className="text-lg font-semibold text-gray-900 dark:text-white">7. Security Controls</h2>
+              <h2 className="text-lg font-semibold text-gray-900 dark:text-white">
+                7. Security Controls
+              </h2>
               <p>
-                Current controls include authenticated API access, Firestore security rules,
-                rate limiting for AI endpoints, payload validation, anti-cheat safeguards, and
-                optional App Check in production.
+                Current controls include authenticated API access, Firestore security rules, rate
+                limiting for AI endpoints, payload validation, anti-cheat safeguards, and optional
+                App Check in production.
               </p>
             </section>
 
@@ -110,7 +124,9 @@ const PrivacyPolicy = () => {
             </section>
 
             <section>
-              <h2 className="text-lg font-semibold text-gray-900 dark:text-white">9. Your Choices</h2>
+              <h2 className="text-lg font-semibold text-gray-900 dark:text-white">
+                9. Your Choices
+              </h2>
               <p>
                 You can stop using the app at any time, clear browser storage locally, and request
                 account/data deletion through the project maintainers.
@@ -118,15 +134,19 @@ const PrivacyPolicy = () => {
             </section>
 
             <section>
-              <h2 className="text-lg font-semibold text-gray-900 dark:text-white">10. Children&apos;s Privacy</h2>
+              <h2 className="text-lg font-semibold text-gray-900 dark:text-white">
+                10. Children&apos;s Privacy
+              </h2>
               <p>
-                Mockzam is intended for exam aspirants and is not directed to children under 13.
-                If you believe a child has submitted personal data, contact the maintainers.
+                Mockzam is intended for exam aspirants and is not directed to children under 13. If
+                you believe a child has submitted personal data, contact the maintainers.
               </p>
             </section>
 
             <section>
-              <h2 className="text-lg font-semibold text-gray-900 dark:text-white">11. Policy Updates</h2>
+              <h2 className="text-lg font-semibold text-gray-900 dark:text-white">
+                11. Policy Updates
+              </h2>
               <p>
                 We may update this policy as features or integrations change. The date at the top
                 shows the latest revision.
@@ -136,8 +156,7 @@ const PrivacyPolicy = () => {
             <section>
               <h2 className="text-lg font-semibold text-gray-900 dark:text-white">12. Contact</h2>
               <p>
-                For privacy questions or deletion requests, open an issue:
-                {" "}
+                For privacy questions or deletion requests, open an issue:{' '}
                 <a
                   className="underline"
                   href="https://github.com/amanrcy1/MockTest-app/issues"

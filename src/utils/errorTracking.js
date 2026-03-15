@@ -9,10 +9,9 @@
 export const logError = (error, context = {}) => {
   // Log to console in development
   if (import.meta.env.DEV) {
-     
     console.error('Error:', error, 'Context:', context);
   }
-  
+
   // Error tracking can be integrated with services like Sentry if needed
 };
 

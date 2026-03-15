@@ -13,9 +13,10 @@ const usePWAInstall = () => {
 
   useEffect(() => {
     // Check if running in standalone mode (opened from home screen)
-    const isStandalone = window.matchMedia('(display-mode: standalone)').matches 
-      || window.navigator.standalone === true;
-    
+    const isStandalone =
+      window.matchMedia('(display-mode: standalone)').matches ||
+      window.navigator.standalone === true;
+
     if (isStandalone) {
       setIsInstalled(true);
       // Update localStorage when opened in standalone mode
@@ -86,7 +87,7 @@ const usePWAInstall = () => {
     try {
       installPrompt.prompt();
       const { outcome } = await installPrompt.userChoice;
-      
+
       if (outcome === 'accepted') {
         setIsInstalled(true);
         setInstallPrompt(null);

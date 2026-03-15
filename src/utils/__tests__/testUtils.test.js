@@ -25,7 +25,7 @@ describe('testUtils', () => {
     it('should contain all original elements', () => {
       const arr = [1, 2, 3, 4, 5];
       const shuffled = shuffleArray(arr);
-      arr.forEach(item => {
+      arr.forEach((item) => {
         expect(shuffled).toContain(item);
       });
     });
@@ -101,32 +101,39 @@ describe('testUtils', () => {
     });
 
     it('should return answered for answered questions', () => {
-      expect(getQuestionStatus({ 
-        visited: true, 
-        selectedAnswer: 'A' 
-      })).toBe('answered');
+      expect(
+        getQuestionStatus({
+          visited: true,
+          selectedAnswer: 'A',
+        })
+      ).toBe('answered');
     });
 
     it('should return marked for marked questions', () => {
-      expect(getQuestionStatus({ 
-        visited: true, 
-        markedForReview: true 
-      })).toBe('marked');
+      expect(
+        getQuestionStatus({
+          visited: true,
+          markedForReview: true,
+        })
+      ).toBe('marked');
     });
 
     it('should return answered-marked for answered and marked', () => {
-      expect(getQuestionStatus({ 
-        visited: true, 
-        selectedAnswer: 'A',
-        markedForReview: true 
-      })).toBe('answered-marked');
+      expect(
+        getQuestionStatus({
+          visited: true,
+          selectedAnswer: 'A',
+          markedForReview: true,
+        })
+      ).toBe('answered-marked');
     });
   });
 
   describe('sanitizeInput', () => {
     it('should escape HTML characters', () => {
-      expect(sanitizeInput('<script>alert("xss")</script>'))
-        .toBe('&lt;script&gt;alert(&quot;xss&quot;)&lt;&#x2F;script&gt;');
+      expect(sanitizeInput('<script>alert("xss")</script>')).toBe(
+        '&lt;script&gt;alert(&quot;xss&quot;)&lt;&#x2F;script&gt;'
+      );
     });
 
     it('should handle quotes', () => {

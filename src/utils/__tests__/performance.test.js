@@ -10,7 +10,7 @@ describe('performance utilities', () => {
   describe('PerformanceTracker', () => {
     it('should track duration', (done) => {
       const tracker = new PerformanceTracker('test-operation');
-      
+
       setTimeout(() => {
         const duration = tracker.end();
         expect(duration).toBeGreaterThan(50);
@@ -22,7 +22,7 @@ describe('performance utilities', () => {
     it('should return duration in milliseconds', () => {
       const tracker = new PerformanceTracker('test');
       const duration = tracker.end();
-      
+
       expect(typeof duration).toBe('number');
       expect(duration).toBeGreaterThanOrEqual(0);
     });
@@ -30,7 +30,6 @@ describe('performance utilities', () => {
 
   describe('trackRender', () => {
     it('should create tracker with component name', () => {
-
       const perfTracker = trackRender('TestComponent');
       expect(perfTracker).toBeInstanceOf(PerformanceTracker);
       expect(perfTracker.name).toBe('render_TestComponent');
@@ -49,10 +48,10 @@ describe('performance utilities', () => {
     it('should return null if performance API unavailable', () => {
       const originalPerformance = global.performance;
       delete global.performance;
-      
+
       const metrics = getPerformanceMetrics();
       expect(metrics).toBeNull();
-      
+
       global.performance = originalPerformance;
     });
 
@@ -61,24 +60,24 @@ describe('performance utilities', () => {
       global.performance = {
         getEntriesByType: vi.fn((type) => {
           if (type === 'navigation') {
-            return [{
-              domainLookupStart: 0,
-              domainLookupEnd: 10,
-              connectStart: 10,
-              connectEnd: 20,
-              requestStart: 20,
-              responseStart: 30,
-              responseEnd: 40,
-              domContentLoadedEventStart: 50,
-              domContentLoadedEventEnd: 60,
-              loadEventStart: 70,
-              loadEventEnd: 80,
-            }];
+            return [
+              {
+                domainLookupStart: 0,
+                domainLookupEnd: 10,
+                connectStart: 10,
+                connectEnd: 20,
+                requestStart: 20,
+                responseStart: 30,
+                responseEnd: 40,
+                domContentLoadedEventStart: 50,
+                domContentLoadedEventEnd: 60,
+                loadEventStart: 70,
+                loadEventEnd: 80,
+              },
+            ];
           }
           if (type === 'paint') {
-            return [
-              { name: 'first-contentful-paint', startTime: 100 },
-            ];
+            return [{ name: 'first-contentful-paint', startTime: 100 }];
           }
           return [];
         }),
@@ -88,9 +87,9 @@ describe('performance utilities', () => {
           jsHeapSizeLimit: 100 * 1024 * 1024,
         },
       };
-      
+
       const metrics = getPerformanceMetrics();
-      
+
       expect(metrics).toBeDefined();
       expect(metrics.dns).toBe(10);
       expect(metrics.tcp).toBe(10);

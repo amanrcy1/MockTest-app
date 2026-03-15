@@ -28,6 +28,12 @@ export const calculateScore = (responses, questions) => {
 
   responses.forEach((response, index) => {
     const question = questions[index];
+    // Guard against missing question data
+    if (!question) {
+      skipped++;
+      return;
+    }
+
     if (!response.selectedAnswer) {
       skipped++;
     } else if (response.selectedAnswer === question.correctAnswer) {
@@ -61,15 +67,15 @@ export const calculateScore = (responses, questions) => {
  */
 export const formatTime = (seconds) => {
   if (seconds < 0) seconds = 0;
-  
+
   const hours = Math.floor(seconds / 3600);
   const minutes = Math.floor((seconds % 3600) / 60);
   const secs = seconds % 60;
 
   if (hours > 0) {
-    return `${hours}:${minutes.toString().padStart(2, "0")}:${secs.toString().padStart(2, "0")}`;
+    return `${hours}:${minutes.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
   }
-  return `${minutes}:${secs.toString().padStart(2, "0")}`;
+  return `${minutes}:${secs.toString().padStart(2, '0')}`;
 };
 
 /**
@@ -95,12 +101,12 @@ export const formatTimeHuman = (seconds) => {
  * @returns {string} - Status string
  */
 export const getQuestionStatus = (response) => {
-  if (!response) return "not-visited";
-  if (!response.visited) return "not-visited";
-  if (response.markedForReview && response.selectedAnswer) return "answered-marked";
-  if (response.markedForReview) return "marked";
-  if (response.selectedAnswer) return "answered";
-  return "not-answered";
+  if (!response) return 'not-visited';
+  if (!response.visited) return 'not-visited';
+  if (response.markedForReview && response.selectedAnswer) return 'answered-marked';
+  if (response.markedForReview) return 'marked';
+  if (response.selectedAnswer) return 'answered';
+  return 'not-answered';
 };
 
 /**
@@ -110,13 +116,13 @@ export const getQuestionStatus = (response) => {
  */
 export const getStatusColor = (status) => {
   const colors = {
-    "not-visited": "bg-gray-200 text-gray-700 hover:bg-gray-300",
-    "answered": "bg-green-500 text-white hover:bg-green-600",
-    "not-answered": "bg-red-500 text-white hover:bg-red-600",
-    "marked": "bg-purple-500 text-white hover:bg-purple-600",
-    "answered-marked": "bg-orange-500 text-white hover:bg-orange-600",
+    'not-visited': 'bg-gray-200 text-gray-700 hover:bg-gray-300',
+    answered: 'bg-green-500 text-white hover:bg-green-600',
+    'not-answered': 'bg-red-500 text-white hover:bg-red-600',
+    marked: 'bg-purple-500 text-white hover:bg-purple-600',
+    'answered-marked': 'bg-orange-500 text-white hover:bg-orange-600',
   };
-  return colors[status] || colors["not-visited"];
+  return colors[status] || colors['not-visited'];
 };
 
 /**
@@ -126,13 +132,13 @@ export const getStatusColor = (status) => {
  */
 export const getStatusLabel = (status) => {
   const labels = {
-    "not-visited": "Not visited",
-    "answered": "Answered",
-    "not-answered": "Visited but not answered",
-    "marked": "Marked for review",
-    "answered-marked": "Answered and marked for review",
+    'not-visited': 'Not visited',
+    answered: 'Answered',
+    'not-answered': 'Visited but not answered',
+    marked: 'Marked for review',
+    'answered-marked': 'Answered and marked for review',
   };
-  return labels[status] || "Unknown";
+  return labels[status] || 'Unknown';
 };
 
 /**
@@ -142,16 +148,16 @@ export const getStatusLabel = (status) => {
  * @param {string} categoryKey - Key to group by ('subject' or 'topic')
  * @returns {Object} - Performance by category
  */
-export const calculatePerformanceByCategory = (questions, responses, categoryKey = "subject") => {
+export const calculatePerformanceByCategory = (questions, responses, categoryKey = 'subject') => {
   const performance = {};
 
   questions.forEach((question, index) => {
-    const category = question[categoryKey];
+    const category = question[categoryKey] || 'Unknown';
     if (!performance[category]) {
       performance[category] = { correct: 0, total: 0, timeTaken: 0 };
     }
     performance[category].total++;
-    
+
     const response = responses[index];
     if (response?.selectedAnswer === question.correctAnswer) {
       performance[category].correct++;
@@ -202,10 +208,10 @@ export const generateSessionId = () => {
 export const isValidSession = (session, userId, maxAge = 6 * 60 * 60 * 1000) => {
   if (!session) return false;
   if (session.userId && session.userId !== userId) return false;
-  
+
   const updatedAt = session.updatedAt ? new Date(session.updatedAt).getTime() : 0;
   if (Date.now() - updatedAt > maxAge) return false;
-  
+
   return true;
 };
 
@@ -252,7 +258,7 @@ export const throttle = (func, limit) => {
  */
 export const sanitizeInput = (input) => {
   if (typeof input !== 'string') return input;
-  
+
   return input
     .replace(/</g, '&lt;')
     .replace(/>/g, '&gt;')
@@ -270,7 +276,7 @@ export const sanitizeInput = (input) => {
  */
 export const sanitizeForStorage = (input) => {
   if (typeof input !== 'string') return input;
-  
+
   return input
     .replace(/<script\b[^<]*(?:(?!<\/script>)<[^<]*)*<\/script>/gi, '')
     .replace(/on\w+\s*=\s*["'][^"']*["']/gi, '')
@@ -288,12 +294,14 @@ export const sanitizeQuestionData = (questionData) => {
     ...questionData,
     questionText: sanitizeForStorage(questionData.questionText || ''),
     solution: sanitizeForStorage(questionData.solution || ''),
-    options: questionData.options ? {
-      A: sanitizeForStorage(questionData.options.A || ''),
-      B: sanitizeForStorage(questionData.options.B || ''),
-      C: sanitizeForStorage(questionData.options.C || ''),
-      D: sanitizeForStorage(questionData.options.D || ''),
-    } : questionData.options,
+    options: questionData.options
+      ? {
+          A: sanitizeForStorage(questionData.options.A || ''),
+          B: sanitizeForStorage(questionData.options.B || ''),
+          C: sanitizeForStorage(questionData.options.C || ''),
+          D: sanitizeForStorage(questionData.options.D || ''),
+        }
+      : questionData.options,
   };
 };
 
@@ -306,11 +314,11 @@ export const sanitizeObject = (obj) => {
   if (typeof obj !== 'object' || obj === null) {
     return typeof obj === 'string' ? sanitizeInput(obj) : obj;
   }
-  
+
   if (Array.isArray(obj)) {
     return obj.map(sanitizeObject);
   }
-  
+
   const sanitized = {};
   for (const [key, value] of Object.entries(obj)) {
     sanitized[key] = sanitizeObject(value);
@@ -325,20 +333,21 @@ export const sanitizeObject = (obj) => {
  */
 export const isValidEmail = (email) => {
   // More comprehensive email validation
-  const emailRegex = /^[a-zA-Z0-9.!#$%&'*+/=?^_`{|}~-]+@[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?(?:\.[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?)*$/;
-  
+  const emailRegex =
+    /^[a-zA-Z0-9.!#$%&'*+/=?^_`{|}~-]+@[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?(?:\.[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?)*$/;
+
   if (!email || typeof email !== 'string') {
     return false;
   }
-  
+
   // Basic checks
   if (email.length > 254) return false; // RFC 5321
   if (!emailRegex.test(email)) return false;
-  
+
   // Split and validate parts
   const parts = email.split('@');
   if (parts[0].length > 64) return false; // Local part max length
-  
+
   // Check for common typos
   const domain = parts[1].toLowerCase();
   const typos = {
@@ -347,14 +356,13 @@ export const isValidEmail = (email) => {
     'yahooo.com': 'yahoo.com',
     'outlok.com': 'outlook.com',
   };
-  
+
   if (typos[domain]) {
     if (import.meta.env.DEV) {
-       
       console.warn(`Did you mean ${typos[domain]}?`);
     }
   }
-  
+
   return true;
 };
 
@@ -365,12 +373,20 @@ export const isValidEmail = (email) => {
  */
 export const isDisposableEmail = (email) => {
   const disposableDomains = [
-    'tempmail.com', 'guerrillamail.com', '10minutemail.com',
-    'throwaway.email', 'mailinator.com', 'trashmail.com',
-    'temp-mail.org', 'fakeinbox.com', 'yopmail.com',
-    'maildrop.cc', 'getnada.com', 'mohmal.com'
+    'tempmail.com',
+    'guerrillamail.com',
+    '10minutemail.com',
+    'throwaway.email',
+    'mailinator.com',
+    'trashmail.com',
+    'temp-mail.org',
+    'fakeinbox.com',
+    'yopmail.com',
+    'maildrop.cc',
+    'getnada.com',
+    'mohmal.com',
   ];
-  
+
   const domain = email.split('@')[1]?.toLowerCase();
   return disposableDomains.includes(domain);
 };

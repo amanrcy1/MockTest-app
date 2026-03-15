@@ -65,24 +65,14 @@ describe('QuestionCard', () => {
 
   it('should show feedback when enabled', () => {
     render(
-      <QuestionCard 
-        {...defaultProps} 
-        selectedAnswer="B" 
-        showFeedback={true}
-        isCorrect={true}
-      />
+      <QuestionCard {...defaultProps} selectedAnswer="B" showFeedback={true} isCorrect={true} />
     );
     expect(screen.getByText(/Correct!/)).toBeInTheDocument();
   });
 
   it('should show solution in feedback', () => {
     render(
-      <QuestionCard 
-        {...defaultProps} 
-        selectedAnswer="B" 
-        showFeedback={true}
-        isCorrect={true}
-      />
+      <QuestionCard {...defaultProps} selectedAnswer="B" showFeedback={true} isCorrect={true} />
     );
     expect(screen.getByText(/Paris is the capital of France/)).toBeInTheDocument();
   });
@@ -102,7 +92,7 @@ describe('QuestionCard', () => {
   it('should disable options when disabled prop is true', () => {
     render(<QuestionCard {...defaultProps} disabled={true} />);
     const options = screen.getAllByRole('radio');
-    options.forEach(option => {
+    options.forEach((option) => {
       expect(option).toBeDisabled();
     });
   });

@@ -1,4 +1,4 @@
-import { Link } from "react-router-dom";
+import { Link } from 'react-router-dom';
 
 const TermsOfService = () => {
   return (
@@ -12,7 +12,9 @@ const TermsOfService = () => {
 
           <div className="mt-6 space-y-6 text-sm leading-7 text-gray-700 dark:text-gray-300">
             <section>
-              <h2 className="text-lg font-semibold text-gray-900 dark:text-white">1. Service Overview</h2>
+              <h2 className="text-lg font-semibold text-gray-900 dark:text-white">
+                1. Service Overview
+              </h2>
               <p>
                 Mockzam is an exam-preparation platform that provides mock tests, practice mode,
                 custom tests, analytics, leaderboard features, bookmarking, error reporting, and
@@ -21,15 +23,19 @@ const TermsOfService = () => {
             </section>
 
             <section>
-              <h2 className="text-lg font-semibold text-gray-900 dark:text-white">2. Acceptance and Eligibility</h2>
+              <h2 className="text-lg font-semibold text-gray-900 dark:text-white">
+                2. Acceptance and Eligibility
+              </h2>
               <p>
-                By using Mockzam, you agree to these terms. You must use a valid Google account
-                and comply with applicable laws and exam integrity rules.
+                By using Mockzam, you agree to these terms. You must use a valid Google account and
+                comply with applicable laws and exam integrity rules.
               </p>
             </section>
 
             <section>
-              <h2 className="text-lg font-semibold text-gray-900 dark:text-white">3. Accounts and Access</h2>
+              <h2 className="text-lg font-semibold text-gray-900 dark:text-white">
+                3. Accounts and Access
+              </h2>
               <p>
                 Authentication is handled through Google Sign-In (Firebase Authentication). You are
                 responsible for maintaining the security of your account and any activity under it.
@@ -38,7 +44,9 @@ const TermsOfService = () => {
             </section>
 
             <section>
-              <h2 className="text-lg font-semibold text-gray-900 dark:text-white">4. Acceptable Use</h2>
+              <h2 className="text-lg font-semibold text-gray-900 dark:text-white">
+                4. Acceptable Use
+              </h2>
               <p>You agree not to:</p>
               <ul className="list-disc pl-6 space-y-1">
                 <li>attempt unauthorized access to users, admin tools, or infrastructure;</li>
@@ -49,7 +57,9 @@ const TermsOfService = () => {
             </section>
 
             <section>
-              <h2 className="text-lg font-semibold text-gray-900 dark:text-white">5. Test Integrity and Anti-Cheat</h2>
+              <h2 className="text-lg font-semibold text-gray-900 dark:text-white">
+                5. Test Integrity and Anti-Cheat
+              </h2>
               <p>
                 Mock tests may enforce fullscreen mode and other anti-cheat controls. Exiting
                 required exam states can trigger warnings or automatic submission. These controls
@@ -58,7 +68,9 @@ const TermsOfService = () => {
             </section>
 
             <section>
-              <h2 className="text-lg font-semibold text-gray-900 dark:text-white">6. AI Features</h2>
+              <h2 className="text-lg font-semibold text-gray-900 dark:text-white">
+                6. AI Features
+              </h2>
               <p>
                 AI features are provided for educational support only. Responses may be incomplete
                 or incorrect and should not be treated as official exam authority. Do not share
@@ -67,7 +79,9 @@ const TermsOfService = () => {
             </section>
 
             <section>
-              <h2 className="text-lg font-semibold text-gray-900 dark:text-white">7. Content and Intellectual Property</h2>
+              <h2 className="text-lg font-semibold text-gray-900 dark:text-white">
+                7. Content and Intellectual Property
+              </h2>
               <p>
                 The platform design, code, branding, and original content remain protected by
                 applicable intellectual property law. You retain rights to content you submit, but
@@ -76,24 +90,31 @@ const TermsOfService = () => {
             </section>
 
             <section>
-              <h2 className="text-lg font-semibold text-gray-900 dark:text-white">8. Availability and Changes</h2>
+              <h2 className="text-lg font-semibold text-gray-900 dark:text-white">
+                8. Availability and Changes
+              </h2>
               <p>
-                We may modify features, limits, or integrations (including AI providers) at any
-                time to improve reliability, security, or quality.
+                We may modify features, limits, or integrations (including AI providers) at any time
+                to improve reliability, security, or quality.
               </p>
             </section>
 
             <section>
-              <h2 className="text-lg font-semibold text-gray-900 dark:text-white">9. Disclaimer and Limitation</h2>
+              <h2 className="text-lg font-semibold text-gray-900 dark:text-white">
+                9. Disclaimer and Limitation
+              </h2>
               <p>
-                Mockzam is provided on an &quot;as is&quot; and &quot;as available&quot; basis. To the fullest extent
-                permitted by law, we disclaim warranties and are not liable for indirect, incidental,
-                special, or consequential damages arising from use of the service.
+                Mockzam is provided on an &quot;as is&quot; and &quot;as available&quot; basis. To
+                the fullest extent permitted by law, we disclaim warranties and are not liable for
+                indirect, incidental, special, or consequential damages arising from use of the
+                service.
               </p>
             </section>
 
             <section>
-              <h2 className="text-lg font-semibold text-gray-900 dark:text-white">10. Termination</h2>
+              <h2 className="text-lg font-semibold text-gray-900 dark:text-white">
+                10. Termination
+              </h2>
               <p>
                 We may restrict or terminate access for violation of these terms, abuse of platform
                 resources, security threats, or misuse of admin/AI features.
@@ -103,8 +124,7 @@ const TermsOfService = () => {
             <section>
               <h2 className="text-lg font-semibold text-gray-900 dark:text-white">11. Contact</h2>
               <p>
-                For legal or policy questions, open an issue in the project repository:
-                {" "}
+                For legal or policy questions, open an issue in the project repository:{' '}
                 <a
                   className="underline"
                   href="https://github.com/amanrcy1/MockTest-app/issues"

@@ -157,13 +157,7 @@ describe('ConfirmModal', () => {
   });
 
   it('should use custom button labels', () => {
-    render(
-      <ConfirmModal
-        {...defaultProps}
-        confirmText="Delete"
-        cancelText="Keep"
-      />
-    );
+    render(<ConfirmModal {...defaultProps} confirmText="Delete" cancelText="Keep" />);
 
     expect(screen.getByText('Delete')).toBeInTheDocument();
     expect(screen.getByText('Keep')).toBeInTheDocument();

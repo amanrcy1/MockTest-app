@@ -1,5 +1,5 @@
-import React from "react";
-import PropTypes from "prop-types";
+import React from 'react';
+import PropTypes from 'prop-types';
 
 class ErrorBoundary extends React.Component {
   constructor(props) {
@@ -15,8 +15,7 @@ class ErrorBoundary extends React.Component {
     this.setState({ error, errorInfo });
     // Log error only in development
     if (import.meta.env.DEV) {
-       
-      console.error("ErrorBoundary caught an error:", error, errorInfo);
+      console.error('ErrorBoundary caught an error:', error, errorInfo);
     }
     // In production, send to error tracking service (e.g., Sentry)
   }
@@ -60,7 +59,7 @@ class ErrorBoundary extends React.Component {
                 Try Again
               </button>
               <button
-                onClick={() => window.location.href = "/dashboard"}
+                onClick={() => (window.location.href = '/dashboard')}
                 className="w-full bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-200 py-3 rounded-lg font-semibold hover:bg-gray-300 dark:hover:bg-gray-600 transition-colors"
               >
                 Go to Dashboard

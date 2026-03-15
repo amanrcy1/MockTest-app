@@ -3,7 +3,9 @@ import { render, screen, fireEvent } from '@testing-library/react';
 // Import directly, not from the barrel (which is mocked in setupTests)
 import ErrorBoundary from '../ErrorBoundary';
 
-const ThrowError = () => { throw new Error('Test error'); };
+const ThrowError = () => {
+  throw new Error('Test error');
+};
 const WorkingComponent = () => <div>Working</div>;
 
 describe('ErrorBoundary', () => {
@@ -65,11 +67,11 @@ describe('ErrorBoundary', () => {
       </ErrorBoundary>
     );
     expect(screen.getByText(/something went wrong/i)).toBeInTheDocument();
-    
+
     // Stop throwing before clicking retry
     shouldThrow = false;
     fireEvent.click(screen.getByRole('button', { name: /try again/i }));
-    
+
     // After retry with no error, should show working content
     rerender(
       <ErrorBoundary>

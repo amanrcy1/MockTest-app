@@ -7,10 +7,10 @@ import {
   query,
   where,
   limit as firestoreLimit,
-} from "firebase/firestore";
-import { db } from "../config/firebase";
-import { COLLECTIONS } from "../constants";
-import { testSubmitLimiter } from "../utils/securityUtils";
+} from 'firebase/firestore';
+import { db } from '../config/firebase';
+import { COLLECTIONS } from '../constants';
+import { testSubmitLimiter } from '../utils/securityUtils';
 
 /**
  * Save test result with rate limiting
@@ -19,7 +19,7 @@ export const saveTestResult = async (testData) => {
   // Rate limiting check
   const userId = testData.userId;
   if (!testSubmitLimiter.canMakeRequest(userId)) {
-    throw new Error("Too many test submissions. Wait before submitting again.");
+    throw new Error('Too many test submissions. Wait before submitting again.');
   }
 
   const docRef = await addDoc(collection(db, COLLECTIONS.TESTS), {
@@ -44,12 +44,12 @@ export const getTestById = async (testId) => {
 export const getUserTestHistory = async (userId, options = {}) => {
   let q = query(
     collection(db, COLLECTIONS.TESTS),
-    where("userId", "==", userId),
-    where("completed", "==", true)
+    where('userId', '==', userId),
+    where('completed', '==', true)
   );
 
   if (options.examType) {
-    q = query(q, where("examType", "==", options.examType));
+    q = query(q, where('examType', '==', options.examType));
   }
 
   const snapshot = await getDocs(q);
@@ -67,8 +67,8 @@ export const getUserTestHistory = async (userId, options = {}) => {
 export const getLeaderboard = async (examType, dateRange = null, limitCount = 100) => {
   let q = query(
     collection(db, COLLECTIONS.TESTS),
-    where("examType", "==", examType),
-    where("completed", "==", true),
+    where('examType', '==', examType),
+    where('completed', '==', true),
     firestoreLimit(limitCount * 2) // Fetch more to account for duplicates per user
   );
 
@@ -116,18 +116,16 @@ export const getLeaderboard = async (examType, dateRange = null, limitCount = 10
 export const getUserStats = async (userId) => {
   const q = query(
     collection(db, COLLECTIONS.TESTS),
-    where("userId", "==", userId),
-    where("completed", "==", true)
+    where('userId', '==', userId),
+    where('completed', '==', true)
   );
-  
+
   const snapshot = await getDocs(q);
   const tests = snapshot.docs.map((doc) => doc.data());
 
   const attempted = tests.length;
   const averageAccuracy =
-    attempted > 0
-      ? tests.reduce((sum, t) => sum + Number(t.accuracy || 0), 0) / attempted
-      : 0;
+    attempted > 0 ? tests.reduce((sum, t) => sum + Number(t.accuracy || 0), 0) / attempted : 0;
   const totalTimeTaken = tests.reduce((sum, t) => sum + (t.timeTaken || 0), 0);
 
   return {

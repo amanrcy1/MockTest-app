@@ -1,8 +1,5 @@
 import { vi } from 'vitest';
-import {
-  saveTestResult,
-  getUserStats,
-} from '../testService';
+import { saveTestResult, getUserStats } from '../testService';
 import { testSubmitLimiter } from '../../utils/securityUtils';
 import { addDoc, getDocs } from 'firebase/firestore';
 
@@ -35,9 +32,7 @@ describe('testService', () => {
 
       const testData = { userId: 'user1', score: 85 };
 
-      await expect(saveTestResult(testData)).rejects.toThrow(
-        'Too many test submissions'
-      );
+      await expect(saveTestResult(testData)).rejects.toThrow('Too many test submissions');
     });
   });
 
@@ -50,7 +45,7 @@ describe('testService', () => {
       ];
 
       getDocs.mockResolvedValue({
-        docs: mockTests.map(data => ({ data: () => data })),
+        docs: mockTests.map((data) => ({ data: () => data })),
       });
 
       const stats = await getUserStats('user1');

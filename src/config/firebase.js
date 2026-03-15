@@ -1,8 +1,8 @@
-import { initializeApp } from "firebase/app";
-import { getAuth } from "firebase/auth";
-import { getFirestore } from "firebase/firestore";
-import { getStorage } from "firebase/storage";
-import { initializeAppCheck, ReCaptchaV3Provider } from "firebase/app-check";
+import { initializeApp } from 'firebase/app';
+import { getAuth } from 'firebase/auth';
+import { getFirestore } from 'firebase/firestore';
+import { getStorage } from 'firebase/storage';
+import { initializeAppCheck, ReCaptchaV3Provider } from 'firebase/app-check';
 
 /**
  * Firebase configuration
@@ -16,10 +16,10 @@ const requiredEnvVars = [
 ];
 
 // Check for required environment variables
-const missing = requiredEnvVars.filter(key => !import.meta.env[key]);
+const missing = requiredEnvVars.filter((key) => !import.meta.env[key]);
 if (missing.length > 0) {
   const errorMsg = `Missing Firebase environment variables: ${missing.join(', ')}`;
-  
+
   if (import.meta.env.PROD) {
     // In production, throw error to prevent app from running with missing config
     throw new Error(errorMsg);
@@ -27,7 +27,7 @@ if (missing.length > 0) {
     // In development, only warn
     console.warn(
       `[WARNING] ${errorMsg}\n` +
-      'Create a .env file in your project root. See .env.example for reference.'
+        'Create a .env file in your project root. See .env.example for reference.'
     );
   }
 }
@@ -50,17 +50,17 @@ let storage;
 try {
   app = initializeApp(firebaseConfig);
   auth = getAuth(app);
-  
+
   // Initialize Firestore with offline persistence (new method)
   db = getFirestore(app);
-  
+
   storage = getStorage(app);
-  
+
   // Enable App Check in production
   if (import.meta.env.PROD && import.meta.env.VITE_RECAPTCHA_SITE_KEY) {
     initializeAppCheck(app, {
       provider: new ReCaptchaV3Provider(import.meta.env.VITE_RECAPTCHA_SITE_KEY),
-      isTokenAutoRefreshEnabled: true
+      isTokenAutoRefreshEnabled: true,
     });
   }
 } catch (error) {

@@ -1,56 +1,58 @@
-import { Suspense, lazy, useCallback, useState } from "react";
-import PropTypes from "prop-types";
-import {
-  BrowserRouter as Router,
-  Routes,
-  Route,
-  Navigate,
-  useLocation,
-} from "react-router-dom";
-import { AuthProvider, useAuth } from "./context/AuthContext";
-import { ThemeProvider } from "./context/ThemeContext";
-import { ToastContainer } from "react-toastify";
-import "react-toastify/dist/ReactToastify.css";
-import { ErrorBoundary, AiChatWidget } from "./components";
-import InstallBanner from "./components/ui/InstallBanner";
-import SwipeRefresh from "./components/ui/SwipeRefresh";
+import { Suspense, lazy, useCallback, useState } from 'react';
+import PropTypes from 'prop-types';
+import { BrowserRouter as Router, Routes, Route, Navigate, useLocation } from 'react-router-dom';
+import { AuthProvider, useAuth } from './context/AuthContext';
+import { ThemeProvider } from './context/ThemeContext';
+import { ToastContainer } from 'react-toastify';
+import 'react-toastify/dist/ReactToastify.css';
+import { ErrorBoundary, AiChatWidget } from './components';
+import InstallBanner from './components/ui/InstallBanner';
+import SwipeRefresh from './components/ui/SwipeRefresh';
 
 // Eager load critical pages
-import Auth from "./pages/auth/Auth";
-import Dashboard from "./pages/user/Dashboard";
+import Auth from './pages/auth/Auth';
+import Dashboard from './pages/user/Dashboard';
 
 // Lazy load other pages for better performance
-const AdminDashboard = lazy(() => import("./pages/admin/Dashboard"));
-const AddQuestion = lazy(() => import("./pages/admin/AddQuestion"));
-const ManageQuestions = lazy(() => import("./pages/admin/ManageQuestions"));
-const BulkUpload = lazy(() => import("./pages/admin/BulkUpload"));
-const TestSelection = lazy(() => import("./pages/test/TestSelection"));
-const MockTest = lazy(() => import("./pages/test/MockTest"));
-const PaperSelection = lazy(() => import("./pages/test/PaperSelection"));
-const TestResult = lazy(() => import("./pages/test/TestResult"));
-const PracticeMode = lazy(() => import("./pages/test/PracticeMode"));
-const CustomTestSetup = lazy(() => import("./pages/test/CustomTestSetup"));
-const CustomTest = lazy(() => import("./pages/test/CustomTest"));
-const Leaderboard = lazy(() => import("./pages/user/Leaderboard"));
-const TestHistory = lazy(() => import("./pages/test/TestHistory"));
-const AdminUsers = lazy(() => import("./pages/admin/Users"));
-const Bookmarks = lazy(() => import("./pages/user/Bookmarks"));
-const AdminErrorReports = lazy(() => import("./pages/admin/ErrorReports"));
-const AdminBookmarks = lazy(() => import("./pages/admin/Bookmarks"));
-const Profile = lazy(() => import("./pages/user/Profile"));
-const Onboarding = lazy(() => import("./pages/Onboarding"));
-const NotFound = lazy(() => import("./pages/NotFound"));
-const Landing = lazy(() => import("./pages/Landing"));
-const Universe = lazy(() => import("./pages/Universe"));
-const TermsOfService = lazy(() => import("./pages/legal/TermsOfService"));
-const PrivacyPolicy = lazy(() => import("./pages/legal/PrivacyPolicy"));
+const AdminDashboard = lazy(() => import('./pages/admin/Dashboard'));
+const AddQuestion = lazy(() => import('./pages/admin/AddQuestion'));
+const ManageQuestions = lazy(() => import('./pages/admin/ManageQuestions'));
+const BulkUpload = lazy(() => import('./pages/admin/BulkUpload'));
+const TestSelection = lazy(() => import('./pages/test/TestSelection'));
+const MockTest = lazy(() => import('./pages/test/MockTest'));
+const PaperSelection = lazy(() => import('./pages/test/PaperSelection'));
+const TestResult = lazy(() => import('./pages/test/TestResult'));
+const PracticeMode = lazy(() => import('./pages/test/PracticeMode'));
+const CustomTestSetup = lazy(() => import('./pages/test/CustomTestSetup'));
+const CustomTest = lazy(() => import('./pages/test/CustomTest'));
+const Leaderboard = lazy(() => import('./pages/user/Leaderboard'));
+const TestHistory = lazy(() => import('./pages/test/TestHistory'));
+const AdminUsers = lazy(() => import('./pages/admin/Users'));
+const Bookmarks = lazy(() => import('./pages/user/Bookmarks'));
+const AdminErrorReports = lazy(() => import('./pages/admin/ErrorReports'));
+const AdminBookmarks = lazy(() => import('./pages/admin/Bookmarks'));
+const Profile = lazy(() => import('./pages/user/Profile'));
+const Onboarding = lazy(() => import('./pages/Onboarding'));
+const NotFound = lazy(() => import('./pages/NotFound'));
+const Landing = lazy(() => import('./pages/Landing'));
+const TermsOfService = lazy(() => import('./pages/legal/TermsOfService'));
+const PrivacyPolicy = lazy(() => import('./pages/legal/PrivacyPolicy'));
 
 // Chat widget — hidden during active tests and on public/admin pages
 const ChatWrapper = () => {
   const { currentUser, userDetails } = useAuth();
   const location = useLocation();
-  const hiddenPaths = ["/test/mock", "/test/paper-selection", "/test/practice", "/test/custom", "/login", "/", "/onboarding"];
-  const isHidden = hiddenPaths.some((p) => location.pathname === p) || location.pathname.startsWith("/admin");
+  const hiddenPaths = [
+    '/test/mock',
+    '/test/paper-selection',
+    '/test/practice',
+    '/test/custom',
+    '/login',
+    '/',
+    '/onboarding',
+  ];
+  const isHidden =
+    hiddenPaths.some((p) => location.pathname === p) || location.pathname.startsWith('/admin');
   if (!currentUser || isHidden) return null;
 
   // Build rich context so AI knows the user
@@ -64,14 +66,14 @@ const ChatWrapper = () => {
 };
 
 const REFRESH_STORAGE_KEYS = [
-  "questionCounts",
-  "questionCountsAt",
-  "ai_chat_stats",
-  "ai_chat_messages",
+  'questionCounts',
+  'questionCountsAt',
+  'ai_chat_stats',
+  'ai_chat_messages',
 ];
 
 const bumpGlobalRefreshEpoch = () => {
-  if (typeof window === "undefined") return 0;
+  if (typeof window === 'undefined') return 0;
   const current = Number(window.__APP_REFRESH_EPOCH__ || 0);
   const next = current + 1;
   window.__APP_REFRESH_EPOCH__ = next;
@@ -79,7 +81,7 @@ const bumpGlobalRefreshEpoch = () => {
 };
 
 const clearRefreshCaches = () => {
-  if (typeof sessionStorage === "undefined") return;
+  if (typeof sessionStorage === 'undefined') return;
   for (const key of REFRESH_STORAGE_KEYS) {
     sessionStorage.removeItem(key);
   }
@@ -89,7 +91,10 @@ const clearRefreshCaches = () => {
 const PageLoader = () => (
   <div className="min-h-screen bg-gray-100 dark:bg-gray-950 flex items-center justify-center">
     <div className="text-center">
-      <div className="inline-block animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600" aria-hidden="true"></div>
+      <div
+        className="inline-block animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"
+        aria-hidden="true"
+      ></div>
       <p className="mt-4 text-gray-600 dark:text-gray-300">Loading...</p>
     </div>
   </div>
@@ -98,11 +103,11 @@ const PageLoader = () => (
 // Protected Route Component
 const ProtectedRoute = ({ children, skipOnboardingCheck = false }) => {
   const { currentUser, userDetails, loading } = useAuth();
-  
+
   if (loading) {
     return <PageLoader />;
   }
-  
+
   if (!currentUser) return <Navigate to="/login" />;
 
   // Redirect to onboarding if not completed (skip for the onboarding page itself)
@@ -121,19 +126,19 @@ ProtectedRoute.propTypes = {
 // Admin Route Component
 const AdminRoute = ({ children }) => {
   const { currentUser, userDetails, loading } = useAuth();
-  
+
   if (loading) {
     return <PageLoader />;
   }
-  
+
   if (!currentUser) {
     return <Navigate to="/login" />;
   }
-  
+
   if (!userDetails) {
     return <PageLoader />;
   }
-  
+
   return userDetails.isAdmin ? children : <Navigate to="/dashboard" />;
 };
 
@@ -144,11 +149,11 @@ AdminRoute.propTypes = {
 // Public Route Component (redirect if already logged in)
 const PublicRoute = ({ children }) => {
   const { currentUser, userDetails, loading } = useAuth();
-  
+
   if (loading) {
     return <PageLoader />;
   }
-  
+
   // Not logged in - show the public page
   if (!currentUser) {
     return children;
@@ -160,7 +165,7 @@ const PublicRoute = ({ children }) => {
   }
 
   // Logged in - redirect to appropriate page
-  return <Navigate to={userDetails?.onboardingComplete ? "/dashboard" : "/onboarding"} />;
+  return <Navigate to={userDetails?.onboardingComplete ? '/dashboard' : '/onboarding'} />;
 };
 
 PublicRoute.propTypes = {
@@ -191,7 +196,7 @@ function App() {
         <a href="#main-content" className="skip-link">
           Skip to main content
         </a>
-        
+
         <ToastContainer
           position="top-right"
           autoClose={3000}
@@ -398,23 +403,23 @@ function App() {
                 }
               />
 
-              {/* Universe Explorer */}
-              <Route path="/universe" element={<Universe />} />
-
               {/* Default redirect */}
-              <Route path="/" element={
-                <PublicRoute>
-                  <Landing />
-                </PublicRoute>
-              } />
+              <Route
+                path="/"
+                element={
+                  <PublicRoute>
+                    <Landing />
+                  </PublicRoute>
+                }
+              />
               <Route path="*" element={<NotFound />} />
             </Routes>
           </Suspense>
         </main>
-        
+
         {/* PWA Install Banner */}
         <InstallBanner />
-        
+
         {/* AI Chat Widget */}
         <ChatWrapper />
       </>

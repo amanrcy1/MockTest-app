@@ -1,27 +1,28 @@
-import { useCallback, useEffect, useRef, useState, useMemo } from "react";
-import { useLocation, useNavigate } from "react-router-dom";
-import {
-  addDoc,
-  collection,
-  getDocs,
-  query,
-  where,
-} from "firebase/firestore";
-import toast, { messages } from "../../utils/toast";
-import { db } from "../../config/firebase";
-import { useAuth } from "../../context/AuthContext";
-import { EXAM_PATTERNS } from "../../utils/examPatterns";
+import { useCallback, useEffect, useRef, useState, useMemo } from 'react';
+import { useLocation, useNavigate } from 'react-router-dom';
+import { addDoc, collection, getDocs, query, where } from 'firebase/firestore';
+import toast, { messages } from '../../utils/toast';
+import { db } from '../../config/firebase';
+import { useAuth } from '../../context/AuthContext';
+import { EXAM_PATTERNS } from '../../utils/examPatterns';
 import {
   calculateScore,
   formatTime,
   getQuestionStatus,
   getStatusColor,
   shuffleArray,
-} from "../../utils/testUtils";
-import { useKeyboardShortcuts, useNavigationBlock, useAntiCheat, randomizeTest, useTestSession, useBookmarks, useErrorReport } from "../../hooks";
-import { ViolationModal, PageSpinner, ResumePrompt, ReportModal } from "../../components";
-import { Timer3D } from "../../components/3d";
-import logger from "../../utils/logger";
+} from '../../utils/testUtils';
+import {
+  useKeyboardShortcuts,
+  useNavigationBlock,
+  useAntiCheat,
+  randomizeTest,
+  useTestSession,
+  useBookmarks,
+  useErrorReport,
+} from '../../hooks';
+import { ViolationModal, PageSpinner, ResumePrompt, ReportModal, Timer } from '../../components';
+import logger from '../../utils/logger';
 
 const MockTest = () => {
   const navigate = useNavigate();
@@ -62,20 +63,31 @@ const MockTest = () => {
   const examPattern = EXAM_PATTERNS[examType];
 
   // Shared hooks
-  const sessionStorageKey = singlePaper && sectionId ? `mockTestSession_${sectionId}` : "mockTestSession";
+  const sessionStorageKey =
+    singlePaper && sectionId ? `mockTestSession_${sectionId}` : 'mockTestSession';
   const { saveSession, loadSavedSession, clearSession } = useTestSession(
-    sessionStorageKey, "activeTestSession",
-    { mode: "mock", examType, userId: currentUser?.uid }
+    sessionStorageKey,
+    'activeTestSession',
+    { mode: 'mock', examType, userId: currentUser?.uid }
   );
   const { bookmarkMap, loadBookmarks, toggleBookmark } = useBookmarks(currentUser?.uid, examType);
   const {
-    showReportModal, reportText, setReportText, reportSubmitting,
-    openReport, closeReport, submitReport,
+    showReportModal,
+    reportText,
+    setReportText,
+    reportSubmitting,
+    openReport,
+    closeReport,
+    submitReport,
   } = useErrorReport(currentUser?.uid, examType);
 
   // Block navigation when test is in progress
-  const isTestInProgress = !loading && !showInstructions && !showResumePrompt && questions.length > 0;
-  useNavigationBlock(isTestInProgress, 'You have an ongoing test. Your progress will be saved, but are you sure you want to leave?');
+  const isTestInProgress =
+    !loading && !showInstructions && !showResumePrompt && questions.length > 0;
+  useNavigationBlock(
+    isTestInProgress,
+    'You have an ongoing test. Your progress will be saved, but are you sure you want to leave?'
+  );
 
   // Ref to store submit function for violation auto-submit
   const submitTestRef = useRef(null);
@@ -89,10 +101,10 @@ const MockTest = () => {
   }, []);
 
   // Anti-cheat measures
-  const { 
-    enterFullscreen, 
-    exitFullscreen, 
-    showViolationModal, 
+  const {
+    enterFullscreen,
+    exitFullscreen,
+    showViolationModal,
     resumeTest,
     violationCount,
     remainingWarnings,
@@ -108,16 +120,18 @@ const MockTest = () => {
   const focusFirstInteractive = useCallback((container) => {
     if (!container) return;
     const focusable = container.querySelector(
-      'button:not([disabled]), [href], input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])',
+      'button:not([disabled]), [href], input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])'
     );
     (focusable || container).focus();
   }, []);
 
   const trapFocus = useCallback((event, container) => {
-    if (!container || event.key !== "Tab") return;
-    const focusable = Array.from(container.querySelectorAll(
-      'button:not([disabled]), [href], input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])',
-    ));
+    if (!container || event.key !== 'Tab') return;
+    const focusable = Array.from(
+      container.querySelectorAll(
+        'button:not([disabled]), [href], input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])'
+      )
+    );
     if (focusable.length === 0) {
       event.preventDefault();
       return;
@@ -135,71 +149,71 @@ const MockTest = () => {
 
   const buildSectionedQuestions = useCallback(
     (allQuestions) => {
-    if (!examPattern) return { selectedQuestions: [], sectionMeta: [] };
+      if (!examPattern) return { selectedQuestions: [], sectionMeta: [] };
 
-    // Single paper mode: only build one section
-    if (singlePaper && sectionId) {
-      const targetSection = examPattern.sections.find(s => s.id === sectionId);
-      if (!targetSection) return { selectedQuestions: [], sectionMeta: [] };
+      // Single paper mode: only build one section
+      if (singlePaper && sectionId) {
+        const targetSection = examPattern.sections.find((s) => s.id === sectionId);
+        if (!targetSection) return { selectedQuestions: [], sectionMeta: [] };
 
-      let sectionQuestions = allQuestions.filter(q => q.subject === targetSection.name);
-      if (sectionQuestions.length < targetSection.totalQuestions) {
-        return { selectedQuestions: [], sectionMeta: [] };
+        let sectionQuestions = allQuestions.filter((q) => q.subject === targetSection.name);
+        if (sectionQuestions.length < targetSection.totalQuestions) {
+          return { selectedQuestions: [], sectionMeta: [] };
+        }
+        sectionQuestions = sectionQuestions.slice(0, targetSection.totalQuestions);
+
+        const sectionMeta = [
+          {
+            ...targetSection,
+            startIndex: 0,
+            endIndex: sectionQuestions.length - 1,
+          },
+        ];
+        return { selectedQuestions: sectionQuestions, sectionMeta };
       }
-      sectionQuestions = sectionQuestions.slice(0, targetSection.totalQuestions);
 
-      const sectionMeta = [{
-        ...targetSection,
-        startIndex: 0,
-        endIndex: sectionQuestions.length - 1,
-      }];
-      return { selectedQuestions: sectionQuestions, sectionMeta };
-    }
-
-    // Multi-section mode (original behavior)
-    const totalRequired = examPattern.sections.reduce(
-      (sum, section) => sum + section.totalQuestions,
-      0,
-    );
-
-    if (allQuestions.length < totalRequired) {
-      return { selectedQuestions: [], sectionMeta: [] };
-    }
-
-    let remaining = [...allQuestions];
-    const selectedQuestions = [];
-    const sectionMeta = [];
-
-    examPattern.sections.forEach((section) => {
-      let sectionQuestions = remaining.filter(
-        (question) => question.subject === section.name,
+      // Multi-section mode (original behavior)
+      const totalRequired = examPattern.sections.reduce(
+        (sum, section) => sum + section.totalQuestions,
+        0
       );
 
-      if (sectionQuestions.length > section.totalQuestions) {
-        sectionQuestions = sectionQuestions.slice(0, section.totalQuestions);
+      if (allQuestions.length < totalRequired) {
+        return { selectedQuestions: [], sectionMeta: [] };
       }
 
-      const selectedIds = new Set(sectionQuestions.map((q) => q.id));
-      remaining = remaining.filter((q) => !selectedIds.has(q.id));
+      let remaining = [...allQuestions];
+      const selectedQuestions = [];
+      const sectionMeta = [];
 
-      if (sectionQuestions.length < section.totalQuestions) {
-        const needed = section.totalQuestions - sectionQuestions.length;
-        const fallback = remaining.slice(0, needed);
-        sectionQuestions = sectionQuestions.concat(fallback);
-        const fallbackIds = new Set(fallback.map((q) => q.id));
-        remaining = remaining.filter((q) => !fallbackIds.has(q.id));
-      }
+      examPattern.sections.forEach((section) => {
+        let sectionQuestions = remaining.filter((question) => question.subject === section.name);
 
-      const startIndex = selectedQuestions.length;
-      selectedQuestions.push(...sectionQuestions);
-      sectionMeta.push({
-        ...section,
-        startIndex,
-        endIndex: selectedQuestions.length - 1,
+        if (sectionQuestions.length > section.totalQuestions) {
+          sectionQuestions = sectionQuestions.slice(0, section.totalQuestions);
+        }
+
+        const selectedIds = new Set(sectionQuestions.map((q) => q.id));
+        remaining = remaining.filter((q) => !selectedIds.has(q.id));
+
+        if (sectionQuestions.length < section.totalQuestions) {
+          const needed = section.totalQuestions - sectionQuestions.length;
+          const fallback = remaining.slice(0, needed);
+          sectionQuestions = sectionQuestions.concat(fallback);
+          const fallbackIds = new Set(fallback.map((q) => q.id));
+          remaining = remaining.filter((q) => !fallbackIds.has(q.id));
+        }
+
+        const startIndex = selectedQuestions.length;
+        selectedQuestions.push(...sectionQuestions);
+        sectionMeta.push({
+          ...section,
+          startIndex,
+          endIndex: selectedQuestions.length - 1,
+        });
       });
-    });
 
-    return { selectedQuestions, sectionMeta };
+      return { selectedQuestions, sectionMeta };
     },
     [examPattern?.sections, singlePaper, sectionId] // eslint-disable-line react-hooks/exhaustive-deps
   );
@@ -207,13 +221,13 @@ const MockTest = () => {
   const fetchQuestions = useCallback(async () => {
     try {
       setLoading(true);
-      
+
       // Build query - for single paper, filter by subject too
-      const constraints = [where("examType", "==", examType)];
+      const constraints = [where('examType', '==', examType)];
       if (singlePaper && sectionName) {
-        constraints.push(where("subject", "==", sectionName));
+        constraints.push(where('subject', '==', sectionName));
       }
-      const q = query(collection(db, "questions"), ...constraints);
+      const q = query(collection(db, 'questions'), ...constraints);
       const snapshot = await getDocs(q);
 
       let allQuestions = snapshot.docs.map((doc) => ({
@@ -223,37 +237,33 @@ const MockTest = () => {
 
       allQuestions = shuffleArray(allQuestions);
 
-      const { selectedQuestions, sectionMeta } =
-        buildSectionedQuestions(allQuestions);
+      const { selectedQuestions, sectionMeta } = buildSectionedQuestions(allQuestions);
 
       if (selectedQuestions.length === 0) {
-        const targetSection = singlePaper && sectionId
-          ? examPattern.sections.find(s => s.id === sectionId)
-          : null;
+        const targetSection =
+          singlePaper && sectionId ? examPattern.sections.find((s) => s.id === sectionId) : null;
         const totalRequired = targetSection
           ? targetSection.totalQuestions
           : examPattern.sections.reduce((sum, section) => sum + section.totalQuestions, 0);
-        toast.error(
-          messages.INSUFFICIENT_QUESTIONS(totalRequired, allQuestions.length),
-        );
-        navigate(singlePaper ? "/test/paper-selection" : "/test-selection", {
+        toast.error(messages.INSUFFICIENT_QUESTIONS(totalRequired, allQuestions.length));
+        navigate(singlePaper ? '/test/paper-selection' : '/test-selection', {
           state: singlePaper ? { examType } : undefined,
         });
         return;
       }
 
       setSections(sectionMeta);
-      
+
       // Randomize options for each question (anti-cheat measure)
       const randomizedQuestions = randomizeTest(selectedQuestions, currentUser?.uid);
       setQuestions(randomizedQuestions);
-      
+
       setCurrentSectionIndex(0);
       setCurrentQuestionIndex(sectionMeta[0]?.startIndex || 0);
 
       const initialResponses = randomizedQuestions.map((question, index) => {
         const section = sectionMeta.find(
-          (meta) => index >= meta.startIndex && index <= meta.endIndex,
+          (meta) => index >= meta.startIndex && index <= meta.endIndex
         );
         return {
           questionId: question.id,
@@ -269,22 +279,28 @@ const MockTest = () => {
       setResponses(initialResponses);
 
       // For single paper, use only that section's duration
-      const totalTime = sectionMeta.reduce(
-        (sum, section) => sum + section.duration * 60,
-        0,
-      );
+      const totalTime = sectionMeta.reduce((sum, section) => sum + section.duration * 60, 0);
       setTimeRemaining(totalTime);
       setSectionTimeRemaining(sectionMeta[0]?.duration * 60 || 0);
 
       setLoading(false);
     } catch (error) {
-      logger.error("Error fetching questions:", error);
+      logger.error('Error fetching questions:', error);
       toast.error(messages.TEST_LOAD_FAILED);
-      navigate(singlePaper ? "/test/paper-selection" : "/test-selection", {
+      navigate(singlePaper ? '/test/paper-selection' : '/test-selection', {
         state: singlePaper ? { examType } : undefined,
       });
     }
-  }, [buildSectionedQuestions, currentUser, examPattern, examType, navigate, singlePaper, sectionId, sectionName]);
+  }, [
+    buildSectionedQuestions,
+    currentUser,
+    examPattern,
+    examType,
+    navigate,
+    singlePaper,
+    sectionId,
+    sectionName,
+  ]);
 
   const restoreSession = useCallback((session) => {
     setQuestions(session.questions || []);
@@ -299,10 +315,7 @@ const MockTest = () => {
   }, []);
 
   const recordTimeSpent = useCallback(() => {
-    if (
-      questionStartRef.current === null ||
-      lastQuestionIndexRef.current === null
-    ) {
+    if (questionStartRef.current === null || lastQuestionIndexRef.current === null) {
       return;
     }
     const delta = Math.floor((Date.now() - questionStartRef.current) / 1000);
@@ -339,24 +352,25 @@ const MockTest = () => {
       }
 
       // For single paper, use only the active section's duration
-      const activeSections = singlePaper && sectionId
-        ? examPattern.sections.filter(s => s.id === sectionId)
-        : examPattern.sections;
+      const activeSections =
+        singlePaper && sectionId
+          ? examPattern.sections.filter((s) => s.id === sectionId)
+          : examPattern.sections;
       const totalDurationSeconds = activeSections.reduce(
         (sum, section) => sum + section.duration * 60,
-        0,
+        0
       );
 
       const scoreData = calculateScore(responses, questions);
       const testData = {
         userId: currentUser.uid,
         examType,
-        testMode: "mock",
+        testMode: 'mock',
         ...(singlePaper && sectionId ? { sectionId, sectionName } : {}),
         questions: questions.map((q) => q.id),
         responses,
         startTime: new Date(
-          Date.now() - (totalDurationSeconds - timeRemaining) * 1000,
+          Date.now() - (totalDurationSeconds - timeRemaining) * 1000
         ).toISOString(),
         endTime: new Date().toISOString(),
         timeRemaining,
@@ -369,15 +383,15 @@ const MockTest = () => {
         completed: true,
       };
 
-      const docRef = await addDoc(collection(db, "tests"), testData);
+      const docRef = await addDoc(collection(db, 'tests'), testData);
       clearSession();
-      
+
       // Exit fullscreen before navigating
       exitFullscreen();
 
       if (singlePaper && sectionId) {
         // Navigate back to paper selection with completed paper data
-        navigate("/test/paper-selection", {
+        navigate('/test/paper-selection', {
           state: {
             examType,
             completedPaper: {
@@ -391,18 +405,18 @@ const MockTest = () => {
           },
         });
       } else {
-        navigate("/test/result", {
+        navigate('/test/result', {
           state: {
             testId: docRef.id,
             questions,
             responses,
             examType,
-            testMode: "mock",
+            testMode: 'mock',
           },
         });
       }
     } catch (error) {
-      logger.error("Error submitting test:", error);
+      logger.error('Error submitting test:', error);
       toast.error(messages.TEST_SUBMIT_FAILED);
     }
   }, [
@@ -434,13 +448,11 @@ const MockTest = () => {
   useEffect(() => {
     if (!examType || !examPattern) {
       toast.error(messages.NO_EXAM_SELECTED);
-      navigate("/test-selection");
+      navigate('/test-selection');
       return;
     }
 
-    const saved = loadSavedSession(
-      (s) => s.examType === examType && s.questions?.length
-    );
+    const saved = loadSavedSession((s) => s.examType === examType && s.questions?.length);
     if (saved) {
       if (location.state?.resume) {
         restoreSession(saved);
@@ -471,23 +483,40 @@ const MockTest = () => {
   const saveTimeoutRef = useRef(null);
   useEffect(() => {
     if (loading || showInstructions || questions.length === 0) return;
-    
+
     // Clear any pending save
     if (saveTimeoutRef.current) clearTimeout(saveTimeoutRef.current);
-    
+
     // Debounce the save by 2 seconds (useTestSession also throttles to 5s)
     saveTimeoutRef.current = setTimeout(() => {
       saveSession({
-        examType, questions, sections, responses,
-        currentSectionIndex, currentQuestionIndex,
-        timeRemaining, sectionTimeRemaining,
+        examType,
+        questions,
+        sections,
+        responses,
+        currentSectionIndex,
+        currentQuestionIndex,
+        timeRemaining,
+        sectionTimeRemaining,
       });
     }, 2000);
-    
+
     return () => {
       if (saveTimeoutRef.current) clearTimeout(saveTimeoutRef.current);
     };
-  }, [saveSession, loading, showInstructions, examType, questions, sections, responses, currentSectionIndex, currentQuestionIndex, timeRemaining, sectionTimeRemaining]);
+  }, [
+    saveSession,
+    loading,
+    showInstructions,
+    examType,
+    questions,
+    sections,
+    responses,
+    currentSectionIndex,
+    currentQuestionIndex,
+    timeRemaining,
+    sectionTimeRemaining,
+  ]);
 
   // Ref to track current section index inside timer interval (avoids stale closure)
   const currentSectionIndexRef = useRef(currentSectionIndex);
@@ -498,9 +527,11 @@ const MockTest = () => {
   useEffect(() => {
     if (!showInstructions && timeRemaining > 0) {
       timerRef.current = setInterval(() => {
+        let shouldAutoSubmit = false;
+
         setTimeRemaining((prev) => {
           if (prev <= 1) {
-            handleAutoSubmit();
+            shouldAutoSubmit = true;
             return 0;
           }
           return prev - 1;
@@ -511,12 +542,17 @@ const MockTest = () => {
             if (currentSectionIndexRef.current < sections.length - 1) {
               setCurrentSectionIndex((index) => index + 1);
             } else {
-              handleAutoSubmit();
+              shouldAutoSubmit = true;
             }
             return 0;
           }
           return prev - 1;
         });
+
+        // Call autosubmit outside of setState to avoid React warning
+        if (shouldAutoSubmit) {
+          setTimeout(() => handleAutoSubmit(), 0);
+        }
       }, 1000);
     }
 
@@ -525,12 +561,7 @@ const MockTest = () => {
         clearInterval(timerRef.current);
       }
     };
-  }, [
-    handleAutoSubmit,
-    sections.length,
-    showInstructions,
-    timeRemaining,
-  ]);
+  }, [handleAutoSubmit, sections.length, showInstructions]);
 
   useEffect(() => {
     if (!sections.length) {
@@ -552,24 +583,27 @@ const MockTest = () => {
     questionStartRef.current = Date.now();
   }, [currentQuestionIndex, recordTimeSpent, showInstructions]);
 
-  const handleAnswerSelect = useCallback((answer) => {
-    setResponses(prev => {
-      // Don't allow changing answer if already locked
-      if (prev[currentQuestionIndex]?.locked) {
-        return prev;
-      }
-      const newResponses = [...prev];
-      newResponses[currentQuestionIndex] = {
-        ...newResponses[currentQuestionIndex],
-        selectedAnswer: answer,
-        visited: true,
-      };
-      return newResponses;
-    });
-  }, [currentQuestionIndex]);
+  const handleAnswerSelect = useCallback(
+    (answer) => {
+      setResponses((prev) => {
+        // Don't allow changing answer if already locked
+        if (prev[currentQuestionIndex]?.locked) {
+          return prev;
+        }
+        const newResponses = [...prev];
+        newResponses[currentQuestionIndex] = {
+          ...newResponses[currentQuestionIndex],
+          selectedAnswer: answer,
+          visited: true,
+        };
+        return newResponses;
+      });
+    },
+    [currentQuestionIndex]
+  );
 
   const handleMarkForReview = useCallback(() => {
-    setResponses(prev => {
+    setResponses((prev) => {
       const newResponses = [...prev];
       newResponses[currentQuestionIndex] = {
         ...newResponses[currentQuestionIndex],
@@ -581,7 +615,7 @@ const MockTest = () => {
   }, [currentQuestionIndex]);
 
   const handleClearResponse = useCallback(() => {
-    setResponses(prev => {
+    setResponses((prev) => {
       // Don't allow clearing if locked
       if (prev[currentQuestionIndex]?.locked) {
         return prev;
@@ -595,42 +629,57 @@ const MockTest = () => {
     });
   }, [currentQuestionIndex]);
 
-  const goToQuestion = useCallback((index) => {
-    const section = sections[currentSectionIndex];
-    if (index < section.startIndex || index > section.endIndex) {
-      return;
-    }
-    // Lock current question if answered and not marked (palette click = same as Next)
-    setResponses(prev => {
-      const newResponses = [...prev];
-      const cur = newResponses[currentQuestionIndex];
-      if (cur?.selectedAnswer && !cur?.locked && !cur?.markedForReview) {
-        newResponses[currentQuestionIndex] = { ...cur, locked: true };
+  const goToQuestion = useCallback(
+    (index) => {
+      const section = sections[currentSectionIndex];
+      if (index < section.startIndex || index > section.endIndex) {
+        return;
       }
-      newResponses[index] = { ...newResponses[index], visited: true };
-      return newResponses;
-    });
-    setCurrentQuestionIndex(index);
-  }, [sections, currentSectionIndex, currentQuestionIndex]);
+      // Lock current question if answered and not marked (palette click = same as Next)
+      setResponses((prev) => {
+        const newResponses = [...prev];
+        const cur = newResponses[currentQuestionIndex];
+        if (cur?.selectedAnswer && !cur?.locked && !cur?.markedForReview) {
+          newResponses[currentQuestionIndex] = { ...cur, locked: true };
+        }
+        newResponses[index] = { ...newResponses[index], visited: true };
+        return newResponses;
+      });
+      setCurrentQuestionIndex(index);
+    },
+    [sections, currentSectionIndex, currentQuestionIndex]
+  );
 
   const handleNext = useCallback(() => {
     // Lock the current answer if one was selected (skip if marked for review)
-    setResponses(prev => {
+    let shouldShowToast = false;
+    let questionNum = 0;
+
+    setResponses((prev) => {
       const newResponses = [...prev];
-      if (newResponses[currentQuestionIndex]?.selectedAnswer && !newResponses[currentQuestionIndex]?.locked && !newResponses[currentQuestionIndex]?.markedForReview) {
+      if (
+        newResponses[currentQuestionIndex]?.selectedAnswer &&
+        !newResponses[currentQuestionIndex]?.locked &&
+        !newResponses[currentQuestionIndex]?.markedForReview
+      ) {
         newResponses[currentQuestionIndex] = {
           ...newResponses[currentQuestionIndex],
           locked: true,
         };
-        toast.info(messages.ANSWER_LOCKED(currentQuestionIndex + 1), { 
-          autoClose: 1500, 
-          hideProgressBar: true,
-          toastId: `lock-${currentQuestionIndex}`
-        });
+        shouldShowToast = true;
+        questionNum = currentQuestionIndex + 1;
       }
       return newResponses;
     });
-    
+
+    if (shouldShowToast) {
+      toast.info(messages.ANSWER_LOCKED(questionNum), {
+        autoClose: 1500,
+        hideProgressBar: true,
+        toastId: `lock-${questionNum - 1}`,
+      });
+    }
+
     const section = sections[currentSectionIndex];
     if (currentQuestionIndex < section.endIndex) {
       goToQuestion(currentQuestionIndex + 1);
@@ -643,7 +692,7 @@ const MockTest = () => {
 
   const handleSkip = useCallback(() => {
     // Mark as visited but NOT locked - user can answer later
-    setResponses(prev => {
+    setResponses((prev) => {
       const newResponses = [...prev];
       newResponses[currentQuestionIndex] = {
         ...newResponses[currentQuestionIndex],
@@ -664,22 +713,34 @@ const MockTest = () => {
 
   const handlePrevious = useCallback(() => {
     // Lock the current answer if one was selected (skip if marked for review)
-    setResponses(prev => {
+    let shouldShowToast = false;
+    let questionNum = 0;
+
+    setResponses((prev) => {
       const newResponses = [...prev];
-      if (newResponses[currentQuestionIndex]?.selectedAnswer && !newResponses[currentQuestionIndex]?.locked && !newResponses[currentQuestionIndex]?.markedForReview) {
+      if (
+        newResponses[currentQuestionIndex]?.selectedAnswer &&
+        !newResponses[currentQuestionIndex]?.locked &&
+        !newResponses[currentQuestionIndex]?.markedForReview
+      ) {
         newResponses[currentQuestionIndex] = {
           ...newResponses[currentQuestionIndex],
           locked: true,
         };
-        toast.info(messages.ANSWER_LOCKED(currentQuestionIndex + 1), { 
-          autoClose: 1500, 
-          hideProgressBar: true,
-          toastId: `lock-${currentQuestionIndex}`
-        });
+        shouldShowToast = true;
+        questionNum = currentQuestionIndex + 1;
       }
       return newResponses;
     });
-    
+
+    if (shouldShowToast) {
+      toast.info(messages.ANSWER_LOCKED(questionNum), {
+        autoClose: 1500,
+        hideProgressBar: true,
+        toastId: `lock-${questionNum - 1}`,
+      });
+    }
+
     const section = sections[currentSectionIndex];
     if (currentQuestionIndex > section.startIndex) {
       goToQuestion(currentQuestionIndex - 1);
@@ -688,26 +749,37 @@ const MockTest = () => {
 
   const handleSaveAndNext = useCallback(() => {
     // Save & Next: always lock if answered, even if marked for review
-    setResponses(prev => {
+    let shouldShowToast = false;
+    let questionNum = 0;
+
+    setResponses((prev) => {
       const newResponses = [...prev];
       newResponses[currentQuestionIndex] = {
         ...newResponses[currentQuestionIndex],
         visited: true,
       };
-      if (newResponses[currentQuestionIndex]?.selectedAnswer && !newResponses[currentQuestionIndex]?.locked) {
+      if (
+        newResponses[currentQuestionIndex]?.selectedAnswer &&
+        !newResponses[currentQuestionIndex]?.locked
+      ) {
         newResponses[currentQuestionIndex] = {
           ...newResponses[currentQuestionIndex],
           locked: true,
           markedForReview: false, // Unmark since it's explicitly saved
         };
-        toast.info(messages.ANSWER_LOCKED(currentQuestionIndex + 1), { 
-          autoClose: 1500, 
-          hideProgressBar: true,
-          toastId: `lock-${currentQuestionIndex}`
-        });
+        shouldShowToast = true;
+        questionNum = currentQuestionIndex + 1;
       }
       return newResponses;
     });
+
+    if (shouldShowToast) {
+      toast.info(messages.ANSWER_LOCKED(questionNum), {
+        autoClose: 1500,
+        hideProgressBar: true,
+        toastId: `lock-${questionNum - 1}`,
+      });
+    }
 
     const section = sections[currentSectionIndex];
     if (currentQuestionIndex < section.endIndex) {
@@ -721,43 +793,50 @@ const MockTest = () => {
 
   const statusCounts = useMemo(() => {
     return {
-      answered: responses.filter((r) => r.selectedAnswer && !r.markedForReview)
+      answered: responses.filter((r) => r.selectedAnswer && !r.markedForReview).length,
+      notAnswered: responses.filter((r) => r.visited && !r.selectedAnswer && !r.markedForReview)
         .length,
-      notAnswered: responses.filter(
-        (r) => r.visited && !r.selectedAnswer && !r.markedForReview,
-      ).length,
-      marked: responses.filter((r) => r.markedForReview && !r.selectedAnswer)
-        .length,
-      answeredMarked: responses.filter(
-        (r) => r.selectedAnswer && r.markedForReview,
-      ).length,
+      marked: responses.filter((r) => r.markedForReview && !r.selectedAnswer).length,
+      answeredMarked: responses.filter((r) => r.selectedAnswer && r.markedForReview).length,
       notVisited: responses.filter((r) => !r.visited).length,
     };
   }, [responses]);
 
   // Keyboard shortcuts for test navigation
-  const keyboardShortcuts = useMemo(() => ({
-    '1': () => handleAnswerSelect('A'),
-    '2': () => handleAnswerSelect('B'),
-    '3': () => handleAnswerSelect('C'),
-    '4': () => handleAnswerSelect('D'),
-    'a': () => handleAnswerSelect('A'),
-    'b': () => handleAnswerSelect('B'),
-    'c': () => handleAnswerSelect('C'),
-    'd': () => handleAnswerSelect('D'),
-    'n': handleNext,
-    'p': handlePrevious,
-    's': handleSkip,
-    'ArrowRight': handleNext,
-    'ArrowLeft': handlePrevious,
-    'm': handleMarkForReview,
-    'r': handleClearResponse,
-    '?': () => setShowShortcutsHelp(true),
-    'Escape': () => {
-      closeShortcutsHelp();
-      closeReport();
-    },
-  }), [handleAnswerSelect, handleClearResponse, handleMarkForReview, handleNext, handlePrevious, handleSkip, closeReport, closeShortcutsHelp]);
+  const keyboardShortcuts = useMemo(
+    () => ({
+      1: () => handleAnswerSelect('A'),
+      2: () => handleAnswerSelect('B'),
+      3: () => handleAnswerSelect('C'),
+      4: () => handleAnswerSelect('D'),
+      a: () => handleAnswerSelect('A'),
+      b: () => handleAnswerSelect('B'),
+      c: () => handleAnswerSelect('C'),
+      d: () => handleAnswerSelect('D'),
+      n: handleNext,
+      p: handlePrevious,
+      s: handleSkip,
+      ArrowRight: handleNext,
+      ArrowLeft: handlePrevious,
+      m: handleMarkForReview,
+      r: handleClearResponse,
+      '?': () => setShowShortcutsHelp(true),
+      Escape: () => {
+        closeShortcutsHelp();
+        closeReport();
+      },
+    }),
+    [
+      handleAnswerSelect,
+      handleClearResponse,
+      handleMarkForReview,
+      handleNext,
+      handlePrevious,
+      handleSkip,
+      closeReport,
+      closeShortcutsHelp,
+    ]
+  );
 
   useKeyboardShortcuts(keyboardShortcuts, isTestInProgress && !showSubmitModal && !showReportModal);
 
@@ -766,16 +845,16 @@ const MockTest = () => {
     lastFocusedElementRef.current = document.activeElement;
     focusFirstInteractive(submitModalRef.current);
     const onKeyDown = (event) => {
-      if (event.key === "Escape") {
+      if (event.key === 'Escape') {
         event.preventDefault();
         closeSubmitModal();
         return;
       }
       trapFocus(event, submitModalRef.current);
     };
-    document.addEventListener("keydown", onKeyDown);
+    document.addEventListener('keydown', onKeyDown);
     return () => {
-      document.removeEventListener("keydown", onKeyDown);
+      document.removeEventListener('keydown', onKeyDown);
       lastFocusedElementRef.current?.focus?.();
     };
   }, [showSubmitModal, closeSubmitModal, focusFirstInteractive, trapFocus]);
@@ -785,16 +864,16 @@ const MockTest = () => {
     lastFocusedElementRef.current = document.activeElement;
     focusFirstInteractive(shortcutsModalRef.current);
     const onKeyDown = (event) => {
-      if (event.key === "Escape") {
+      if (event.key === 'Escape') {
         event.preventDefault();
         closeShortcutsHelp();
         return;
       }
       trapFocus(event, shortcutsModalRef.current);
     };
-    document.addEventListener("keydown", onKeyDown);
+    document.addEventListener('keydown', onKeyDown);
     return () => {
-      document.removeEventListener("keydown", onKeyDown);
+      document.removeEventListener('keydown', onKeyDown);
       lastFocusedElementRef.current?.focus?.();
     };
   }, [showShortcutsHelp, closeShortcutsHelp, focusFirstInteractive, trapFocus]);
@@ -804,16 +883,16 @@ const MockTest = () => {
     lastFocusedElementRef.current = document.activeElement;
     focusFirstInteractive(mobilePaletteRef.current);
     const onKeyDown = (event) => {
-      if (event.key === "Escape") {
+      if (event.key === 'Escape') {
         event.preventDefault();
         closeMobilePalette();
         return;
       }
       trapFocus(event, mobilePaletteRef.current);
     };
-    document.addEventListener("keydown", onKeyDown);
+    document.addEventListener('keydown', onKeyDown);
     return () => {
-      document.removeEventListener("keydown", onKeyDown);
+      document.removeEventListener('keydown', onKeyDown);
       lastFocusedElementRef.current?.focus?.();
     };
   }, [showMobilePalette, closeMobilePalette, focusFirstInteractive, trapFocus]);
@@ -823,7 +902,7 @@ const MockTest = () => {
 
   const progressPercent = useMemo(() => {
     return responses.length > 0
-      ? Math.round((responses.filter(r => r.selectedAnswer).length / responses.length) * 100)
+      ? Math.round((responses.filter((r) => r.selectedAnswer).length / responses.length) * 100)
       : 0;
   }, [responses]);
 
@@ -863,28 +942,93 @@ const MockTest = () => {
           <div className="bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-blue-900/20 dark:to-indigo-900/20 rounded-lg p-4 mb-4">
             <div className="grid grid-cols-2 gap-3 text-sm">
               <div className="flex items-center gap-2">
-                <svg className="w-4 h-4 text-blue-600 dark:text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
+                <svg
+                  className="w-4 h-4 text-blue-600 dark:text-blue-400"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"
+                  />
                 </svg>
-                <span className="text-gray-700 dark:text-gray-300"><strong>{questions.length}</strong> Questions</span>
+                <span className="text-gray-700 dark:text-gray-300">
+                  <strong>{questions.length}</strong> Questions
+                </span>
               </div>
               <div className="flex items-center gap-2">
-                <svg className="w-4 h-4 text-blue-600 dark:text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                <svg
+                  className="w-4 h-4 text-blue-600 dark:text-blue-400"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"
+                  />
                 </svg>
-                <span className="text-gray-700 dark:text-gray-300"><strong>{singlePaper && sectionId ? (examPattern.sections.find(s => s.id === sectionId)?.duration || 0) : examPattern.sections.reduce((sum, s) => sum + s.duration, 0)}</strong> Minutes</span>
+                <span className="text-gray-700 dark:text-gray-300">
+                  <strong>
+                    {singlePaper && sectionId
+                      ? examPattern.sections.find((s) => s.id === sectionId)?.duration || 0
+                      : examPattern.sections.reduce((sum, s) => sum + s.duration, 0)}
+                  </strong>{' '}
+                  Minutes
+                </span>
               </div>
               <div className="flex items-center gap-2">
-                <svg className="w-4 h-4 text-green-600 dark:text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+                <svg
+                  className="w-4 h-4 text-green-600 dark:text-green-400"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M12 4v16m8-8H4"
+                  />
                 </svg>
-                <span className="text-gray-700 dark:text-gray-300"><strong>+{Number(singlePaper && sectionId ? (examPattern.sections.find(s => s.id === sectionId)?.marksPerQuestion || examPattern.sections[0].marksPerQuestion) : examPattern.sections[0].marksPerQuestion).toFixed(2)}</strong> per correct</span>
+                <span className="text-gray-700 dark:text-gray-300">
+                  <strong>
+                    +
+                    {Number(
+                      singlePaper && sectionId
+                        ? examPattern.sections.find((s) => s.id === sectionId)?.marksPerQuestion ||
+                            examPattern.sections[0].marksPerQuestion
+                        : examPattern.sections[0].marksPerQuestion
+                    ).toFixed(2)}
+                  </strong>{' '}
+                  per correct
+                </span>
               </div>
               <div className="flex items-center gap-2">
-                <svg className="w-4 h-4 text-red-600 dark:text-red-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <svg
+                  className="w-4 h-4 text-red-600 dark:text-red-400"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20 12H4" />
                 </svg>
-                <span className="text-gray-700 dark:text-gray-300"><strong>{Number(singlePaper && sectionId ? (examPattern.sections.find(s => s.id === sectionId)?.negativeMarking || examPattern.sections[0].negativeMarking) : examPattern.sections[0].negativeMarking).toFixed(2)}</strong> per wrong</span>
+                <span className="text-gray-700 dark:text-gray-300">
+                  <strong>
+                    {Number(
+                      singlePaper && sectionId
+                        ? examPattern.sections.find((s) => s.id === sectionId)?.negativeMarking ||
+                            examPattern.sections[0].negativeMarking
+                        : examPattern.sections[0].negativeMarking
+                    ).toFixed(2)}
+                  </strong>{' '}
+                  per wrong
+                </span>
               </div>
             </div>
           </div>
@@ -892,8 +1036,18 @@ const MockTest = () => {
           {/* Important Rules - Compact */}
           <div className="bg-red-50 dark:bg-red-900/20 border-l-4 border-red-500 rounded-lg p-3 mb-4">
             <div className="flex items-start gap-2">
-              <svg className="w-5 h-5 text-red-600 dark:text-red-400 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+              <svg
+                className="w-5 h-5 text-red-600 dark:text-red-400 flex-shrink-0 mt-0.5"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"
+                />
               </svg>
               <div className="text-sm text-red-800 dark:text-red-200">
                 <p className="font-semibold">Fullscreen required • Auto-submit on time up</p>
@@ -904,12 +1058,25 @@ const MockTest = () => {
           {/* Answer Lock Notice */}
           <div className="bg-amber-50 dark:bg-amber-900/20 border-l-4 border-amber-500 rounded-lg p-3 mb-4">
             <div className="flex items-start gap-2">
-              <svg className="w-5 h-5 text-amber-600 dark:text-amber-400 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+              <svg
+                className="w-5 h-5 text-amber-600 dark:text-amber-400 flex-shrink-0 mt-0.5"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"
+                />
               </svg>
               <div className="text-sm text-amber-800 dark:text-amber-200">
                 <p className="font-semibold">Answers lock when you navigate away</p>
-                <p className="text-xs text-amber-700 dark:text-amber-300 mt-0.5">Once you move to another question, your selected answer cannot be changed. Skipped questions can still be answered later.</p>
+                <p className="text-xs text-amber-700 dark:text-amber-300 mt-0.5">
+                  Once you move to another question, your selected answer cannot be changed. Skipped
+                  questions can still be answered later.
+                </p>
               </div>
             </div>
           </div>
@@ -919,9 +1086,19 @@ const MockTest = () => {
             onClick={() => setShowDetails(!showDetails)}
             className="w-full flex items-center justify-between text-sm text-gray-600 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-200 mb-4 transition-colors"
           >
-            <span>{showDetails ? "Hide" : "Show"} detailed instructions</span>
-            <svg className={`w-4 h-4 transition-transform ${showDetails ? "rotate-180" : ""}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+            <span>{showDetails ? 'Hide' : 'Show'} detailed instructions</span>
+            <svg
+              className={`w-4 h-4 transition-transform ${showDetails ? 'rotate-180' : ''}`}
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M19 9l-7 7-7-7"
+              />
             </svg>
           </button>
 
@@ -931,16 +1108,23 @@ const MockTest = () => {
                 <div className="bg-gray-50 dark:bg-gray-700/50 rounded-lg p-3">
                   <p className="font-semibold text-gray-800 dark:text-gray-200 mb-2">Sections:</p>
                   {examPattern.sections.map((section, idx) => (
-                    <div key={idx} className="flex justify-between text-gray-600 dark:text-gray-400 text-xs">
+                    <div
+                      key={idx}
+                      className="flex justify-between text-gray-600 dark:text-gray-400 text-xs"
+                    >
                       <span>{section.name}</span>
-                      <span>{section.totalQuestions}Q • {section.duration}min</span>
+                      <span>
+                        {section.totalQuestions}Q • {section.duration}min
+                      </span>
                     </div>
                   ))}
                 </div>
               )}
 
               <div className="bg-gray-50 dark:bg-gray-700/50 rounded-lg p-3">
-                <p className="font-semibold text-gray-800 dark:text-gray-200 mb-2">Status Colors:</p>
+                <p className="font-semibold text-gray-800 dark:text-gray-200 mb-2">
+                  Status Colors:
+                </p>
                 <div className="grid grid-cols-2 gap-2 text-xs">
                   <div className="flex items-center gap-1.5">
                     <div className="w-4 h-4 bg-green-500 rounded"></div>
@@ -966,7 +1150,7 @@ const MockTest = () => {
           {/* Action Buttons */}
           <div className="flex gap-3">
             <button
-              onClick={() => navigate("/test-selection")}
+              onClick={() => navigate('/test-selection')}
               className="flex-1 bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-200 py-3 rounded-lg font-semibold hover:bg-gray-300 dark:hover:bg-gray-600 transition-colors"
             >
               Cancel
@@ -997,7 +1181,7 @@ const MockTest = () => {
   if (!currentQuestion || !currentResponse) {
     return <PageSpinner message="Preparing question..." />;
   }
-  
+
   const currentSection = sections[currentSectionIndex];
   const isBookmarked = Boolean(bookmarkMap[currentQuestion?.id]);
 
@@ -1010,7 +1194,7 @@ const MockTest = () => {
         remainingWarnings={remainingWarnings}
         violationCount={violationCount}
       />
-      
+
       {/* Header */}
       <div className="bg-white dark:bg-gray-900 border-b border-gray-200 dark:border-gray-800 sticky top-0 z-10">
         <div className="max-w-7xl mx-auto px-4 py-2.5">
@@ -1038,24 +1222,45 @@ const MockTest = () => {
                 title="Keyboard shortcuts (?)"
               >
                 <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8.228 9c.549-1.165 2.03-2 3.772-2 2.21 0 4 1.343 4 3 0 1.4-1.278 2.575-3.006 2.907-.542.104-.994.54-.994 1.093m0 3h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M8.228 9c.549-1.165 2.03-2 3.772-2 2.21 0 4 1.343 4 3 0 1.4-1.278 2.575-3.006 2.907-.542.104-.994.54-.994 1.093m0 3h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
+                  />
                 </svg>
               </button>
               <div className="flex items-center gap-3 bg-gray-50 dark:bg-gray-800 rounded-xl px-4 py-2">
                 <div className="text-center">
-                  <p className="text-[10px] uppercase tracking-wider text-gray-400 dark:text-gray-500 font-medium">Section</p>
-                  <p className={`text-xl font-mono font-bold tabular-nums ${
-                    sectionTimeRemaining < 60 ? "text-red-600 animate-pulse" : sectionTimeRemaining < 300 ? "text-orange-500" : "text-gray-900 dark:text-white"
-                  }`}>
+                  <p className="text-[10px] uppercase tracking-wider text-gray-400 dark:text-gray-500 font-medium">
+                    Section
+                  </p>
+                  <p
+                    className={`text-xl font-mono font-bold tabular-nums ${
+                      sectionTimeRemaining < 60
+                        ? 'text-red-600 animate-pulse'
+                        : sectionTimeRemaining < 300
+                          ? 'text-orange-500'
+                          : 'text-gray-900 dark:text-white'
+                    }`}
+                  >
                     {formatTime(sectionTimeRemaining)}
                   </p>
                 </div>
                 <div className="w-px h-8 bg-gray-200 dark:bg-gray-700" />
                 <div className="text-center">
-                  <p className="text-[10px] uppercase tracking-wider text-gray-400 dark:text-gray-500 font-medium">Overall</p>
-                  <p className={`text-xl font-mono font-bold tabular-nums ${
-                    timeRemaining < 60 ? "text-red-600 animate-pulse" : timeRemaining < 300 ? "text-orange-500" : "text-gray-900 dark:text-white"
-                  }`}>
+                  <p className="text-[10px] uppercase tracking-wider text-gray-400 dark:text-gray-500 font-medium">
+                    Overall
+                  </p>
+                  <p
+                    className={`text-xl font-mono font-bold tabular-nums ${
+                      timeRemaining < 60
+                        ? 'text-red-600 animate-pulse'
+                        : timeRemaining < 300
+                          ? 'text-orange-500'
+                          : 'text-gray-900 dark:text-white'
+                    }`}
+                  >
                     {formatTime(timeRemaining)}
                   </p>
                 </div>
@@ -1068,7 +1273,7 @@ const MockTest = () => {
               </button>
             </div>
           </div>
-          
+
           {/* Mobile Header */}
           <div className="md:hidden">
             <div className="flex justify-between items-center mb-2">
@@ -1087,10 +1292,25 @@ const MockTest = () => {
               </div>
               <div className="flex items-center gap-2">
                 <button
-                  onClick={() => { setShowMobilePalette(true); setPalettePage(Math.floor(currentQuestionIndex / PALETTE_PAGE_SIZE)); }}
+                  onClick={() => {
+                    setShowMobilePalette(true);
+                    setPalettePage(Math.floor(currentQuestionIndex / PALETTE_PAGE_SIZE));
+                  }}
                   className="bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 px-3 py-2 rounded-lg text-xs font-semibold flex items-center gap-1.5"
                 >
-                  <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zm10 0a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zm10 0a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z" /></svg>
+                  <svg
+                    className="w-3.5 h-3.5"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zm10 0a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zm10 0a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z"
+                    />
+                  </svg>
                   {statusCounts.answered}/{questions.length}
                 </button>
                 <button
@@ -1104,14 +1324,18 @@ const MockTest = () => {
             <div className="flex justify-between items-center bg-gray-50 dark:bg-gray-700 rounded-lg p-2">
               <div className="text-center flex-1">
                 <p className="text-xs text-gray-500 dark:text-gray-400">Section</p>
-                <p className={`text-lg font-bold ${sectionTimeRemaining < 60 ? "text-red-600 animate-pulse" : sectionTimeRemaining < 300 ? "text-orange-500" : "text-blue-600"}`}>
+                <p
+                  className={`text-lg font-bold ${sectionTimeRemaining < 60 ? 'text-red-600 animate-pulse' : sectionTimeRemaining < 300 ? 'text-orange-500' : 'text-blue-600'}`}
+                >
                   {formatTime(sectionTimeRemaining)}
                 </p>
               </div>
               <div className="w-px h-8 bg-gray-300 dark:bg-gray-600"></div>
               <div className="text-center flex-1">
                 <p className="text-xs text-gray-500 dark:text-gray-400">Total</p>
-                <p className={`text-lg font-bold ${timeRemaining < 60 ? "text-red-600 animate-pulse" : timeRemaining < 300 ? "text-orange-500" : "text-blue-600"}`}>
+                <p
+                  className={`text-lg font-bold ${timeRemaining < 60 ? 'text-red-600 animate-pulse' : timeRemaining < 300 ? 'text-orange-500' : 'text-blue-600'}`}
+                >
                   {formatTime(timeRemaining)}
                 </p>
               </div>
@@ -1137,11 +1361,23 @@ const MockTest = () => {
                 <div>
                   <div className="flex items-center gap-2">
                     <span className="inline-flex items-center gap-1.5 bg-gradient-to-r from-blue-500 to-indigo-500 text-white text-sm font-semibold px-3 py-1 rounded-lg">
-                      <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8.228 9c.549-1.165 2.03-2 3.772-2 2.21 0 4 1.343 4 3 0 1.4-1.278 2.575-3.006 2.907-.542.104-.994.54-.994 1.093m0 3h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+                      <svg
+                        className="w-3.5 h-3.5"
+                        fill="none"
+                        stroke="currentColor"
+                        viewBox="0 0 24 24"
+                      >
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth={2}
+                          d="M8.228 9c.549-1.165 2.03-2 3.772-2 2.21 0 4 1.343 4 3 0 1.4-1.278 2.575-3.006 2.907-.542.104-.994.54-.994 1.093m0 3h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
+                        />
+                      </svg>
                       Question {currentQuestionIndex + 1} of {questions.length}
                     </span>
                     <span className="text-xs px-2 py-0.5 rounded-full bg-gray-100 dark:bg-gray-800 text-gray-500 dark:text-gray-400 font-medium">
-                      {currentQuestion.difficulty || "Medium"}
+                      {currentQuestion.difficulty || 'Medium'}
                     </span>
                   </div>
                   <p className="text-sm text-gray-500 dark:text-gray-400 mt-2">
@@ -1162,19 +1398,43 @@ const MockTest = () => {
                       onClick={() => toggleBookmark(currentQuestion.id)}
                       className={`p-1.5 rounded-lg transition-colors ${
                         isBookmarked
-                          ? "bg-yellow-100 dark:bg-yellow-900/30 text-yellow-600 dark:text-yellow-400"
-                          : "bg-gray-100 dark:bg-gray-800 text-gray-400 dark:text-gray-500 hover:text-yellow-600 dark:hover:text-yellow-400"
+                          ? 'bg-yellow-100 dark:bg-yellow-900/30 text-yellow-600 dark:text-yellow-400'
+                          : 'bg-gray-100 dark:bg-gray-800 text-gray-400 dark:text-gray-500 hover:text-yellow-600 dark:hover:text-yellow-400'
                       }`}
-                      aria-label={isBookmarked ? "Remove bookmark" : "Bookmark"}
+                      aria-label={isBookmarked ? 'Remove bookmark' : 'Bookmark'}
                     >
-                      <svg className="w-4 h-4" fill={isBookmarked ? "currentColor" : "none"} stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 5a2 2 0 012-2h10a2 2 0 012 2v16l-7-3.5L5 21V5z" /></svg>
+                      <svg
+                        className="w-4 h-4"
+                        fill={isBookmarked ? 'currentColor' : 'none'}
+                        stroke="currentColor"
+                        viewBox="0 0 24 24"
+                      >
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth={2}
+                          d="M5 5a2 2 0 012-2h10a2 2 0 012 2v16l-7-3.5L5 21V5z"
+                        />
+                      </svg>
                     </button>
                     <button
                       onClick={openReport}
                       className="p-1.5 rounded-lg bg-gray-100 dark:bg-gray-800 text-gray-400 dark:text-gray-500 hover:text-red-500 dark:hover:text-red-400 transition-colors"
                       aria-label="Report error"
                     >
-                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 21v-4m0 0V5a2 2 0 012-2h6.5l1 1H21l-3 6 3 6h-8.5l-1-1H5a2 2 0 00-2 2zm9-13.5V9" /></svg>
+                      <svg
+                        className="w-4 h-4"
+                        fill="none"
+                        stroke="currentColor"
+                        viewBox="0 0 24 24"
+                      >
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth={2}
+                          d="M3 21v-4m0 0V5a2 2 0 012-2h6.5l1 1H21l-3 6 3 6h-8.5l-1-1H5a2 2 0 00-2 2zm9-13.5V9"
+                        />
+                      </svg>
                     </button>
                   </div>
                 </div>
@@ -1187,7 +1447,8 @@ const MockTest = () => {
                       Q{currentQuestionIndex + 1}/{questions.length}
                     </span>
                     <span className="inline-flex items-center bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 text-xs px-2 py-0.5 rounded-full truncate max-w-[55vw]">
-                      {currentQuestion.subject}{currentQuestion.topic ? ` · ${currentQuestion.topic}` : ''}
+                      {currentQuestion.subject}
+                      {currentQuestion.topic ? ` · ${currentQuestion.topic}` : ''}
                     </span>
                   </div>
                   <div className="flex items-center gap-1 flex-shrink-0">
@@ -1195,19 +1456,43 @@ const MockTest = () => {
                       onClick={() => toggleBookmark(currentQuestion.id)}
                       className={`p-1.5 rounded ${
                         isBookmarked
-                          ? "text-yellow-600 dark:text-yellow-400"
-                          : "text-gray-400 dark:text-gray-500"
+                          ? 'text-yellow-600 dark:text-yellow-400'
+                          : 'text-gray-400 dark:text-gray-500'
                       }`}
-                      aria-label={isBookmarked ? "Remove bookmark" : "Bookmark"}
+                      aria-label={isBookmarked ? 'Remove bookmark' : 'Bookmark'}
                     >
-                      <svg className="w-4 h-4" fill={isBookmarked ? "currentColor" : "none"} stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 5a2 2 0 012-2h10a2 2 0 012 2v16l-7-3.5L5 21V5z" /></svg>
+                      <svg
+                        className="w-4 h-4"
+                        fill={isBookmarked ? 'currentColor' : 'none'}
+                        stroke="currentColor"
+                        viewBox="0 0 24 24"
+                      >
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth={2}
+                          d="M5 5a2 2 0 012-2h10a2 2 0 012 2v16l-7-3.5L5 21V5z"
+                        />
+                      </svg>
                     </button>
                     <button
                       onClick={openReport}
                       className="p-1.5 rounded text-gray-400 dark:text-gray-500"
                       aria-label="Report error"
                     >
-                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 21v-4m0 0V5a2 2 0 012-2h6.5l1 1H21l-3 6 3 6h-8.5l-1-1H5a2 2 0 00-2 2zm9-13.5V9" /></svg>
+                      <svg
+                        className="w-4 h-4"
+                        fill="none"
+                        stroke="currentColor"
+                        viewBox="0 0 24 24"
+                      >
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth={2}
+                          d="M3 21v-4m0 0V5a2 2 0 012-2h6.5l1 1H21l-3 6 3 6h-8.5l-1-1H5a2 2 0 00-2 2zm9-13.5V9"
+                        />
+                      </svg>
                     </button>
                   </div>
                 </div>
@@ -1223,8 +1508,18 @@ const MockTest = () => {
               {/* Locked indicator */}
               {currentResponse.locked && (
                 <div className="mb-4 p-3 bg-amber-50 dark:bg-amber-900/10 border border-amber-200 dark:border-amber-800/50 rounded-xl flex items-center gap-2">
-                  <svg className="w-4 h-4 text-amber-500 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+                  <svg
+                    className="w-4 h-4 text-amber-500 flex-shrink-0"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"
+                    />
                   </svg>
                   <span className="text-xs text-amber-700 dark:text-amber-300 font-medium">
                     Answer locked. You cannot change your response.
@@ -1234,7 +1529,7 @@ const MockTest = () => {
 
               {/* Options */}
               <div className="space-y-3 mb-8">
-                {["A", "B", "C", "D"].map((option) => {
+                {['A', 'B', 'C', 'D'].map((option) => {
                   const isSelected = currentResponse.selectedAnswer === option;
                   return (
                     <button
@@ -1244,22 +1539,24 @@ const MockTest = () => {
                       className={`w-full flex items-center gap-4 p-4 rounded-xl border-2 text-left transition-all duration-150 ${
                         isSelected
                           ? currentResponse.locked
-                            ? "border-blue-500 bg-blue-50 dark:bg-blue-900/20 cursor-not-allowed"
-                            : "border-blue-500 bg-blue-50 dark:bg-blue-900/20 shadow-sm shadow-blue-500/10"
+                            ? 'border-blue-500 bg-blue-50 dark:bg-blue-900/20 cursor-not-allowed'
+                            : 'border-blue-500 bg-blue-50 dark:bg-blue-900/20 shadow-sm shadow-blue-500/10'
                           : currentResponse.locked
-                            ? "border-gray-100 dark:border-gray-800 bg-gray-50 dark:bg-gray-800/50 cursor-not-allowed opacity-50"
-                            : "border-gray-100 dark:border-gray-800 hover:border-blue-200 dark:hover:border-blue-800 hover:bg-blue-50/50 dark:hover:bg-blue-900/10"
+                            ? 'border-gray-100 dark:border-gray-800 bg-gray-50 dark:bg-gray-800/50 cursor-not-allowed opacity-50'
+                            : 'border-gray-100 dark:border-gray-800 hover:border-blue-200 dark:hover:border-blue-800 hover:bg-blue-50/50 dark:hover:bg-blue-900/10'
                       }`}
                     >
-                      <span className={`flex-shrink-0 w-9 h-9 rounded-full flex items-center justify-center text-sm font-bold transition-colors ${
-                        isSelected
-                          ? "bg-blue-500 text-white"
-                          : "bg-gray-100 dark:bg-gray-800 text-gray-500 dark:text-gray-400"
-                      }`}>
+                      <span
+                        className={`flex-shrink-0 w-9 h-9 rounded-full flex items-center justify-center text-sm font-bold transition-colors ${
+                          isSelected
+                            ? 'bg-blue-500 text-white'
+                            : 'bg-gray-100 dark:bg-gray-800 text-gray-500 dark:text-gray-400'
+                        }`}
+                      >
                         {option}
                       </span>
                       <span className="text-gray-800 dark:text-gray-200 text-[15px]">
-                        {currentQuestion.options?.[option] || "Option missing"}
+                        {currentQuestion.options?.[option] || 'Option missing'}
                       </span>
                     </button>
                   );
@@ -1272,36 +1569,71 @@ const MockTest = () => {
                   onClick={handleMarkForReview}
                   className={`inline-flex items-center gap-1.5 px-4 py-2 rounded-xl text-sm font-semibold transition-all ${
                     currentResponse.markedForReview
-                      ? "bg-purple-500 text-white shadow-sm shadow-purple-500/20"
-                      : "bg-purple-50 dark:bg-purple-900/20 text-purple-600 dark:text-purple-400 hover:bg-purple-100 dark:hover:bg-purple-900/30"
+                      ? 'bg-purple-500 text-white shadow-sm shadow-purple-500/20'
+                      : 'bg-purple-50 dark:bg-purple-900/20 text-purple-600 dark:text-purple-400 hover:bg-purple-100 dark:hover:bg-purple-900/30'
                   }`}
                 >
-                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 21v-4m0 0V5a2 2 0 012-2h6.5l1 1H21l-3 6 3 6h-8.5l-1-1H5a2 2 0 00-2 2zm9-13.5V9" /></svg>
-                  {currentResponse.markedForReview ? "Marked" : "Mark for Review"}
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M3 21v-4m0 0V5a2 2 0 012-2h6.5l1 1H21l-3 6 3 6h-8.5l-1-1H5a2 2 0 00-2 2zm9-13.5V9"
+                    />
+                  </svg>
+                  {currentResponse.markedForReview ? 'Marked' : 'Mark for Review'}
                 </button>
                 <button
                   onClick={handleClearResponse}
                   disabled={!currentResponse.selectedAnswer || currentResponse.locked}
                   className="inline-flex items-center gap-1.5 px-4 py-2 bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-300 rounded-xl text-sm font-semibold hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
                 >
-                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg>
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"
+                    />
+                  </svg>
                   Clear
                 </button>
                 <button
                   onClick={handleSkip}
-                  disabled={currentResponse.locked || (currentQuestionIndex === currentSection?.endIndex && currentSectionIndex === sections.length - 1)}
+                  disabled={
+                    currentResponse.locked ||
+                    (currentQuestionIndex === currentSection?.endIndex &&
+                      currentSectionIndex === sections.length - 1)
+                  }
                   className="inline-flex items-center gap-1.5 px-4 py-2 bg-yellow-50 dark:bg-yellow-900/20 text-yellow-600 dark:text-yellow-400 rounded-xl text-sm font-semibold hover:bg-yellow-100 dark:hover:bg-yellow-900/30 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
                 >
-                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 5l7 7-7 7M5 5l7 7-7 7" /></svg>
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M13 5l7 7-7 7M5 5l7 7-7 7"
+                    />
+                  </svg>
                   Skip
                 </button>
                 <button
                   onClick={handleSaveAndNext}
-                  disabled={currentQuestionIndex === currentSection?.endIndex && currentSectionIndex === sections.length - 1}
+                  disabled={
+                    currentQuestionIndex === currentSection?.endIndex &&
+                    currentSectionIndex === sections.length - 1
+                  }
                   className="inline-flex items-center gap-1.5 px-5 py-2 bg-gradient-to-r from-blue-500 to-indigo-600 text-white rounded-xl text-sm font-semibold hover:from-blue-600 hover:to-indigo-700 transition-all ml-auto shadow-sm shadow-blue-500/20 disabled:opacity-40 disabled:cursor-not-allowed disabled:shadow-none"
                 >
                   Save & Next
-                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" /></svg>
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M9 5l7 7-7 7"
+                    />
+                  </svg>
                 </button>
               </div>
               {/* Action Buttons — Mobile: compact icon strip */}
@@ -1310,28 +1642,52 @@ const MockTest = () => {
                   onClick={handleMarkForReview}
                   className={`flex items-center gap-1 px-3 py-2 rounded-lg text-xs font-semibold transition-colors ${
                     currentResponse.markedForReview
-                      ? "bg-purple-600 text-white"
-                      : "bg-purple-100 dark:bg-purple-900/30 text-purple-700 dark:text-purple-300"
+                      ? 'bg-purple-600 text-white'
+                      : 'bg-purple-100 dark:bg-purple-900/30 text-purple-700 dark:text-purple-300'
                   }`}
                 >
-                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 21v-4m0 0V5a2 2 0 012-2h6.5l1 1H21l-3 6 3 6h-8.5l-1-1H5a2 2 0 00-2 2zm9-13.5V9" /></svg>
-                  {currentResponse.markedForReview ? "Marked" : "Mark"}
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M3 21v-4m0 0V5a2 2 0 012-2h6.5l1 1H21l-3 6 3 6h-8.5l-1-1H5a2 2 0 00-2 2zm9-13.5V9"
+                    />
+                  </svg>
+                  {currentResponse.markedForReview ? 'Marked' : 'Mark'}
                 </button>
                 <button
                   onClick={handleClearResponse}
                   disabled={!currentResponse.selectedAnswer || currentResponse.locked}
                   className="flex items-center gap-1 px-3 py-2 bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-200 rounded-lg text-xs font-semibold disabled:opacity-50"
                 >
-                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg>
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"
+                    />
+                  </svg>
                   Clear
                 </button>
                 <button
                   onClick={handleSaveAndNext}
-                  disabled={currentQuestionIndex === currentSection?.endIndex && currentSectionIndex === sections.length - 1}
+                  disabled={
+                    currentQuestionIndex === currentSection?.endIndex &&
+                    currentSectionIndex === sections.length - 1
+                  }
                   className="flex items-center gap-1 px-4 py-2 bg-blue-600 text-white rounded-lg text-xs font-semibold disabled:opacity-50 ml-auto"
                 >
                   Save & Next
-                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" /></svg>
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M9 5l7 7-7 7"
+                    />
+                  </svg>
                 </button>
               </div>
 
@@ -1342,7 +1698,14 @@ const MockTest = () => {
                   disabled={currentQuestionIndex === currentSection?.startIndex}
                   className="inline-flex items-center gap-1.5 px-5 py-2 bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-300 rounded-xl text-sm font-semibold hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
                 >
-                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" /></svg>
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M15 19l-7-7 7-7"
+                    />
+                  </svg>
                   Previous
                 </button>
                 <button
@@ -1355,9 +1718,16 @@ const MockTest = () => {
                 >
                   {currentQuestionIndex === currentSection?.endIndex &&
                   currentSectionIndex < sections.length - 1
-                    ? "Next Section"
-                    : "Next"}
-                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" /></svg>
+                    ? 'Next Section'
+                    : 'Next'}
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M9 5l7 7-7 7"
+                    />
+                  </svg>
                 </button>
               </div>
             </div>
@@ -1367,9 +1737,8 @@ const MockTest = () => {
           <div className="hidden lg:block space-y-4">
             {/* Timer */}
             <div className="bg-white dark:bg-gray-900 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-800 p-5">
-              <Timer3D
+              <Timer
                 timeRemaining={timeRemaining}
-                totalTime={examPattern?.duration * 60 || 7200}
                 label="Time Left"
                 size="md"
               />
@@ -1381,95 +1750,111 @@ const MockTest = () => {
                 Question Palette
               </h2>
 
-            <div className="grid grid-cols-2 gap-1.5 text-xs mb-4">
-              <div className="flex justify-between items-center bg-green-50 dark:bg-green-900/20 px-2.5 py-1.5 rounded-lg">
-                <span className="text-gray-600 dark:text-gray-400">Answered</span>
-                <span className="font-bold text-green-600 dark:text-green-400">{statusCounts.answered}</span>
+              <div className="grid grid-cols-2 gap-1.5 text-xs mb-4">
+                <div className="flex justify-between items-center bg-green-50 dark:bg-green-900/20 px-2.5 py-1.5 rounded-lg">
+                  <span className="text-gray-600 dark:text-gray-400">Answered</span>
+                  <span className="font-bold text-green-600 dark:text-green-400">
+                    {statusCounts.answered}
+                  </span>
+                </div>
+                <div className="flex justify-between items-center bg-red-50 dark:bg-red-900/20 px-2.5 py-1.5 rounded-lg">
+                  <span className="text-gray-600 dark:text-gray-400">Not Answered</span>
+                  <span className="font-bold text-red-500 dark:text-red-400">
+                    {statusCounts.notAnswered}
+                  </span>
+                </div>
+                <div className="flex justify-between items-center bg-purple-50 dark:bg-purple-900/20 px-2.5 py-1.5 rounded-lg">
+                  <span className="text-gray-600 dark:text-gray-400">Marked</span>
+                  <span className="font-bold text-purple-600 dark:text-purple-400">
+                    {statusCounts.marked}
+                  </span>
+                </div>
+                <div className="flex justify-between items-center bg-orange-50 dark:bg-orange-900/20 px-2.5 py-1.5 rounded-lg">
+                  <span className="text-gray-600 dark:text-gray-400">Ans + Mark</span>
+                  <span className="font-bold text-orange-600 dark:text-orange-400">
+                    {statusCounts.answeredMarked}
+                  </span>
+                </div>
+                <div className="col-span-2 flex justify-between items-center bg-gray-50 dark:bg-gray-800 px-2.5 py-1.5 rounded-lg">
+                  <span className="text-gray-600 dark:text-gray-400">Not Visited</span>
+                  <span className="font-bold text-gray-500 dark:text-gray-400">
+                    {statusCounts.notVisited}
+                  </span>
+                </div>
               </div>
-              <div className="flex justify-between items-center bg-red-50 dark:bg-red-900/20 px-2.5 py-1.5 rounded-lg">
-                <span className="text-gray-600 dark:text-gray-400">Not Answered</span>
-                <span className="font-bold text-red-500 dark:text-red-400">
-                  {statusCounts.notAnswered}
-                </span>
-              </div>
-              <div className="flex justify-between items-center bg-purple-50 dark:bg-purple-900/20 px-2.5 py-1.5 rounded-lg">
-                <span className="text-gray-600 dark:text-gray-400">Marked</span>
-                <span className="font-bold text-purple-600 dark:text-purple-400">{statusCounts.marked}</span>
-              </div>
-              <div className="flex justify-between items-center bg-orange-50 dark:bg-orange-900/20 px-2.5 py-1.5 rounded-lg">
-                <span className="text-gray-600 dark:text-gray-400">Ans + Mark</span>
-                <span className="font-bold text-orange-600 dark:text-orange-400">
-                  {statusCounts.answeredMarked}
-                </span>
-              </div>
-              <div className="col-span-2 flex justify-between items-center bg-gray-50 dark:bg-gray-800 px-2.5 py-1.5 rounded-lg">
-                <span className="text-gray-600 dark:text-gray-400">Not Visited</span>
-                <span className="font-bold text-gray-500 dark:text-gray-400">{statusCounts.notVisited}</span>
-              </div>
-            </div>
 
-            <div className="grid grid-cols-5 gap-2">
-              {(() => {
-                const section = sections[currentSectionIndex];
-                const sectionQuestions = questions.slice(section.startIndex, section.endIndex + 1);
-                const sectionPageSize = PALETTE_PAGE_SIZE;
-                const totalPages = Math.ceil(sectionQuestions.length / sectionPageSize);
-                const currentPage = Math.floor((currentQuestionIndex - section.startIndex) / sectionPageSize);
-                const pageStart = currentPage * sectionPageSize;
-                const pageEnd = Math.min(pageStart + sectionPageSize, sectionQuestions.length);
-                const pageQuestions = sectionQuestions.slice(pageStart, pageEnd);
+              <div className="grid grid-cols-5 gap-2">
+                {(() => {
+                  const section = sections[currentSectionIndex];
+                  const sectionQuestions = questions.slice(
+                    section.startIndex,
+                    section.endIndex + 1
+                  );
+                  const sectionPageSize = PALETTE_PAGE_SIZE;
+                  const totalPages = Math.ceil(sectionQuestions.length / sectionPageSize);
+                  const currentPage = Math.floor(
+                    (currentQuestionIndex - section.startIndex) / sectionPageSize
+                  );
+                  const pageStart = currentPage * sectionPageSize;
+                  const pageEnd = Math.min(pageStart + sectionPageSize, sectionQuestions.length);
+                  const pageQuestions = sectionQuestions.slice(pageStart, pageEnd);
 
-                return (
-                  <>
-                    {totalPages > 1 && (
-                      <div className="col-span-full flex items-center justify-between mb-1">
-                        <button
-                          onClick={() => {
-                            const prevStart = section.startIndex + (currentPage - 1) * sectionPageSize;
-                            if (currentPage > 0) goToQuestion(prevStart);
-                          }}
-                          disabled={currentPage === 0}
-                          className="px-2 py-1 text-xs font-semibold rounded bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-200 disabled:opacity-40 transition-colors"
-                        >
-                          Prev
-                        </button>
-                        <span className="text-xs text-gray-500 dark:text-gray-400 font-medium">
-                          {section.startIndex + pageStart + 1}-{section.startIndex + pageEnd} of {sectionQuestions.length}
-                        </span>
-                        <button
-                          onClick={() => {
-                            const nextStart = section.startIndex + (currentPage + 1) * sectionPageSize;
-                            if (currentPage < totalPages - 1) goToQuestion(nextStart);
-                          }}
-                          disabled={currentPage >= totalPages - 1}
-                          className="px-2 py-1 text-xs font-semibold rounded bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-200 disabled:opacity-40 transition-colors"
-                        >
-                          Next
-                        </button>
-                      </div>
-                    )}
-                    {pageQuestions.map((_, i) => {
-                      const index = section.startIndex + pageStart + i;
-                      const status = getQuestionStatus(responses[index]);
-                      const baseStyle = getStatusColor(status);
-                      const isActive = index === currentQuestionIndex;
+                  return (
+                    <>
+                      {totalPages > 1 && (
+                        <div className="col-span-full flex items-center justify-between mb-1">
+                          <button
+                            onClick={() => {
+                              const prevStart =
+                                section.startIndex + (currentPage - 1) * sectionPageSize;
+                              if (currentPage > 0) goToQuestion(prevStart);
+                            }}
+                            disabled={currentPage === 0}
+                            className="px-2 py-1 text-xs font-semibold rounded bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-200 disabled:opacity-40 transition-colors"
+                          >
+                            Prev
+                          </button>
+                          <span className="text-xs text-gray-500 dark:text-gray-400 font-medium">
+                            {section.startIndex + pageStart + 1}-{section.startIndex + pageEnd} of{' '}
+                            {sectionQuestions.length}
+                          </span>
+                          <button
+                            onClick={() => {
+                              const nextStart =
+                                section.startIndex + (currentPage + 1) * sectionPageSize;
+                              if (currentPage < totalPages - 1) goToQuestion(nextStart);
+                            }}
+                            disabled={currentPage >= totalPages - 1}
+                            className="px-2 py-1 text-xs font-semibold rounded bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-200 disabled:opacity-40 transition-colors"
+                          >
+                            Next
+                          </button>
+                        </div>
+                      )}
+                      {pageQuestions.map((_, i) => {
+                        const index = section.startIndex + pageStart + i;
+                        const status = getQuestionStatus(responses[index]);
+                        const baseStyle = getStatusColor(status);
+                        const isActive = index === currentQuestionIndex;
 
-                      return (
-                        <button
-                          key={index}
-                          onClick={() => goToQuestion(index)}
-                          className={`h-9 w-9 rounded-full text-xs font-bold transition-all ${baseStyle} ${
-                            isActive ? "ring-2 ring-blue-500 ring-offset-1 dark:ring-offset-gray-900 scale-110" : "hover:scale-105"
-                          }`}
-                        >
-                          {index + 1}
-                        </button>
-                      );
-                    })}
-                  </>
-                );
-              })()}
-            </div>
+                        return (
+                          <button
+                            key={index}
+                            onClick={() => goToQuestion(index)}
+                            className={`h-9 w-9 rounded-full text-xs font-bold transition-all ${baseStyle} ${
+                              isActive
+                                ? 'ring-2 ring-blue-500 ring-offset-1 dark:ring-offset-gray-900 scale-110'
+                                : 'hover:scale-105'
+                            }`}
+                          >
+                            {index + 1}
+                          </button>
+                        );
+                      })}
+                    </>
+                  );
+                })()}
+              </div>
             </div>
           </div>
         </div>
@@ -1479,7 +1864,6 @@ const MockTest = () => {
         <div
           className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4 z-20"
           onClick={closeSubmitModal}
-          aria-hidden="true"
         >
           <div
             ref={submitModalRef}
@@ -1490,7 +1874,10 @@ const MockTest = () => {
             className="bg-white dark:bg-gray-900 rounded-2xl shadow-2xl p-6 max-w-md w-full border border-gray-100 dark:border-gray-800"
             onClick={(event) => event.stopPropagation()}
           >
-            <h2 id="submit-test-title" className="text-xl font-bold text-gray-900 dark:text-white mb-1">
+            <h2
+              id="submit-test-title"
+              className="text-xl font-bold text-gray-900 dark:text-white mb-1"
+            >
               Submit Test?
             </h2>
             <p className="text-sm text-gray-500 dark:text-gray-400 mb-5">
@@ -1500,7 +1887,9 @@ const MockTest = () => {
             <div className="grid grid-cols-2 gap-2 text-xs mb-6">
               <div className="flex justify-between items-center bg-green-50 dark:bg-green-900/20 text-gray-700 dark:text-gray-300 px-3 py-2.5 rounded-xl">
                 <span>Answered</span>
-                <span className="font-bold text-green-600 dark:text-green-400">{statusCounts.answered}</span>
+                <span className="font-bold text-green-600 dark:text-green-400">
+                  {statusCounts.answered}
+                </span>
               </div>
               <div className="flex justify-between items-center bg-red-50 dark:bg-red-900/20 text-gray-700 dark:text-gray-300 px-3 py-2.5 rounded-xl">
                 <span>Not Answered</span>
@@ -1510,7 +1899,9 @@ const MockTest = () => {
               </div>
               <div className="flex justify-between items-center bg-purple-50 dark:bg-purple-900/20 text-gray-700 dark:text-gray-300 px-3 py-2.5 rounded-xl">
                 <span>Marked</span>
-                <span className="font-bold text-purple-600 dark:text-purple-400">{statusCounts.marked}</span>
+                <span className="font-bold text-purple-600 dark:text-purple-400">
+                  {statusCounts.marked}
+                </span>
               </div>
               <div className="flex justify-between items-center bg-orange-50 dark:bg-orange-900/20 text-gray-700 dark:text-gray-300 px-3 py-2.5 rounded-xl">
                 <span>Ans + Mark</span>
@@ -1555,7 +1946,6 @@ const MockTest = () => {
         <div
           className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4 z-20"
           onClick={closeShortcutsHelp}
-          aria-hidden="true"
         >
           <div
             ref={shortcutsModalRef}
@@ -1567,7 +1957,10 @@ const MockTest = () => {
             onClick={(event) => event.stopPropagation()}
           >
             <div className="flex justify-between items-center mb-4">
-              <h2 id="keyboard-shortcuts-title" className="text-xl font-bold text-gray-800 dark:text-white">
+              <h2
+                id="keyboard-shortcuts-title"
+                className="text-xl font-bold text-gray-800 dark:text-white"
+              >
                 Keyboard Shortcuts
               </h2>
               <button
@@ -1576,42 +1969,63 @@ const MockTest = () => {
                 className="text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200"
               >
                 <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M6 18L18 6M6 6l12 12"
+                  />
                 </svg>
               </button>
             </div>
             <div className="space-y-3 text-sm">
               <div className="grid grid-cols-2 gap-2">
                 <div className="bg-gray-50 dark:bg-gray-700 p-2 rounded">
-                  <kbd className="bg-gray-200 dark:bg-gray-600 px-2 py-1 rounded text-xs font-mono">1-4</kbd>
+                  <kbd className="bg-gray-200 dark:bg-gray-600 px-2 py-1 rounded text-xs font-mono">
+                    1-4
+                  </kbd>
                   <span className="ml-2 text-gray-700 dark:text-gray-300">Select option A-D</span>
                 </div>
                 <div className="bg-gray-50 dark:bg-gray-700 p-2 rounded">
-                  <kbd className="bg-gray-200 dark:bg-gray-600 px-2 py-1 rounded text-xs font-mono">A-D</kbd>
+                  <kbd className="bg-gray-200 dark:bg-gray-600 px-2 py-1 rounded text-xs font-mono">
+                    A-D
+                  </kbd>
                   <span className="ml-2 text-gray-700 dark:text-gray-300">Select option</span>
                 </div>
                 <div className="bg-gray-50 dark:bg-gray-700 p-2 rounded">
-                  <kbd className="bg-gray-200 dark:bg-gray-600 px-2 py-1 rounded text-xs font-mono">N</kbd>
+                  <kbd className="bg-gray-200 dark:bg-gray-600 px-2 py-1 rounded text-xs font-mono">
+                    N
+                  </kbd>
                   <span className="ml-2 text-gray-700 dark:text-gray-300">Next question</span>
                 </div>
                 <div className="bg-gray-50 dark:bg-gray-700 p-2 rounded">
-                  <kbd className="bg-gray-200 dark:bg-gray-600 px-2 py-1 rounded text-xs font-mono">P</kbd>
+                  <kbd className="bg-gray-200 dark:bg-gray-600 px-2 py-1 rounded text-xs font-mono">
+                    P
+                  </kbd>
                   <span className="ml-2 text-gray-700 dark:text-gray-300">Previous question</span>
                 </div>
                 <div className="bg-gray-50 dark:bg-gray-700 p-2 rounded">
-                  <kbd className="bg-gray-200 dark:bg-gray-600 px-2 py-1 rounded text-xs font-mono">S</kbd>
+                  <kbd className="bg-gray-200 dark:bg-gray-600 px-2 py-1 rounded text-xs font-mono">
+                    S
+                  </kbd>
                   <span className="ml-2 text-gray-700 dark:text-gray-300">Skip question</span>
                 </div>
                 <div className="bg-gray-50 dark:bg-gray-700 p-2 rounded">
-                  <kbd className="bg-gray-200 dark:bg-gray-600 px-2 py-1 rounded text-xs font-mono">M</kbd>
+                  <kbd className="bg-gray-200 dark:bg-gray-600 px-2 py-1 rounded text-xs font-mono">
+                    M
+                  </kbd>
                   <span className="ml-2 text-gray-700 dark:text-gray-300">Mark for review</span>
                 </div>
                 <div className="bg-gray-50 dark:bg-gray-700 p-2 rounded">
-                  <kbd className="bg-gray-200 dark:bg-gray-600 px-2 py-1 rounded text-xs font-mono">R</kbd>
+                  <kbd className="bg-gray-200 dark:bg-gray-600 px-2 py-1 rounded text-xs font-mono">
+                    R
+                  </kbd>
                   <span className="ml-2 text-gray-700 dark:text-gray-300">Clear response</span>
                 </div>
                 <div className="bg-gray-50 dark:bg-gray-700 p-2 rounded">
-                  <kbd className="bg-gray-200 dark:bg-gray-600 px-2 py-1 rounded text-xs font-mono">?</kbd>
+                  <kbd className="bg-gray-200 dark:bg-gray-600 px-2 py-1 rounded text-xs font-mono">
+                    ?
+                  </kbd>
                   <span className="ml-2 text-gray-700 dark:text-gray-300">Show this help</span>
                 </div>
               </div>
@@ -1639,40 +2053,68 @@ const MockTest = () => {
             onClick={(e) => e.stopPropagation()}
           >
             <div className="flex justify-between items-center mb-4">
-              <h3 id="mobile-palette-title" className="font-bold text-gray-800 dark:text-white">Question Palette</h3>
-              <button onClick={closeMobilePalette} aria-label="Close question palette" className="text-gray-500 dark:text-gray-400 p-1">
+              <h3 id="mobile-palette-title" className="font-bold text-gray-800 dark:text-white">
+                Question Palette
+              </h3>
+              <button
+                onClick={closeMobilePalette}
+                aria-label="Close question palette"
+                className="text-gray-500 dark:text-gray-400 p-1"
+              >
                 <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M6 18L18 6M6 6l12 12"
+                  />
                 </svg>
               </button>
             </div>
             <div className="grid grid-cols-2 gap-2 text-sm mb-4">
               <div className="flex justify-between bg-green-50 dark:bg-green-900/20 px-3 py-2 rounded">
                 <span className="text-gray-700 dark:text-gray-300">Answered</span>
-                <span className="font-semibold text-gray-900 dark:text-white">{statusCounts.answered}</span>
+                <span className="font-semibold text-gray-900 dark:text-white">
+                  {statusCounts.answered}
+                </span>
               </div>
               <div className="flex justify-between bg-red-50 dark:bg-red-900/20 px-3 py-2 rounded">
                 <span className="text-gray-700 dark:text-gray-300">Not Answered</span>
-                <span className="font-semibold text-gray-900 dark:text-white">{statusCounts.notAnswered}</span>
+                <span className="font-semibold text-gray-900 dark:text-white">
+                  {statusCounts.notAnswered}
+                </span>
               </div>
               <div className="flex justify-between bg-purple-50 dark:bg-purple-900/20 px-3 py-2 rounded">
                 <span className="text-gray-700 dark:text-gray-300">Marked</span>
-                <span className="font-semibold text-gray-900 dark:text-white">{statusCounts.marked}</span>
+                <span className="font-semibold text-gray-900 dark:text-white">
+                  {statusCounts.marked}
+                </span>
               </div>
               <div className="flex justify-between bg-gray-50 dark:bg-gray-700 px-3 py-2 rounded">
                 <span className="text-gray-700 dark:text-gray-300">Not Visited</span>
-                <span className="font-semibold text-gray-900 dark:text-white">{statusCounts.notVisited}</span>
+                <span className="font-semibold text-gray-900 dark:text-white">
+                  {statusCounts.notVisited}
+                </span>
               </div>
             </div>
             {/* Marking Scheme */}
             <div className="flex items-center justify-center gap-4 mb-4 py-2 bg-blue-50 dark:bg-blue-900/20 rounded-lg text-xs">
               <span className="flex items-center gap-1 text-green-700 dark:text-green-400 font-semibold">
-                <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" /></svg>
+                <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M12 4v16m8-8H4"
+                  />
+                </svg>
                 +{Number(currentResponse?.marksPerQuestion || 0).toFixed(2)} correct
               </span>
               <span className="w-px h-4 bg-gray-300 dark:bg-gray-600"></span>
               <span className="flex items-center gap-1 text-red-600 dark:text-red-400 font-semibold">
-                <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20 12H4" /></svg>
+                <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20 12H4" />
+                </svg>
                 {Number(currentResponse?.negativeMarking || 0).toFixed(2)} wrong
               </span>
             </div>
@@ -1680,17 +2122,23 @@ const MockTest = () => {
             {questions.length > PALETTE_PAGE_SIZE && (
               <div className="flex items-center justify-between mb-3">
                 <button
-                  onClick={() => setPalettePage(p => Math.max(0, p - 1))}
+                  onClick={() => setPalettePage((p) => Math.max(0, p - 1))}
                   disabled={palettePage === 0}
                   className="px-3 py-1.5 text-xs font-semibold rounded-lg bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-200 disabled:opacity-40 transition-colors"
                 >
                   ← Prev
                 </button>
                 <span className="text-xs text-gray-500 dark:text-gray-400 font-medium">
-                  {palettePage * PALETTE_PAGE_SIZE + 1}-{Math.min((palettePage + 1) * PALETTE_PAGE_SIZE, questions.length)} of {questions.length}
+                  {palettePage * PALETTE_PAGE_SIZE + 1}-
+                  {Math.min((palettePage + 1) * PALETTE_PAGE_SIZE, questions.length)} of{' '}
+                  {questions.length}
                 </span>
                 <button
-                  onClick={() => setPalettePage(p => Math.min(Math.ceil(questions.length / PALETTE_PAGE_SIZE) - 1, p + 1))}
+                  onClick={() =>
+                    setPalettePage((p) =>
+                      Math.min(Math.ceil(questions.length / PALETTE_PAGE_SIZE) - 1, p + 1)
+                    )
+                  }
                   disabled={palettePage >= Math.ceil(questions.length / PALETTE_PAGE_SIZE) - 1}
                   className="px-3 py-1.5 text-xs font-semibold rounded-lg bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-200 disabled:opacity-40 transition-colors"
                 >
@@ -1699,29 +2147,35 @@ const MockTest = () => {
               </div>
             )}
             <div className="grid grid-cols-6 gap-2.5">
-              {questions.slice(palettePage * PALETTE_PAGE_SIZE, (palettePage + 1) * PALETTE_PAGE_SIZE).map((_, i) => {
-                const index = palettePage * PALETTE_PAGE_SIZE + i;
-                const status = getQuestionStatus(responses[index]);
-                const baseStyle = getStatusColor(status);
-                const isActive = index === currentQuestionIndex;
-                const isInSection = index >= currentSection.startIndex && index <= currentSection.endIndex;
-                return (
-                  <button
-                    key={index}
-                    onClick={() => {
-                      goToQuestion(index);
-                      closeMobilePalette();
-                      setTimeout(() => {
-                        questionCardRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
-                      }, 100);
-                    }}
-                    disabled={!isInSection}
-                    className={`h-10 w-10 rounded-lg text-sm font-semibold ${baseStyle} ${isActive ? "ring-2 ring-blue-600" : ""} ${!isInSection ? "opacity-40 cursor-not-allowed" : ""}`}
-                  >
-                    {index + 1}
-                  </button>
-                );
-              })}
+              {questions
+                .slice(palettePage * PALETTE_PAGE_SIZE, (palettePage + 1) * PALETTE_PAGE_SIZE)
+                .map((_, i) => {
+                  const index = palettePage * PALETTE_PAGE_SIZE + i;
+                  const status = getQuestionStatus(responses[index]);
+                  const baseStyle = getStatusColor(status);
+                  const isActive = index === currentQuestionIndex;
+                  const isInSection =
+                    index >= currentSection.startIndex && index <= currentSection.endIndex;
+                  return (
+                    <button
+                      key={index}
+                      onClick={() => {
+                        goToQuestion(index);
+                        closeMobilePalette();
+                        setTimeout(() => {
+                          questionCardRef.current?.scrollIntoView({
+                            behavior: 'smooth',
+                            block: 'start',
+                          });
+                        }, 100);
+                      }}
+                      disabled={!isInSection}
+                      className={`h-10 w-10 rounded-lg text-sm font-semibold ${baseStyle} ${isActive ? 'ring-2 ring-blue-600' : ''} ${!isInSection ? 'opacity-40 cursor-not-allowed' : ''}`}
+                    >
+                      {index + 1}
+                    </button>
+                  );
+                })}
             </div>
           </div>
         </div>
@@ -1735,23 +2189,42 @@ const MockTest = () => {
             disabled={currentQuestionIndex === currentSection?.startIndex}
             className="flex items-center gap-1 px-4 py-2.5 bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-200 rounded-lg text-sm font-semibold disabled:opacity-40 transition-colors"
           >
-            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" /></svg>
+            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M15 19l-7-7 7-7"
+              />
+            </svg>
             Prev
           </button>
           <button
             onClick={handleSkip}
-            disabled={currentResponse.locked || (currentQuestionIndex === currentSection?.endIndex && currentSectionIndex === sections.length - 1)}
+            disabled={
+              currentResponse.locked ||
+              (currentQuestionIndex === currentSection?.endIndex &&
+                currentSectionIndex === sections.length - 1)
+            }
             className="flex items-center gap-1 px-4 py-2.5 bg-yellow-100 dark:bg-yellow-900/30 text-yellow-700 dark:text-yellow-300 rounded-lg text-sm font-semibold disabled:opacity-40 transition-colors"
           >
             Skip
           </button>
           <button
             onClick={handleNext}
-            disabled={currentQuestionIndex === currentSection?.endIndex && currentSectionIndex === sections.length - 1}
+            disabled={
+              currentQuestionIndex === currentSection?.endIndex &&
+              currentSectionIndex === sections.length - 1
+            }
             className="flex items-center gap-1 px-4 py-2.5 bg-blue-600 text-white rounded-lg text-sm font-semibold disabled:opacity-40 transition-colors"
           >
-            {currentQuestionIndex === currentSection?.endIndex && currentSectionIndex < sections.length - 1 ? "Next Sec" : "Next"}
-            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" /></svg>
+            {currentQuestionIndex === currentSection?.endIndex &&
+            currentSectionIndex < sections.length - 1
+              ? 'Next Sec'
+              : 'Next'}
+            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+            </svg>
           </button>
         </div>
       </div>

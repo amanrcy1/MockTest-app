@@ -86,7 +86,7 @@ describe('useTimer', () => {
 
   it('should provide formatTime function', () => {
     const { result } = renderHook(() => useTimer(125));
-    
+
     expect(result.current.formatTime(3665)).toBe('1:01:05');
     expect(result.current.formatTime(125)).toBe('2:05');
     expect(result.current.formatTime(59)).toBe('0:59');

@@ -45,7 +45,7 @@ describe('questionService', () => {
       ];
 
       const mockSnapshot = {
-        docs: mockQuestions.map(q => ({
+        docs: mockQuestions.map((q) => ({
           id: q.id,
           data: () => q,
         })),

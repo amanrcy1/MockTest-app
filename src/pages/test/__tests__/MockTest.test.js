@@ -45,7 +45,13 @@ vi.mock('../../../utils/examPatterns', () => ({
       name: 'CDS',
       totalTime: 7200,
       sections: [
-        { name: 'General Knowledge', totalQuestions: 10, marksPerQuestion: 1, negativeMarking: -0.33, timeLimit: 3600 },
+        {
+          name: 'General Knowledge',
+          totalQuestions: 10,
+          marksPerQuestion: 1,
+          negativeMarking: -0.33,
+          timeLimit: 3600,
+        },
       ],
     },
   },
@@ -96,7 +102,9 @@ describe('MockTest Page', () => {
   it('should redirect if insufficient questions', async () => {
     getDocs.mockResolvedValue({ docs: [], empty: true, size: 0, forEach: vi.fn() });
     render(<MockTest />);
-    await waitFor(() => expect(mockNavigate).toHaveBeenCalledWith('/test-selection', expect.anything()));
+    await waitFor(() =>
+      expect(mockNavigate).toHaveBeenCalledWith('/test-selection', expect.anything())
+    );
   });
 
   it('should fetch questions from firestore', async () => {

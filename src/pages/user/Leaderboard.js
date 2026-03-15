@@ -1,34 +1,22 @@
-import { useEffect, useMemo, useState, useCallback, useRef } from "react";
-import { useNavigate } from "react-router-dom";
-import { useAuth } from "../../context/AuthContext";
-import {
-  collection,
-  getDoc,
-  getDocs,
-  query,
-  where,
-  doc,
-} from "firebase/firestore";
-import {
-  addWeeks,
-  endOfWeek,
-  getISOWeek,
-  getISOWeekYear,
-  startOfWeek,
-} from "date-fns";
-import { motion } from "framer-motion";
-import { db } from "../../config/firebase";
-import { EXAM_PATTERNS } from "../../utils/examPatterns";
-import { TopNav, BottomNav } from "../../components";
-import { LeaderboardSkeleton } from "../../components/ui/LoadingSkeleton";
-import { getSafePhotoURL } from "../../utils/avatarUtils";
+import { useEffect, useMemo, useState, useCallback, useRef } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { useAuth } from '../../context/AuthContext';
+import { collection, getDoc, getDocs, query, where, doc } from 'firebase/firestore';
+import { addWeeks, endOfWeek, getISOWeek, getISOWeekYear, startOfWeek } from 'date-fns';
+import { motion } from 'framer-motion';
+import { db } from '../../config/firebase';
+import { EXAM_PATTERNS } from '../../utils/examPatterns';
+import { TopNav, BottomNav } from '../../components';
+import { LeaderboardSkeleton } from '../../components/ui/LoadingSkeleton';
+import { getSafePhotoURL } from '../../utils/avatarUtils';
 
 // Cache for leaderboard data (keyed by examType_weekOffset)
 const leaderboardCache = new Map();
 const CACHE_TTL = 5 * 60 * 1000;
-const getRefreshEpoch = () => (typeof window !== "undefined" ? Number(window.__APP_REFRESH_EPOCH__ || 0) : 0);
+const getRefreshEpoch = () =>
+  typeof window !== 'undefined' ? Number(window.__APP_REFRESH_EPOCH__ || 0) : 0;
 const hideBrokenImage = (e) => {
-  e.currentTarget.style.display = "none";
+  e.currentTarget.style.display = 'none';
 };
 const formatScore = (value) => Number(value || 0).toFixed(2);
 const formatAccuracy = (value) => `${Math.round(Number(value || 0))}%`;
@@ -36,13 +24,13 @@ const formatAccuracy = (value) => `${Math.round(Number(value || 0))}%`;
 const Leaderboard = () => {
   const navigate = useNavigate();
   const { currentUser, userDetails } = useAuth();
-  const [examType, setExamType] = useState("CDS");
+  const [examType, setExamType] = useState('CDS');
   const [weekOffset, setWeekOffset] = useState(0);
   const [entries, setEntries] = useState([]);
   const [loading, setLoading] = useState(true);
   const [myRank, setMyRank] = useState(null);
   const [myOutsideEntry, setMyOutsideEntry] = useState(null);
-  const [error, setError] = useState("");
+  const [error, setError] = useState('');
   const fetchingRef = useRef(false);
 
   const weekRange = useMemo(() => {
@@ -54,17 +42,17 @@ const Leaderboard = () => {
 
   const handleExamChange = useCallback((e) => setExamType(e.target.value), []);
   const handleWeekChange = useCallback((e) => setWeekOffset(Number(e.target.value)), []);
-  const handleBack = useCallback(() => navigate("/dashboard"), [navigate]);
+  const handleBack = useCallback(() => navigate('/dashboard'), [navigate]);
 
   useEffect(() => {
     const fetchLeaderboard = async () => {
       if (fetchingRef.current) return;
-      
+
       const cacheKey = `${examType}_${weekOffset}`;
       const cached = leaderboardCache.get(cacheKey);
       const now = Date.now();
       const refreshEpoch = getRefreshEpoch();
-      
+
       // Use cache if valid
       if (cached && cached.refreshEpoch === refreshEpoch && now - cached.timestamp < CACHE_TTL) {
         setEntries(cached.entries);
@@ -76,7 +64,7 @@ const Leaderboard = () => {
             setMyOutsideEntry({
               ...mine,
               rank: index + 1,
-              name: userDetails?.name || "You",
+              name: userDetails?.name || 'You',
               photoURL: userDetails?.photoURL || null,
               isDeleted: false,
             });
@@ -91,12 +79,12 @@ const Leaderboard = () => {
       fetchingRef.current = true;
 
       try {
-        setError("");
+        setError('');
         setLoading(true);
         const weekNumber = getISOWeek(weekRange.start);
         const yearNumber = getISOWeekYear(weekRange.start);
         const weekDocId = `${examType}_${yearNumber}_W${weekNumber}`;
-        const weekDocRef = doc(db, "leaderboard", weekDocId);
+        const weekDocRef = doc(db, 'leaderboard', weekDocId);
 
         // Check if we have a stored leaderboard for past weeks
         if (weekOffset > 0) {
@@ -104,7 +92,7 @@ const Leaderboard = () => {
           if (weekDocSnap.exists()) {
             const storedEntries = weekDocSnap.data()?.entries || [];
             setEntries(storedEntries);
-            
+
             // Cache the result
             leaderboardCache.set(cacheKey, {
               entries: storedEntries,
@@ -112,7 +100,7 @@ const Leaderboard = () => {
               timestamp: now,
               refreshEpoch,
             });
-            
+
             if (currentUser) {
               const index = storedEntries.findIndex((e) => e.userId === currentUser.uid);
               setMyRank(index >= 0 ? index + 1 : null);
@@ -128,19 +116,19 @@ const Leaderboard = () => {
         let snapshot;
         try {
           const q = query(
-            collection(db, "tests"),
-            where("examType", "==", examType),
-            where("completed", "==", true),
-            where("endTime", ">=", startIso),
-            where("endTime", "<=", endIso),
+            collection(db, 'tests'),
+            where('examType', '==', examType),
+            where('completed', '==', true),
+            where('endTime', '>=', startIso),
+            where('endTime', '<=', endIso)
           );
           snapshot = await getDocs(q);
         } catch {
           // Index fallback: still functional, but more expensive.
           const fallbackQ = query(
-            collection(db, "tests"),
-            where("examType", "==", examType),
-            where("completed", "==", true),
+            collection(db, 'tests'),
+            where('examType', '==', examType),
+            where('completed', '==', true)
           );
           snapshot = await getDocs(fallbackQ);
         }
@@ -154,11 +142,11 @@ const Leaderboard = () => {
 
           const scoreData = {
             totalMarks: data.score,
-            accuracy: data.accuracy ?? "0",
+            accuracy: data.accuracy ?? '0',
           };
           const timeTaken = data.timeTaken ?? null;
           const existing = bestByUser.get(data.userId);
-          
+
           if (
             !existing ||
             scoreData.totalMarks > existing.score ||
@@ -184,7 +172,7 @@ const Leaderboard = () => {
 
         const topEntries = sorted.slice(0, 100);
         const userDocs = await Promise.all(
-          topEntries.map((entry) => getDoc(doc(db, "users", entry.userId))),
+          topEntries.map((entry) => getDoc(doc(db, 'users', entry.userId)))
         );
 
         const enriched = topEntries.map((entry, index) => {
@@ -192,7 +180,7 @@ const Leaderboard = () => {
           const userData = userDoc.exists() ? userDoc.data() : {};
           return {
             ...entry,
-            name: userData.name || (userDoc.exists() ? "User" : "[Deleted User]"),
+            name: userData.name || (userDoc.exists() ? 'User' : '[Deleted User]'),
             photoURL: userData.photoURL || null,
             rank: index + 1,
             isDeleted: !userDoc.exists(),
@@ -200,7 +188,7 @@ const Leaderboard = () => {
         });
 
         setEntries(enriched);
-        
+
         // Cache the result
         leaderboardCache.set(cacheKey, {
           entries: enriched,
@@ -217,7 +205,7 @@ const Leaderboard = () => {
             setMyOutsideEntry({
               ...mine,
               rank: index + 1,
-              name: userDetails?.name || "You",
+              name: userDetails?.name || 'You',
               photoURL: userDetails?.photoURL || null,
               isDeleted: false,
             });
@@ -231,10 +219,10 @@ const Leaderboard = () => {
         setEntries([]);
         setMyRank(null);
         setMyOutsideEntry(null);
-        if (err?.code === "permission-denied") {
-          setError("Leaderboard is temporarily unavailable due to access rules.");
+        if (err?.code === 'permission-denied') {
+          setError('Leaderboard is temporarily unavailable due to access rules.');
         } else {
-          setError("Failed to load leaderboard. Please try again.");
+          setError('Failed to load leaderboard. Please try again.');
         }
       } finally {
         setLoading(false);
@@ -243,7 +231,15 @@ const Leaderboard = () => {
     };
 
     fetchLeaderboard();
-  }, [currentUser, examType, userDetails?.name, userDetails?.photoURL, weekOffset, weekRange.end, weekRange.start]);
+  }, [
+    currentUser,
+    examType,
+    userDetails?.name,
+    userDetails?.photoURL,
+    weekOffset,
+    weekRange.end,
+    weekRange.start,
+  ]);
 
   return (
     <div className="min-h-screen mesh-gradient pb-20 md:pb-0">
@@ -253,11 +249,14 @@ const Leaderboard = () => {
           {/* Desktop Header */}
           <div className="hidden md:flex justify-between items-center">
             <div>
-              <h1 className="text-2xl font-bold gradient-text">
-                Weekly Leaderboard
-              </h1>
+              <h1 className="text-2xl font-bold gradient-text">Weekly Leaderboard</h1>
               <p className="text-sm text-gray-500 dark:text-gray-400">
-                {weekRange.start.toLocaleDateString("en-US", { month: "short", day: "numeric" })} - {weekRange.end.toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })}
+                {weekRange.start.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })} -{' '}
+                {weekRange.end.toLocaleDateString('en-US', {
+                  month: 'short',
+                  day: 'numeric',
+                  year: 'numeric',
+                })}
               </p>
             </div>
             <div className="flex items-center gap-3">
@@ -292,7 +291,13 @@ const Leaderboard = () => {
               <div>
                 <h1 className="text-xl font-bold gradient-text">Leaderboard</h1>
                 <p className="text-xs text-gray-500 dark:text-gray-400">
-                  {weekRange.start.toLocaleDateString("en-US", { month: "short", day: "numeric" })} - {weekRange.end.toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })}
+                  {weekRange.start.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}{' '}
+                  -{' '}
+                  {weekRange.end.toLocaleDateString('en-US', {
+                    month: 'short',
+                    day: 'numeric',
+                    year: 'numeric',
+                  })}
                 </p>
               </div>
               <div className="flex items-center gap-2">
@@ -301,8 +306,18 @@ const Leaderboard = () => {
                   className="p-2 min-h-11 min-w-11 bg-gray-100 dark:bg-gray-700 rounded-xl"
                   aria-label="Back"
                 >
-                  <svg className="w-5 h-5 text-gray-700 dark:text-gray-200" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 19l-7-7m0 0l7-7m-7 7h18" />
+                  <svg
+                    className="w-5 h-5 text-gray-700 dark:text-gray-200"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M10 19l-7-7m0 0l7-7m-7 7h18"
+                    />
                   </svg>
                 </button>
               </div>
@@ -337,16 +352,21 @@ const Leaderboard = () => {
 
       <div className="max-w-5xl mx-auto px-4 py-6 sm:py-8">
         {currentUser && (
-          <motion.div 
+          <motion.div
             initial={{ opacity: 0, y: -10 }}
             animate={{ opacity: 1, y: 0 }}
             className="bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-blue-900/20 dark:to-indigo-900/20 border border-blue-200 dark:border-blue-800 rounded-2xl p-4 mb-6"
           >
             <p className="text-blue-700 dark:text-blue-300 font-semibold text-sm sm:text-base flex items-center gap-2">
               <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 3v4M3 5h4M6 17v4m-2-2h4m5-16l2.286 6.857L21 12l-5.714 2.143L13 21l-2.286-6.857L5 12l5.714-2.143L13 3z" />
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M5 3v4M3 5h4M6 17v4m-2-2h4m5-16l2.286 6.857L21 12l-5.714 2.143L13 21l-2.286-6.857L5 12l5.714-2.143L13 3z"
+                />
               </svg>
-              {myRank ? `Your current rank: #${myRank}` : "You are not ranked this week yet."}
+              {myRank ? `Your current rank: #${myRank}` : 'You are not ranked this week yet.'}
             </p>
           </motion.div>
         )}
@@ -371,41 +391,83 @@ const Leaderboard = () => {
             </button>
           </motion.div>
         ) : entries.length === 0 ? (
-          <motion.div 
+          <motion.div
             initial={{ opacity: 0, scale: 0.95 }}
             animate={{ opacity: 1, scale: 1 }}
             className="bg-white dark:bg-gray-800 rounded-2xl shadow-xl p-12 text-center border border-gray-100 dark:border-gray-700"
           >
             <div className="w-16 h-16 bg-gray-100 dark:bg-gray-700 rounded-full flex items-center justify-center mx-auto mb-4">
-              <svg className="w-8 h-8 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+              <svg
+                className="w-8 h-8 text-gray-400"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"
+                />
               </svg>
             </div>
             <p className="text-gray-500 dark:text-gray-400">No completed tests this week yet.</p>
-            <p className="text-sm text-gray-400 dark:text-gray-500 mt-1">Be the first to take a test!</p>
+            <p className="text-sm text-gray-400 dark:text-gray-500 mt-1">
+              Be the first to take a test!
+            </p>
           </motion.div>
         ) : (
           <>
             {/* Top 3 - Compact Highlight */}
             {entries.length >= 1 && (
-              <motion.div 
+              <motion.div
                 initial={{ opacity: 0, y: 10 }}
                 animate={{ opacity: 1, y: 0 }}
                 className="bg-gradient-to-r from-yellow-50 to-amber-50 dark:from-yellow-900/10 dark:to-amber-900/10 border border-yellow-200 dark:border-yellow-800 rounded-xl p-4 mb-4"
               >
                 <div className="flex items-center justify-center gap-4">
                   {entries.slice(0, 3).map((entry, idx) => {
-                    const medals = [<svg key="gold" className="w-6 h-6 text-yellow-400" fill="currentColor" viewBox="0 0 24 24"><circle cx="12" cy="9" r="6" /><path d="M7 15l-3 7h4l4-4 4 4h4l-3-7" /></svg>, <svg key="silver" className="w-6 h-6 text-gray-400" fill="currentColor" viewBox="0 0 24 24"><circle cx="12" cy="9" r="6" /><path d="M7 15l-3 7h4l4-4 4 4h4l-3-7" /></svg>, <svg key="bronze" className="w-6 h-6 text-amber-600" fill="currentColor" viewBox="0 0 24 24"><circle cx="12" cy="9" r="6" /><path d="M7 15l-3 7h4l4-4 4 4h4l-3-7" /></svg>];
+                    const medals = [
+                      <svg
+                        key="gold"
+                        className="w-6 h-6 text-yellow-400"
+                        fill="currentColor"
+                        viewBox="0 0 24 24"
+                      >
+                        <circle cx="12" cy="9" r="6" />
+                        <path d="M7 15l-3 7h4l4-4 4 4h4l-3-7" />
+                      </svg>,
+                      <svg
+                        key="silver"
+                        className="w-6 h-6 text-gray-400"
+                        fill="currentColor"
+                        viewBox="0 0 24 24"
+                      >
+                        <circle cx="12" cy="9" r="6" />
+                        <path d="M7 15l-3 7h4l4-4 4 4h4l-3-7" />
+                      </svg>,
+                      <svg
+                        key="bronze"
+                        className="w-6 h-6 text-amber-600"
+                        fill="currentColor"
+                        viewBox="0 0 24 24"
+                      >
+                        <circle cx="12" cy="9" r="6" />
+                        <path d="M7 15l-3 7h4l4-4 4 4h4l-3-7" />
+                      </svg>,
+                    ];
                     return (
                       <div key={entry.userId} className="text-center">
                         <div className="flex justify-center mb-1">{medals[idx]}</div>
-                        <div className={`relative w-12 h-12 rounded-full mx-auto mb-1 overflow-hidden ${
-                          entry.isDeleted 
-                            ? "bg-gray-400" 
-                            : "bg-gradient-to-br from-blue-500 to-purple-600"
-                        }`}>
+                        <div
+                          className={`relative w-12 h-12 rounded-full mx-auto mb-1 overflow-hidden ${
+                            entry.isDeleted
+                              ? 'bg-gray-400'
+                              : 'bg-gradient-to-br from-blue-500 to-purple-600'
+                          }`}
+                        >
                           <div className="w-full h-full flex items-center justify-center text-white font-bold">
-                            {entry.name?.charAt(0)?.toUpperCase() || "U"}
+                            {entry.name?.charAt(0)?.toUpperCase() || 'U'}
                           </div>
                           {getSafePhotoURL(entry.photoURL) && (
                             <img
@@ -430,7 +492,7 @@ const Leaderboard = () => {
             )}
 
             {/* Full Leaderboard Table */}
-            <motion.div 
+            <motion.div
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.2 }}
@@ -443,36 +505,68 @@ const Leaderboard = () => {
                 <span>Score</span>
                 <span>Accuracy</span>
               </div>
-              
+
               {/* Mobile Card / Desktop Row */}
               {entries.map((entry, index) => (
                 <motion.div
                   key={entry.userId}
                   className={`border-t border-gray-100 dark:border-gray-700 ${
-                    entry.userId === currentUser?.uid 
-                      ? "bg-blue-50 dark:bg-blue-900/20" 
-                      : ""
+                    entry.userId === currentUser?.uid ? 'bg-blue-50 dark:bg-blue-900/20' : ''
                   }`}
                   initial={{ opacity: 0, x: -20 }}
                   animate={{ opacity: 1, x: 0 }}
                   transition={{ delay: index * 0.03 }}
-                  whileHover={{ backgroundColor: entry.userId === currentUser?.uid ? undefined : "rgba(59, 130, 246, 0.05)" }}
+                  whileHover={{
+                    backgroundColor:
+                      entry.userId === currentUser?.uid ? undefined : 'rgba(59, 130, 246, 0.05)',
+                  }}
                 >
                   {/* Desktop Row */}
                   <div className="hidden sm:grid grid-cols-4 gap-4 px-6 py-4 text-sm text-gray-700 dark:text-gray-300">
                     <span className="font-bold flex items-center gap-2">
                       {entry.rank <= 3 && (
-                        <span className="inline-flex">{entry.rank === 1 ? <svg className="w-6 h-6 text-yellow-400" fill="currentColor" viewBox="0 0 24 24"><circle cx="12" cy="9" r="6" /><path d="M7 15l-3 7h4l4-4 4 4h4l-3-7" /></svg> : entry.rank === 2 ? <svg className="w-6 h-6 text-gray-400" fill="currentColor" viewBox="0 0 24 24"><circle cx="12" cy="9" r="6" /><path d="M7 15l-3 7h4l4-4 4 4h4l-3-7" /></svg> : <svg className="w-6 h-6 text-amber-600" fill="currentColor" viewBox="0 0 24 24"><circle cx="12" cy="9" r="6" /><path d="M7 15l-3 7h4l4-4 4 4h4l-3-7" /></svg>}</span>
+                        <span className="inline-flex">
+                          {entry.rank === 1 ? (
+                            <svg
+                              className="w-6 h-6 text-yellow-400"
+                              fill="currentColor"
+                              viewBox="0 0 24 24"
+                            >
+                              <circle cx="12" cy="9" r="6" />
+                              <path d="M7 15l-3 7h4l4-4 4 4h4l-3-7" />
+                            </svg>
+                          ) : entry.rank === 2 ? (
+                            <svg
+                              className="w-6 h-6 text-gray-400"
+                              fill="currentColor"
+                              viewBox="0 0 24 24"
+                            >
+                              <circle cx="12" cy="9" r="6" />
+                              <path d="M7 15l-3 7h4l4-4 4 4h4l-3-7" />
+                            </svg>
+                          ) : (
+                            <svg
+                              className="w-6 h-6 text-amber-600"
+                              fill="currentColor"
+                              viewBox="0 0 24 24"
+                            >
+                              <circle cx="12" cy="9" r="6" />
+                              <path d="M7 15l-3 7h4l4-4 4 4h4l-3-7" />
+                            </svg>
+                          )}
+                        </span>
                       )}
                       #{entry.rank}
                     </span>
                     <span className="truncate flex items-center gap-2">
-                      <div className={`relative w-8 h-8 rounded-full flex items-center justify-center text-white text-xs font-bold overflow-hidden flex-shrink-0 ${
-                        entry.isDeleted 
-                          ? "bg-gray-400 dark:bg-gray-600" 
-                          : "bg-gradient-to-br from-blue-500 to-purple-600"
-                      }`}>
-                        {entry.name?.charAt(0)?.toUpperCase() || "U"}
+                      <div
+                        className={`relative w-8 h-8 rounded-full flex items-center justify-center text-white text-xs font-bold overflow-hidden flex-shrink-0 ${
+                          entry.isDeleted
+                            ? 'bg-gray-400 dark:bg-gray-600'
+                            : 'bg-gradient-to-br from-blue-500 to-purple-600'
+                        }`}
+                      >
+                        {entry.name?.charAt(0)?.toUpperCase() || 'U'}
                         {getSafePhotoURL(entry.photoURL) && (
                           <img
                             src={getSafePhotoURL(entry.photoURL)}
@@ -482,26 +576,36 @@ const Leaderboard = () => {
                           />
                         )}
                       </div>
-                      <span className={`truncate ${entry.isDeleted ? "text-gray-400 dark:text-gray-500 italic" : ""}`}>
+                      <span
+                        className={`truncate ${entry.isDeleted ? 'text-gray-400 dark:text-gray-500 italic' : ''}`}
+                      >
                         {entry.name}
                       </span>
                       {entry.userId === currentUser?.uid && (
-                        <span className="text-xs bg-blue-100 dark:bg-blue-800 text-blue-700 dark:text-blue-200 px-2 py-0.5 rounded-full font-medium">You</span>
+                        <span className="text-xs bg-blue-100 dark:bg-blue-800 text-blue-700 dark:text-blue-200 px-2 py-0.5 rounded-full font-medium">
+                          You
+                        </span>
                       )}
                     </span>
-                    <span className="font-bold text-blue-600 dark:text-blue-400">{formatScore(entry.score)}</span>
-                    <span className="text-green-600 dark:text-green-400">{formatAccuracy(entry.accuracy)}</span>
+                    <span className="font-bold text-blue-600 dark:text-blue-400">
+                      {formatScore(entry.score)}
+                    </span>
+                    <span className="text-green-600 dark:text-green-400">
+                      {formatAccuracy(entry.accuracy)}
+                    </span>
                   </div>
-                  
+
                   {/* Mobile Card */}
                   <div className="sm:hidden p-4">
                     <div className="flex items-center gap-3">
-                      <div className={`relative w-10 h-10 rounded-full flex items-center justify-center text-white text-sm font-bold overflow-hidden flex-shrink-0 ${
-                        entry.isDeleted 
-                          ? "bg-gray-400 dark:bg-gray-600" 
-                          : "bg-gradient-to-br from-blue-500 to-purple-600"
-                      }`}>
-                        {entry.name?.charAt(0)?.toUpperCase() || "U"}
+                      <div
+                        className={`relative w-10 h-10 rounded-full flex items-center justify-center text-white text-sm font-bold overflow-hidden flex-shrink-0 ${
+                          entry.isDeleted
+                            ? 'bg-gray-400 dark:bg-gray-600'
+                            : 'bg-gradient-to-br from-blue-500 to-purple-600'
+                        }`}
+                      >
+                        {entry.name?.charAt(0)?.toUpperCase() || 'U'}
                         {getSafePhotoURL(entry.photoURL) && (
                           <img
                             src={getSafePhotoURL(entry.photoURL)}
@@ -516,21 +620,58 @@ const Leaderboard = () => {
                           <div className="flex items-center gap-2">
                             <span className="font-bold text-gray-900 dark:text-white">
                               {entry.rank <= 3 && (
-                                <span className="mr-1 inline-flex">{entry.rank === 1 ? <svg className="w-6 h-6 text-yellow-400" fill="currentColor" viewBox="0 0 24 24"><circle cx="12" cy="9" r="6" /><path d="M7 15l-3 7h4l4-4 4 4h4l-3-7" /></svg> : entry.rank === 2 ? <svg className="w-6 h-6 text-gray-400" fill="currentColor" viewBox="0 0 24 24"><circle cx="12" cy="9" r="6" /><path d="M7 15l-3 7h4l4-4 4 4h4l-3-7" /></svg> : <svg className="w-6 h-6 text-amber-600" fill="currentColor" viewBox="0 0 24 24"><circle cx="12" cy="9" r="6" /><path d="M7 15l-3 7h4l4-4 4 4h4l-3-7" /></svg>}</span>
+                                <span className="mr-1 inline-flex">
+                                  {entry.rank === 1 ? (
+                                    <svg
+                                      className="w-6 h-6 text-yellow-400"
+                                      fill="currentColor"
+                                      viewBox="0 0 24 24"
+                                    >
+                                      <circle cx="12" cy="9" r="6" />
+                                      <path d="M7 15l-3 7h4l4-4 4 4h4l-3-7" />
+                                    </svg>
+                                  ) : entry.rank === 2 ? (
+                                    <svg
+                                      className="w-6 h-6 text-gray-400"
+                                      fill="currentColor"
+                                      viewBox="0 0 24 24"
+                                    >
+                                      <circle cx="12" cy="9" r="6" />
+                                      <path d="M7 15l-3 7h4l4-4 4 4h4l-3-7" />
+                                    </svg>
+                                  ) : (
+                                    <svg
+                                      className="w-6 h-6 text-amber-600"
+                                      fill="currentColor"
+                                      viewBox="0 0 24 24"
+                                    >
+                                      <circle cx="12" cy="9" r="6" />
+                                      <path d="M7 15l-3 7h4l4-4 4 4h4l-3-7" />
+                                    </svg>
+                                  )}
+                                </span>
                               )}
                               #{entry.rank}
                             </span>
                             {entry.userId === currentUser?.uid && (
-                              <span className="text-xs bg-blue-100 dark:bg-blue-800 text-blue-700 dark:text-blue-200 px-2 py-0.5 rounded-full font-medium">You</span>
+                              <span className="text-xs bg-blue-100 dark:bg-blue-800 text-blue-700 dark:text-blue-200 px-2 py-0.5 rounded-full font-medium">
+                                You
+                              </span>
                             )}
                           </div>
-                          <span className="font-bold text-blue-600 dark:text-blue-400">{formatScore(entry.score)}</span>
+                          <span className="font-bold text-blue-600 dark:text-blue-400">
+                            {formatScore(entry.score)}
+                          </span>
                         </div>
                         <div className="flex items-center justify-between text-sm text-gray-500 dark:text-gray-400">
-                          <span className={`truncate max-w-[60%] ${entry.isDeleted ? "text-gray-400 dark:text-gray-500 italic" : ""}`}>
+                          <span
+                            className={`truncate max-w-[60%] ${entry.isDeleted ? 'text-gray-400 dark:text-gray-500 italic' : ''}`}
+                          >
                             {entry.name}
                           </span>
-                          <span className="text-green-600 dark:text-green-400">{formatAccuracy(entry.accuracy)}</span>
+                          <span className="text-green-600 dark:text-green-400">
+                            {formatAccuracy(entry.accuracy)}
+                          </span>
                         </div>
                       </div>
                     </div>
@@ -545,12 +686,22 @@ const Leaderboard = () => {
                 animate={{ opacity: 1, y: 0 }}
                 className="mt-4 sticky bottom-24 md:bottom-4 z-10 bg-blue-50 dark:bg-blue-900/25 border border-blue-200 dark:border-blue-800 rounded-2xl p-3"
               >
-                <p className="text-xs font-semibold text-blue-700 dark:text-blue-300 mb-2">Your Position</p>
+                <p className="text-xs font-semibold text-blue-700 dark:text-blue-300 mb-2">
+                  Your Position
+                </p>
                 <div className="grid grid-cols-4 gap-3 items-center text-sm">
-                  <span className="font-bold text-blue-700 dark:text-blue-300">#{myOutsideEntry.rank}</span>
-                  <span className="truncate text-gray-800 dark:text-gray-100">{myOutsideEntry.name}</span>
-                  <span className="font-semibold text-blue-700 dark:text-blue-300">{formatScore(myOutsideEntry.score)}</span>
-                  <span className="text-green-600 dark:text-green-400">{formatAccuracy(myOutsideEntry.accuracy)}</span>
+                  <span className="font-bold text-blue-700 dark:text-blue-300">
+                    #{myOutsideEntry.rank}
+                  </span>
+                  <span className="truncate text-gray-800 dark:text-gray-100">
+                    {myOutsideEntry.name}
+                  </span>
+                  <span className="font-semibold text-blue-700 dark:text-blue-300">
+                    {formatScore(myOutsideEntry.score)}
+                  </span>
+                  <span className="text-green-600 dark:text-green-400">
+                    {formatAccuracy(myOutsideEntry.accuracy)}
+                  </span>
                 </div>
               </motion.div>
             )}

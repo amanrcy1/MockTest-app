@@ -1,26 +1,26 @@
-import { useCallback, useEffect, useState } from "react";
-import { useNavigate, useLocation } from "react-router-dom";
-import { collection, getDocs, query, where } from "firebase/firestore";
-import { db } from "../../config/firebase";
+import { useCallback, useEffect, useState } from 'react';
+import { useNavigate, useLocation } from 'react-router-dom';
+import { collection, getDocs, query, where } from 'firebase/firestore';
+import { db } from '../../config/firebase';
 import {
   EXAM_PATTERNS,
   getSubjectsByExam,
   getTopicsBySubject,
   DIFFICULTY_LEVELS,
-} from "../../utils/examPatterns";
-import toast, { messages } from "../../utils/toast";
-import logger from "../../utils/logger";
+} from '../../utils/examPatterns';
+import toast, { messages } from '../../utils/toast';
+import logger from '../../utils/logger';
 
 const CustomTestSetup = () => {
   const navigate = useNavigate();
   const location = useLocation();
-  const examType = location.state?.examType || "CDS";
+  const examType = location.state?.examType || 'CDS';
 
   const [settings, setSettings] = useState({
     examType: examType,
     subjects: [],
     topics: [],
-    difficulty: "all",
+    difficulty: 'all',
     numberOfQuestions: 20,
     timeLimit: 30, // minutes
     hasTimer: true,
@@ -54,39 +54,27 @@ const CustomTestSetup = () => {
 
   const fetchQuestionCount = useCallback(async () => {
     try {
-      let q = query(
-        collection(db, "questions"),
-        where("examType", "==", settings.examType),
-      );
+      let q = query(collection(db, 'questions'), where('examType', '==', settings.examType));
 
       const snapshot = await getDocs(q);
       let questions = snapshot.docs.map((doc) => doc.data());
 
       // Apply filters
       if (settings.subjects.length > 0) {
-        questions = questions.filter((q) =>
-          settings.subjects.includes(q.subject),
-        );
+        questions = questions.filter((q) => settings.subjects.includes(q.subject));
       }
       if (settings.topics.length > 0) {
         questions = questions.filter((q) => settings.topics.includes(q.topic));
       }
-      if (settings.difficulty !== "all") {
-        questions = questions.filter(
-          (q) => q.difficulty === settings.difficulty,
-        );
+      if (settings.difficulty !== 'all') {
+        questions = questions.filter((q) => q.difficulty === settings.difficulty);
       }
 
       setQuestionCount(questions.length);
     } catch (error) {
-      logger.error("Error counting questions:", error);
+      logger.error('Error counting questions:', error);
     }
-  }, [
-    settings.difficulty,
-    settings.examType,
-    settings.subjects,
-    settings.topics,
-  ]);
+  }, [settings.difficulty, settings.examType, settings.subjects, settings.topics]);
 
   useEffect(() => {
     // Count available questions based on filters
@@ -127,7 +115,7 @@ const CustomTestSetup = () => {
       return;
     }
 
-    navigate("/test/custom", { state: { settings } });
+    navigate('/test/custom', { state: { settings } });
   };
 
   return (
@@ -144,7 +132,7 @@ const CustomTestSetup = () => {
             </p>
           </div>
           <button
-            onClick={() => navigate("/test-selection")}
+            onClick={() => navigate('/test-selection')}
             className="bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-200 px-4 py-2 rounded-lg hover:bg-gray-300 dark:hover:bg-gray-600 transition-colors"
           >
             Back
@@ -158,9 +146,7 @@ const CustomTestSetup = () => {
           <div className="lg:col-span-2 space-y-6">
             {/* Exam Type */}
             <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-6">
-              <h3 className="text-lg font-bold text-gray-800 dark:text-white mb-4">
-                Exam Type
-              </h3>
+              <h3 className="text-lg font-bold text-gray-800 dark:text-white mb-4">Exam Type</h3>
               <select
                 value={settings.examType}
                 onChange={(e) =>
@@ -254,9 +240,7 @@ const CustomTestSetup = () => {
                   </label>
                   <select
                     value={settings.difficulty}
-                    onChange={(e) =>
-                      setSettings({ ...settings, difficulty: e.target.value })
-                    }
+                    onChange={(e) => setSettings({ ...settings, difficulty: e.target.value })}
                     className="w-full px-4 py-2 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none text-gray-900 dark:text-white"
                   >
                     <option value="all">All Levels</option>
@@ -319,9 +303,7 @@ const CustomTestSetup = () => {
                     <input
                       type="checkbox"
                       checked={settings.hasTimer}
-                      onChange={(e) =>
-                        setSettings({ ...settings, hasTimer: e.target.checked })
-                      }
+                      onChange={(e) => setSettings({ ...settings, hasTimer: e.target.checked })}
                       className="w-5 h-5 text-blue-600 rounded"
                     />
                   </label>
@@ -378,9 +360,7 @@ const CustomTestSetup = () => {
           {/* Summary Panel */}
           <div className="lg:col-span-1">
             <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-6 sticky top-4">
-              <h3 className="text-lg font-bold text-gray-800 dark:text-white mb-4">
-                Test Summary
-              </h3>
+              <h3 className="text-lg font-bold text-gray-800 dark:text-white mb-4">Test Summary</h3>
 
               <div className="space-y-4">
                 <div>
@@ -393,27 +373,21 @@ const CustomTestSetup = () => {
                 <div>
                   <p className="text-sm text-gray-600 dark:text-gray-400">Subjects Selected</p>
                   <p className="font-semibold text-gray-800 dark:text-white">
-                    {settings.subjects.length > 0
-                      ? settings.subjects.length
-                      : "None"}
+                    {settings.subjects.length > 0 ? settings.subjects.length : 'None'}
                   </p>
                 </div>
 
                 <div>
                   <p className="text-sm text-gray-600 dark:text-gray-400">Topics Selected</p>
                   <p className="font-semibold text-gray-800 dark:text-white">
-                    {settings.topics.length > 0
-                      ? settings.topics.length
-                      : "All"}
+                    {settings.topics.length > 0 ? settings.topics.length : 'All'}
                   </p>
                 </div>
 
                 <div>
                   <p className="text-sm text-gray-600 dark:text-gray-400">Difficulty</p>
                   <p className="font-semibold text-gray-800 dark:text-white">
-                    {settings.difficulty === "all"
-                      ? "All Levels"
-                      : settings.difficulty}
+                    {settings.difficulty === 'all' ? 'All Levels' : settings.difficulty}
                   </p>
                 </div>
 
@@ -427,9 +401,7 @@ const CustomTestSetup = () => {
                 <div>
                   <p className="text-sm text-gray-600 dark:text-gray-400">Time Limit</p>
                   <p className="font-semibold text-gray-800 dark:text-white">
-                    {settings.hasTimer
-                      ? `${settings.timeLimit} minutes`
-                      : "Unlimited"}
+                    {settings.hasTimer ? `${settings.timeLimit} minutes` : 'Unlimited'}
                   </p>
                 </div>
 
@@ -440,11 +412,11 @@ const CustomTestSetup = () => {
                       <span
                         className={
                           settings.showInstantFeedback
-                            ? "text-green-600 dark:text-green-400"
-                            : "text-gray-400 dark:text-gray-500"
+                            ? 'text-green-600 dark:text-green-400'
+                            : 'text-gray-400 dark:text-gray-500'
                         }
                       >
-                        {settings.showInstantFeedback ? "Yes" : "No"}
+                        {settings.showInstantFeedback ? 'Yes' : 'No'}
                       </span>
                     </div>
                     <div className="flex justify-between">
@@ -452,11 +424,11 @@ const CustomTestSetup = () => {
                       <span
                         className={
                           settings.shuffleQuestions
-                            ? "text-green-600 dark:text-green-400"
-                            : "text-gray-400 dark:text-gray-500"
+                            ? 'text-green-600 dark:text-green-400'
+                            : 'text-gray-400 dark:text-gray-500'
                         }
                       >
-                        {settings.shuffleQuestions ? "Yes" : "No"}
+                        {settings.shuffleQuestions ? 'Yes' : 'No'}
                       </span>
                     </div>
                     <div className="flex justify-between">
@@ -464,11 +436,11 @@ const CustomTestSetup = () => {
                       <span
                         className={
                           settings.negativeMarking
-                            ? "text-green-600 dark:text-green-400"
-                            : "text-gray-400 dark:text-gray-500"
+                            ? 'text-green-600 dark:text-green-400'
+                            : 'text-gray-400 dark:text-gray-500'
                         }
                       >
-                        {settings.negativeMarking ? "Yes" : "No"}
+                        {settings.negativeMarking ? 'Yes' : 'No'}
                       </span>
                     </div>
                   </div>
@@ -476,9 +448,7 @@ const CustomTestSetup = () => {
 
                 <button
                   onClick={handleStartTest}
-                  disabled={
-                    settings.subjects.length === 0 || questionCount === 0
-                  }
+                  disabled={settings.subjects.length === 0 || questionCount === 0}
                   className="w-full bg-blue-600 text-white py-3 rounded-lg font-semibold hover:bg-blue-700 transition-colors disabled:bg-gray-300 dark:disabled:bg-gray-700 disabled:cursor-not-allowed mt-6"
                 >
                   Start Custom Test

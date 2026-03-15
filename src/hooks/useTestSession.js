@@ -1,4 +1,4 @@
-import { useCallback, useRef } from "react";
+import { useCallback, useRef } from 'react';
 
 /**
  * Shared session persistence logic for all test modes.
@@ -40,13 +40,19 @@ export const useTestSession = (sessionKey, activeKey, opts = {}) => {
         );
       } catch (error) {
         // Handle localStorage quota exceeded — try clearing stale sessions
-        if (error?.name === "QuotaExceededError" || error?.code === 22) {
+        if (error?.name === 'QuotaExceededError' || error?.code === 22) {
           try {
             // Remove old test sessions to free space
             const keysToRemove = [];
             for (let i = 0; i < localStorage.length; i++) {
               const key = localStorage.key(i);
-              if (key && (key.startsWith("mockTestSession") || key.startsWith("practiceSession") || key.startsWith("customTestSession")) && key !== sessionKey) {
+              if (
+                key &&
+                (key.startsWith('mockTestSession') ||
+                  key.startsWith('practiceSession') ||
+                  key.startsWith('customTestSession')) &&
+                key !== sessionKey
+              ) {
                 keysToRemove.push(key);
               }
             }
@@ -58,7 +64,7 @@ export const useTestSession = (sessionKey, activeKey, opts = {}) => {
             );
           } catch {
             // Storage is truly full — session won't be saved but test continues
-            console.warn("localStorage quota exceeded. Session save skipped.");
+            console.warn('localStorage quota exceeded. Session save skipped.');
           }
         }
       }
@@ -91,8 +97,8 @@ export const useTestSession = (sessionKey, activeKey, opts = {}) => {
       try {
         const active = JSON.parse(activeRaw);
         const isMatch =
-          mode === "custom"
-            ? active.mode === "custom"
+          mode === 'custom'
+            ? active.mode === 'custom'
             : active.mode === mode && active.examType === examType;
         if (isMatch) localStorage.removeItem(activeKey);
       } catch {

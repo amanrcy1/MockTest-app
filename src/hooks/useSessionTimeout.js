@@ -1,6 +1,6 @@
-import { useEffect, useRef, useCallback } from "react";
+import { useEffect, useRef, useCallback } from 'react';
 
-const ACTIVITY_EVENTS = ["mousedown", "keydown", "touchstart", "scroll"];
+const ACTIVITY_EVENTS = ['mousedown', 'keydown', 'touchstart', 'scroll'];
 const DEFAULT_TIMEOUT_MS = 30 * 60 * 1000; // 30 minutes
 
 /**
@@ -15,7 +15,9 @@ export const useSessionTimeout = (onTimeout, isActive = false, timeoutMs = DEFAU
   const onTimeoutRef = useRef(onTimeout);
 
   // Keep callback ref fresh without re-running the effect
-  useEffect(() => { onTimeoutRef.current = onTimeout; }, [onTimeout]);
+  useEffect(() => {
+    onTimeoutRef.current = onTimeout;
+  }, [onTimeout]);
 
   const resetTimer = useCallback(() => {
     if (timerRef.current) clearTimeout(timerRef.current);

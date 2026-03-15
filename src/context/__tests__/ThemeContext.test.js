@@ -6,9 +6,15 @@ import { ThemeProvider, useTheme } from '../ThemeContext';
 const storage = {};
 const localStorageMock = {
   getItem: vi.fn((key) => storage[key] || null),
-  setItem: vi.fn((key, value) => { storage[key] = value; }),
-  removeItem: vi.fn((key) => { delete storage[key]; }),
-  clear: vi.fn(() => { Object.keys(storage).forEach(k => delete storage[k]); }),
+  setItem: vi.fn((key, value) => {
+    storage[key] = value;
+  }),
+  removeItem: vi.fn((key) => {
+    delete storage[key];
+  }),
+  clear: vi.fn(() => {
+    Object.keys(storage).forEach((k) => delete storage[k]);
+  }),
   length: 0,
   key: vi.fn(),
 };
@@ -18,16 +24,22 @@ const wrapper = ({ children }) => <ThemeProvider>{children}</ThemeProvider>;
 
 describe('ThemeContext', () => {
   beforeEach(() => {
-    Object.keys(storage).forEach(k => delete storage[k]);
+    Object.keys(storage).forEach((k) => delete storage[k]);
     vi.clearAllMocks();
     document.documentElement.classList.remove('dark');
     // Re-set mock implementations after clearAllMocks
     localStorageMock.getItem.mockImplementation((key) => storage[key] || null);
-    localStorageMock.setItem.mockImplementation((key, value) => { storage[key] = value; });
-    localStorageMock.removeItem.mockImplementation((key) => { delete storage[key]; });
-    localStorageMock.clear.mockImplementation(() => { Object.keys(storage).forEach(k => delete storage[k]); });
+    localStorageMock.setItem.mockImplementation((key, value) => {
+      storage[key] = value;
+    });
+    localStorageMock.removeItem.mockImplementation((key) => {
+      delete storage[key];
+    });
+    localStorageMock.clear.mockImplementation(() => {
+      Object.keys(storage).forEach((k) => delete storage[k]);
+    });
     // Ensure matchMedia is properly mocked
-    window.matchMedia = vi.fn().mockImplementation(q => ({
+    window.matchMedia = vi.fn().mockImplementation((q) => ({
       matches: false,
       media: q,
       onchange: null,
@@ -53,13 +65,17 @@ describe('ThemeContext', () => {
   it('should toggle theme', () => {
     const { result } = renderHook(() => useTheme(), { wrapper });
     const initial = result.current.isDark;
-    act(() => { result.current.toggleTheme(); });
+    act(() => {
+      result.current.toggleTheme();
+    });
     expect(result.current.isDark).toBe(!initial);
   });
 
   it('should persist theme to localStorage', () => {
     const { result } = renderHook(() => useTheme(), { wrapper });
-    act(() => { result.current.toggleTheme(); });
+    act(() => {
+      result.current.toggleTheme();
+    });
     expect(localStorageMock.setItem).toHaveBeenCalledWith('theme', expect.any(String));
   });
 

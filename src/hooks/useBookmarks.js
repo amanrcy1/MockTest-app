@@ -1,15 +1,7 @@
-import { useCallback, useState } from "react";
-import {
-  addDoc,
-  collection,
-  deleteDoc,
-  doc,
-  getDocs,
-  query,
-  where,
-} from "firebase/firestore";
-import toast, { messages } from "../utils/toast";
-import { db } from "../config/firebase";
+import { useCallback, useState } from 'react';
+import { addDoc, collection, deleteDoc, doc, getDocs, query, where } from 'firebase/firestore';
+import toast, { messages } from '../utils/toast';
+import { db } from '../config/firebase';
 
 /**
  * Shared bookmark + error-report logic for test pages.
@@ -24,9 +16,9 @@ export const useBookmarks = (userId, examType) => {
   const loadBookmarks = useCallback(async () => {
     if (!userId || !examType) return;
     const q = query(
-      collection(db, "bookmarks"),
-      where("userId", "==", userId),
-      where("examType", "==", examType)
+      collection(db, 'bookmarks'),
+      where('userId', '==', userId),
+      where('examType', '==', examType)
     );
     const snapshot = await getDocs(q);
     const map = {};
@@ -42,7 +34,7 @@ export const useBookmarks = (userId, examType) => {
       if (!userId) return;
       const existingId = bookmarkMap[questionId];
       if (existingId) {
-        await deleteDoc(doc(db, "bookmarks", existingId));
+        await deleteDoc(doc(db, 'bookmarks', existingId));
         setBookmarkMap((prev) => {
           const next = { ...prev };
           delete next[questionId];
@@ -50,7 +42,7 @@ export const useBookmarks = (userId, examType) => {
         });
         toast.success(messages.BOOKMARK_REMOVED);
       } else {
-        const docRef = await addDoc(collection(db, "bookmarks"), {
+        const docRef = await addDoc(collection(db, 'bookmarks'), {
           userId,
           questionId,
           examType,

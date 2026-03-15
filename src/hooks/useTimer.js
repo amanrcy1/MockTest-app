@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef, useCallback } from "react";
+import { useState, useEffect, useRef, useCallback } from 'react';
 
 /**
  * Custom hook for countdown timer functionality
@@ -55,10 +55,13 @@ export const useTimer = (initialSeconds, onExpire, autoStart = false) => {
     setIsRunning(false);
   }, []);
 
-  const reset = useCallback((newTime = initialSeconds) => {
-    setIsRunning(false);
-    setTimeRemaining(newTime);
-  }, [initialSeconds]);
+  const reset = useCallback(
+    (newTime = initialSeconds) => {
+      setIsRunning(false);
+      setTimeRemaining(newTime);
+    },
+    [initialSeconds]
+  );
 
   const setTime = useCallback((seconds) => {
     setTimeRemaining(seconds);
@@ -72,9 +75,9 @@ export const useTimer = (initialSeconds, onExpire, autoStart = false) => {
     const secs = s % 60;
 
     if (hrs > 0) {
-      return `${hrs}:${mins.toString().padStart(2, "0")}:${secs.toString().padStart(2, "0")}`;
+      return `${hrs}:${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
     }
-    return `${mins}:${secs.toString().padStart(2, "0")}`;
+    return `${mins}:${secs.toString().padStart(2, '0')}`;
   }, []);
 
   return {

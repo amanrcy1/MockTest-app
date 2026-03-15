@@ -1,5 +1,11 @@
 import { vi } from 'vitest';
-import { logError, logEvent, setUserContext, clearUserContext, addBreadcrumb } from '../errorTracking';
+import {
+  logError,
+  logEvent,
+  setUserContext,
+  clearUserContext,
+  addBreadcrumb,
+} from '../errorTracking';
 
 describe('errorTracking', () => {
   let consoleErrorSpy;

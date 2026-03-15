@@ -1,6 +1,6 @@
-import { addDoc, collection, serverTimestamp } from "firebase/firestore";
-import { db } from "../config/firebase";
-import logger from "./logger";
+import { addDoc, collection, serverTimestamp } from 'firebase/firestore';
+import { db } from '../config/firebase';
+import logger from './logger';
 
 /**
  * Write an entry to the auditLogs Firestore collection.
@@ -13,7 +13,7 @@ import logger from "./logger";
  */
 export const logAdminAction = async ({ adminId, action, targetId = null, details = {} }) => {
   try {
-    await addDoc(collection(db, "auditLogs"), {
+    await addDoc(collection(db, 'auditLogs'), {
       adminId,
       action,
       targetId,
@@ -22,6 +22,6 @@ export const logAdminAction = async ({ adminId, action, targetId = null, details
     });
   } catch (error) {
     // Never let audit logging break the actual operation
-    logger.error("Failed to write audit log:", error);
+    logger.error('Failed to write audit log:', error);
   }
 };

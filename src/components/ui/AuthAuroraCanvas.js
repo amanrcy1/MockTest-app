@@ -1,4 +1,4 @@
-import { useEffect, useRef, useCallback } from "react";
+import { useEffect, useRef, useCallback } from 'react';
 
 /**
  * Aurora wave canvas for auth pages.
@@ -12,7 +12,7 @@ const AuthAuroraCanvas = () => {
   const draw = useCallback(() => {
     const canvas = canvasRef.current;
     if (!canvas) return;
-    const ctx = canvas.getContext("2d");
+    const ctx = canvas.getContext('2d');
     const dpr = Math.min(window.devicePixelRatio || 1, 2);
     const w = canvas.clientWidth;
     const h = canvas.clientHeight;
@@ -20,14 +20,42 @@ const AuthAuroraCanvas = () => {
     canvas.height = h * dpr;
     ctx.scale(dpr, dpr);
 
-    const dark = document.documentElement.classList.contains("dark");
+    const dark = document.documentElement.classList.contains('dark');
 
     // Fewer, softer waves — indigo/violet palette
     const waves = [
-      { color: dark ? "rgba(129,140,248," : "rgba(99,102,241,", amp: 80, freq: 0.0012, speed: 0.0003, yOffset: 0.2, width: 240 },
-      { color: dark ? "rgba(167,139,250," : "rgba(139,92,246,", amp: 70, freq: 0.0016, speed: -0.00025, yOffset: 0.4, width: 200 },
-      { color: dark ? "rgba(196,181,253," : "rgba(168,85,247,", amp: 60, freq: 0.0014, speed: 0.00035, yOffset: 0.6, width: 220 },
-      { color: dark ? "rgba(165,180,252," : "rgba(79,70,229,", amp: 90, freq: 0.001, speed: -0.0002, yOffset: 0.8, width: 260 },
+      {
+        color: dark ? 'rgba(129,140,248,' : 'rgba(99,102,241,',
+        amp: 80,
+        freq: 0.0012,
+        speed: 0.0003,
+        yOffset: 0.2,
+        width: 240,
+      },
+      {
+        color: dark ? 'rgba(167,139,250,' : 'rgba(139,92,246,',
+        amp: 70,
+        freq: 0.0016,
+        speed: -0.00025,
+        yOffset: 0.4,
+        width: 200,
+      },
+      {
+        color: dark ? 'rgba(196,181,253,' : 'rgba(168,85,247,',
+        amp: 60,
+        freq: 0.0014,
+        speed: 0.00035,
+        yOffset: 0.6,
+        width: 220,
+      },
+      {
+        color: dark ? 'rgba(165,180,252,' : 'rgba(79,70,229,',
+        amp: 90,
+        freq: 0.001,
+        speed: -0.0002,
+        yOffset: 0.8,
+        width: 260,
+      },
     ];
 
     let time = 0;
@@ -36,7 +64,7 @@ const AuthAuroraCanvas = () => {
       time++;
       ctx.clearRect(0, 0, w, h);
 
-      ctx.fillStyle = dark ? "#030712" : "#f8fafc";
+      ctx.fillStyle = dark ? '#030712' : '#f8fafc';
       ctx.fillRect(0, 0, w, h);
 
       for (const wave of waves) {
@@ -59,10 +87,10 @@ const AuthAuroraCanvas = () => {
         ctx.closePath();
 
         const grad = ctx.createLinearGradient(0, baseY - wave.amp * 1.5, 0, baseY + wave.width);
-        grad.addColorStop(0, wave.color + "0)");
-        grad.addColorStop(0.3, wave.color + (opacity * 1.4) + ")");
-        grad.addColorStop(0.6, wave.color + opacity + ")");
-        grad.addColorStop(1, wave.color + "0)");
+        grad.addColorStop(0, wave.color + '0)');
+        grad.addColorStop(0.3, wave.color + opacity * 1.4 + ')');
+        grad.addColorStop(0.6, wave.color + opacity + ')');
+        grad.addColorStop(1, wave.color + '0)');
         ctx.fillStyle = grad;
         ctx.fill();
 
@@ -77,7 +105,7 @@ const AuthAuroraCanvas = () => {
           if (x === 0) ctx.moveTo(x, y);
           else ctx.lineTo(x, y);
         }
-        ctx.strokeStyle = wave.color + (dark ? "0.18)" : "0.1)");
+        ctx.strokeStyle = wave.color + (dark ? '0.18)' : '0.1)');
         ctx.lineWidth = 1;
         ctx.stroke();
       }
@@ -96,24 +124,24 @@ const AuthAuroraCanvas = () => {
       cancelAnimationFrame(animRef.current);
       draw();
     };
-    window.addEventListener("resize", handleResize);
+    window.addEventListener('resize', handleResize);
 
     const observer = new MutationObserver(() => {
       cancelAnimationFrame(animRef.current);
       draw();
     });
-    observer.observe(document.documentElement, { attributes: true, attributeFilter: ["class"] });
+    observer.observe(document.documentElement, { attributes: true, attributeFilter: ['class'] });
 
     return () => {
       if (cleanup) cleanup();
       cancelAnimationFrame(animRef.current);
-      window.removeEventListener("resize", handleResize);
+      window.removeEventListener('resize', handleResize);
       observer.disconnect();
     };
   }, [draw]);
 
   useEffect(() => {
-    const mq = window.matchMedia("(prefers-reduced-motion: reduce)");
+    const mq = window.matchMedia('(prefers-reduced-motion: reduce)');
     if (mq.matches) cancelAnimationFrame(animRef.current);
   }, []);
 

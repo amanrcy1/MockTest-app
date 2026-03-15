@@ -12,17 +12,33 @@
 .env
 .env.local
 .env.*.local
+.env.production
+.env.staging
 
 # Firebase
 .firebase/
+firebase-debug.log
+firestore-debug.log
+ui-debug.log
+database-debug.log
+pubsub-debug.log
+storage-debug.log
+
+# Vercel
+.vercel
 
 # OS
 .DS_Store
 Thumbs.db
+Desktop.ini
+._*
 
 # IDE
 .vscode/
 .idea/
+*.swp
+*.swo
+*~
 
 # logs & cache
 *.log
@@ -31,6 +47,11 @@ Thumbs.db
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
+pnpm-debug.log*
 
 # generated files
 questions_bank.csv
+
+# misc
+*.tgz
+.turbo

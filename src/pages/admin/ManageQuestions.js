@@ -1,22 +1,12 @@
-import { useState, useEffect, useMemo } from "react";
-import { useNavigate, Navigate } from "react-router-dom";
-import {
-  collection,
-  getDocs,
-  doc,
-  deleteDoc,
-  updateDoc,
-} from "firebase/firestore";
-import { db } from "../../config/firebase";
-import toast, { messages } from "../../utils/toast";
-import { useAuth } from "../../context/AuthContext";
-import { logAdminAction } from "../../utils/auditLog";
-import logger from "../../utils/logger";
-import {
-  EXAM_PATTERNS,
-  getSubjectsByExam,
-  DIFFICULTY_LEVELS,
-} from "../../utils/examPatterns";
+import { useState, useEffect, useMemo } from 'react';
+import { useNavigate, Navigate } from 'react-router-dom';
+import { collection, getDocs, doc, deleteDoc, updateDoc } from 'firebase/firestore';
+import { db } from '../../config/firebase';
+import toast, { messages } from '../../utils/toast';
+import { useAuth } from '../../context/AuthContext';
+import { logAdminAction } from '../../utils/auditLog';
+import logger from '../../utils/logger';
+import { EXAM_PATTERNS, getSubjectsByExam, DIFFICULTY_LEVELS } from '../../utils/examPatterns';
 
 const ITEMS_PER_PAGE = 20;
 
@@ -33,10 +23,10 @@ const ManageQuestions = () => {
 
   // Filters
   const [filters, setFilters] = useState({
-    examType: "all",
-    subject: "all",
-    difficulty: "all",
-    searchText: "",
+    examType: 'all',
+    subject: 'all',
+    difficulty: 'all',
+    searchText: '',
   });
 
   // Pagination
@@ -55,7 +45,7 @@ const ManageQuestions = () => {
   const fetchQuestions = async () => {
     try {
       setLoading(true);
-      const querySnapshot = await getDocs(collection(db, "questions"));
+      const querySnapshot = await getDocs(collection(db, 'questions'));
       const questionsData = querySnapshot.docs.map((doc) => ({
         id: doc.id,
         ...doc.data(),
@@ -64,7 +54,7 @@ const ManageQuestions = () => {
       setFilteredQuestions(questionsData);
       setLoading(false);
     } catch (error) {
-      logger.error("Error fetching questions:", error);
+      logger.error('Error fetching questions:', error);
       toast.error(messages.QUESTIONS_LOAD_FAILED);
       setLoading(false);
     }
@@ -79,17 +69,17 @@ const ManageQuestions = () => {
     let filtered = [...questions];
 
     // Filter by exam type
-    if (filters.examType !== "all") {
+    if (filters.examType !== 'all') {
       filtered = filtered.filter((q) => q.examType === filters.examType);
     }
 
     // Filter by subject
-    if (filters.subject !== "all") {
+    if (filters.subject !== 'all') {
       filtered = filtered.filter((q) => q.subject === filters.subject);
     }
 
     // Filter by difficulty
-    if (filters.difficulty !== "all") {
+    if (filters.difficulty !== 'all') {
       filtered = filtered.filter((q) => q.difficulty === filters.difficulty);
     }
 
@@ -100,7 +90,7 @@ const ManageQuestions = () => {
         (q) =>
           q.questionText.toLowerCase().includes(searchLower) ||
           q.topic.toLowerCase().includes(searchLower) ||
-          (q.subtopic && q.subtopic.toLowerCase().includes(searchLower)),
+          (q.subtopic && q.subtopic.toLowerCase().includes(searchLower))
       );
     }
 
@@ -121,14 +111,18 @@ const ManageQuestions = () => {
   // Delete question
   const handleDelete = async (questionId) => {
     try {
-      await deleteDoc(doc(db, "questions", questionId));
-      logAdminAction({ adminId: userDetails?.userId, action: "deleteQuestion", targetId: questionId });
+      await deleteDoc(doc(db, 'questions', questionId));
+      logAdminAction({
+        adminId: userDetails?.userId,
+        action: 'deleteQuestion',
+        targetId: questionId,
+      });
       toast.success(messages.QUESTION_DELETED);
       setShowDeleteModal(false);
       setSelectedQuestion(null);
       fetchQuestions(); // Refresh list
     } catch (error) {
-      logger.error("Error deleting question:", error);
+      logger.error('Error deleting question:', error);
       toast.error(messages.QUESTION_DELETE_FAILED);
     }
   };
@@ -151,15 +145,13 @@ const ManageQuestions = () => {
       <nav className="bg-white dark:bg-gray-900 shadow-md">
         <div className="max-w-7xl mx-auto px-4 py-4 flex justify-between items-center">
           <div>
-            <h1 className="text-2xl font-bold text-blue-600">
-              Manage Questions
-            </h1>
+            <h1 className="text-2xl font-bold text-blue-600">Manage Questions</h1>
             <p className="text-sm text-gray-600 dark:text-gray-400">
               View, Edit, and Delete Questions
             </p>
           </div>
           <button
-            onClick={() => navigate("/admin/dashboard")}
+            onClick={() => navigate('/admin/dashboard')}
             className="bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-200 px-4 py-2 rounded-lg hover:bg-gray-300 dark:hover:bg-gray-600 transition-colors"
           >
             Back to Admin
@@ -205,7 +197,7 @@ const ManageQuestions = () => {
                 className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
               >
                 <option value="all">All Subjects</option>
-                {filters.examType !== "all" &&
+                {filters.examType !== 'all' &&
                   getSubjectsByExam(filters.examType).map((subject) => (
                     <option key={subject.value} value={subject.value}>
                       {subject.label}
@@ -284,7 +276,7 @@ const ManageQuestions = () => {
               Try adjusting your filters or add new questions
             </p>
             <button
-              onClick={() => navigate("/admin/add-question")}
+              onClick={() => navigate('/admin/add-question')}
               className="mt-4 bg-blue-600 text-white px-6 py-2 rounded-lg hover:bg-blue-700"
             >
               Add Question
@@ -292,147 +284,150 @@ const ManageQuestions = () => {
           </div>
         ) : (
           <>
-          <div className="space-y-4">
-            {paginatedQuestions.map((question, index) => (
-              <div
-                key={question.id}
-                className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-6"
-              >
-                {/* Question Header */}
-                <div className="flex justify-between items-start mb-4">
-                  <div className="flex-1">
-                    <div className="flex items-center gap-2 mb-2">
-                      <span className="bg-blue-100 dark:bg-blue-900 text-blue-800 dark:text-blue-200 text-xs font-semibold px-2 py-1 rounded">
-                        {question.examType}
-                      </span>
-                      <span className="bg-green-100 dark:bg-green-900 text-green-800 dark:text-green-200 text-xs font-semibold px-2 py-1 rounded">
-                        {question.subject}
-                      </span>
-                      <span className="bg-purple-100 dark:bg-purple-900 text-purple-800 dark:text-purple-200 text-xs font-semibold px-2 py-1 rounded">
-                        {question.difficulty}
-                      </span>
+            <div className="space-y-4">
+              {paginatedQuestions.map((question, index) => (
+                <div
+                  key={question.id}
+                  className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-6"
+                >
+                  {/* Question Header */}
+                  <div className="flex justify-between items-start mb-4">
+                    <div className="flex-1">
+                      <div className="flex items-center gap-2 mb-2">
+                        <span className="bg-blue-100 dark:bg-blue-900 text-blue-800 dark:text-blue-200 text-xs font-semibold px-2 py-1 rounded">
+                          {question.examType}
+                        </span>
+                        <span className="bg-green-100 dark:bg-green-900 text-green-800 dark:text-green-200 text-xs font-semibold px-2 py-1 rounded">
+                          {question.subject}
+                        </span>
+                        <span className="bg-purple-100 dark:bg-purple-900 text-purple-800 dark:text-purple-200 text-xs font-semibold px-2 py-1 rounded">
+                          {question.difficulty}
+                        </span>
+                      </div>
+                      <p className="text-sm text-gray-600 dark:text-gray-400">
+                        {question.topic} {question.subtopic && `| ${question.subtopic}`}
+                      </p>
                     </div>
-                    <p className="text-sm text-gray-600 dark:text-gray-400">
-                      {question.topic}{" "}
-                      {question.subtopic && `| ${question.subtopic}`}
+                    <div className="flex gap-2">
+                      <button
+                        onClick={() => openEditModal(question)}
+                        className="bg-yellow-500 text-white px-4 py-2 rounded-lg hover:bg-yellow-600 transition-colors text-sm"
+                      >
+                        Edit
+                      </button>
+                      <button
+                        onClick={() => openDeleteModal(question)}
+                        className="bg-red-500 text-white px-4 py-2 rounded-lg hover:bg-red-600 transition-colors text-sm"
+                      >
+                        Delete
+                      </button>
+                    </div>
+                  </div>
+
+                  {/* Question Text */}
+                  <div className="mb-4">
+                    <p className="text-gray-800 dark:text-gray-200 font-medium">
+                      Q{(currentPage - 1) * ITEMS_PER_PAGE + index + 1}. {question.questionText}
                     </p>
                   </div>
-                  <div className="flex gap-2">
-                    <button
-                      onClick={() => openEditModal(question)}
-                      className="bg-yellow-500 text-white px-4 py-2 rounded-lg hover:bg-yellow-600 transition-colors text-sm"
-                    >
-                      Edit
-                    </button>
-                    <button
-                      onClick={() => openDeleteModal(question)}
-                      className="bg-red-500 text-white px-4 py-2 rounded-lg hover:bg-red-600 transition-colors text-sm"
-                    >
-                      Delete
-                    </button>
-                  </div>
-                </div>
 
-                {/* Question Text */}
-                <div className="mb-4">
-                  <p className="text-gray-800 dark:text-gray-200 font-medium">
-                    Q{(currentPage - 1) * ITEMS_PER_PAGE + index + 1}. {question.questionText}
-                  </p>
-                </div>
-
-                {/* Options */}
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-2 mb-4">
-                  {["A", "B", "C", "D"].map((option) => (
-                    <div
-                      key={option}
-                      className={`p-3 rounded-lg border-2 ${
-                        question.correctAnswer === option
-                          ? "border-green-500 bg-green-50 dark:bg-green-900/30"
-                          : "border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-700"
-                      }`}
-                    >
-                      <span className="font-semibold text-gray-800 dark:text-gray-200">{option}.</span>{" "}
-                      <span className="text-gray-700 dark:text-gray-300">{question.options[option]}</span>
-                      {question.correctAnswer === option && (
-                        <span className="ml-2 text-green-600 dark:text-green-400 text-sm font-semibold">
-                          Correct
-                        </span>
-                      )}
-                    </div>
-                  ))}
-                </div>
-
-                {/* Solution */}
-                <div className="bg-gray-50 dark:bg-gray-700 p-4 rounded-lg">
-                  <p className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
-                    Solution:
-                  </p>
-                  <p className="text-sm text-gray-600 dark:text-gray-400">{question.solution}</p>
-                </div>
-
-                {/* Tags */}
-                {question.tags && question.tags.length > 0 && (
-                  <div className="mt-3 flex flex-wrap gap-2">
-                    {question.tags.map((tag, idx) => (
-                      <span
-                        key={idx}
-                        className="bg-gray-200 dark:bg-gray-600 text-gray-700 dark:text-gray-300 text-xs px-2 py-1 rounded"
+                  {/* Options */}
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-2 mb-4">
+                    {['A', 'B', 'C', 'D'].map((option) => (
+                      <div
+                        key={option}
+                        className={`p-3 rounded-lg border-2 ${
+                          question.correctAnswer === option
+                            ? 'border-green-500 bg-green-50 dark:bg-green-900/30'
+                            : 'border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-700'
+                        }`}
                       >
-                        #{tag}
-                      </span>
+                        <span className="font-semibold text-gray-800 dark:text-gray-200">
+                          {option}.
+                        </span>{' '}
+                        <span className="text-gray-700 dark:text-gray-300">
+                          {question.options[option]}
+                        </span>
+                        {question.correctAnswer === option && (
+                          <span className="ml-2 text-green-600 dark:text-green-400 text-sm font-semibold">
+                            Correct
+                          </span>
+                        )}
+                      </div>
                     ))}
                   </div>
-                )}
-              </div>
-            ))}
-          </div>
 
-          {/* Pagination Controls */}
-          {totalPages > 1 && (
-            <div className="flex justify-center items-center gap-2 mt-6">
-              <button
-                onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
-                disabled={currentPage === 1}
-                className="px-4 py-2 bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-200 rounded-lg hover:bg-gray-300 dark:hover:bg-gray-600 disabled:opacity-50 disabled:cursor-not-allowed"
-              >
-                Previous
-              </button>
-              <div className="flex gap-1">
-                {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
-                  let pageNum;
-                  if (totalPages <= 5) {
-                    pageNum = i + 1;
-                  } else if (currentPage <= 3) {
-                    pageNum = i + 1;
-                  } else if (currentPage >= totalPages - 2) {
-                    pageNum = totalPages - 4 + i;
-                  } else {
-                    pageNum = currentPage - 2 + i;
-                  }
-                  return (
-                    <button
-                      key={pageNum}
-                      onClick={() => setCurrentPage(pageNum)}
-                      className={`w-10 h-10 rounded-lg font-semibold ${
-                        currentPage === pageNum
-                          ? 'bg-blue-600 text-white'
-                          : 'bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-200 hover:bg-gray-300 dark:hover:bg-gray-600'
-                      }`}
-                    >
-                      {pageNum}
-                    </button>
-                  );
-                })}
-              </div>
-              <button
-                onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
-                disabled={currentPage === totalPages}
-                className="px-4 py-2 bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-200 rounded-lg hover:bg-gray-300 dark:hover:bg-gray-600 disabled:opacity-50 disabled:cursor-not-allowed"
-              >
-                Next
-              </button>
+                  {/* Solution */}
+                  <div className="bg-gray-50 dark:bg-gray-700 p-4 rounded-lg">
+                    <p className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
+                      Solution:
+                    </p>
+                    <p className="text-sm text-gray-600 dark:text-gray-400">{question.solution}</p>
+                  </div>
+
+                  {/* Tags */}
+                  {question.tags && question.tags.length > 0 && (
+                    <div className="mt-3 flex flex-wrap gap-2">
+                      {question.tags.map((tag, idx) => (
+                        <span
+                          key={idx}
+                          className="bg-gray-200 dark:bg-gray-600 text-gray-700 dark:text-gray-300 text-xs px-2 py-1 rounded"
+                        >
+                          #{tag}
+                        </span>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              ))}
             </div>
-          )}
+
+            {/* Pagination Controls */}
+            {totalPages > 1 && (
+              <div className="flex justify-center items-center gap-2 mt-6">
+                <button
+                  onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
+                  disabled={currentPage === 1}
+                  className="px-4 py-2 bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-200 rounded-lg hover:bg-gray-300 dark:hover:bg-gray-600 disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  Previous
+                </button>
+                <div className="flex gap-1">
+                  {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
+                    let pageNum;
+                    if (totalPages <= 5) {
+                      pageNum = i + 1;
+                    } else if (currentPage <= 3) {
+                      pageNum = i + 1;
+                    } else if (currentPage >= totalPages - 2) {
+                      pageNum = totalPages - 4 + i;
+                    } else {
+                      pageNum = currentPage - 2 + i;
+                    }
+                    return (
+                      <button
+                        key={pageNum}
+                        onClick={() => setCurrentPage(pageNum)}
+                        className={`w-10 h-10 rounded-lg font-semibold ${
+                          currentPage === pageNum
+                            ? 'bg-blue-600 text-white'
+                            : 'bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-200 hover:bg-gray-300 dark:hover:bg-gray-600'
+                        }`}
+                      >
+                        {pageNum}
+                      </button>
+                    );
+                  })}
+                </div>
+                <button
+                  onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
+                  disabled={currentPage === totalPages}
+                  className="px-4 py-2 bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-200 rounded-lg hover:bg-gray-300 dark:hover:bg-gray-600 disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  Next
+                </button>
+              </div>
+            )}
           </>
         )}
       </div>
@@ -462,8 +457,7 @@ const ManageQuestions = () => {
               Delete Question
             </h2>
             <p className="text-gray-600 dark:text-gray-400 mb-6">
-              Are you sure you want to delete this question? This action cannot
-              be undone.
+              Are you sure you want to delete this question? This action cannot be undone.
             </p>
             <div className="bg-gray-50 dark:bg-gray-700 p-4 rounded-lg mb-6">
               <p className="text-sm text-gray-800 dark:text-gray-200 font-medium">
@@ -533,12 +527,16 @@ const EditQuestionModal = ({ question, userDetails, onClose, onSave }) => {
         updatedAt: new Date().toISOString(),
       };
 
-      await updateDoc(doc(db, "questions", question.id), updatedData);
-      logAdminAction({ adminId: userDetails?.userId, action: "updateQuestion", targetId: question.id });
+      await updateDoc(doc(db, 'questions', question.id), updatedData);
+      logAdminAction({
+        adminId: userDetails?.userId,
+        action: 'updateQuestion',
+        targetId: question.id,
+      });
       toast.success(messages.QUESTION_UPDATED);
       onSave();
     } catch (error) {
-      logger.error("Error updating question:", error);
+      logger.error('Error updating question:', error);
       toast.error(messages.QUESTION_UPDATE_FAILED);
       setSaving(false);
     }
@@ -565,7 +563,7 @@ const EditQuestionModal = ({ question, userDetails, onClose, onSave }) => {
           </div>
 
           {/* Options */}
-          {["A", "B", "C", "D"].map((option) => (
+          {['A', 'B', 'C', 'D'].map((option) => (
             <div key={option}>
               <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                 Option {option}
@@ -646,7 +644,7 @@ const EditQuestionModal = ({ question, userDetails, onClose, onSave }) => {
             disabled={saving}
             className="flex-1 bg-blue-600 text-white py-3 rounded-lg hover:bg-blue-700 transition-colors disabled:bg-blue-300"
           >
-            {saving ? "Saving..." : "Save Changes"}
+            {saving ? 'Saving...' : 'Save Changes'}
           </button>
         </div>
       </div>
