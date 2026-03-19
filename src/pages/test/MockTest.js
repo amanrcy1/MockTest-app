@@ -561,6 +561,7 @@ const MockTest = () => {
         clearInterval(timerRef.current);
       }
     };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [handleAutoSubmit, sections.length, showInstructions]);
 
   useEffect(() => {

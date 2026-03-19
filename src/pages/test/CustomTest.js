@@ -525,6 +525,7 @@ const CustomTest = () => {
 
       return () => clearInterval(timerRef.current);
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [handleAutoSubmit, loading, settings]);
 
   if (loading) {
