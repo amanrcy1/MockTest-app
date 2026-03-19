@@ -1275,64 +1275,138 @@ const SHOWCASE_ITEMS = [
   },
 ];
 
-const HorizontalShowcase = () => (
-  <section className="py-10 md:py-14 overflow-hidden">
-    <div className="max-w-7xl mx-auto px-4 mb-8">
-      <motion.p
-        initial={{ opacity: 0 }}
-        whileInView={{ opacity: 1 }}
-        viewport={{ once: true }}
-        className="text-sm font-semibold text-blue-600 dark:text-blue-400 uppercase tracking-wider mb-3"
-      >
-        What you get
-      </motion.p>
-      <h2 className="text-2xl sm:text-3xl md:text-5xl font-extrabold text-gray-900 dark:text-white">
-        <ScrollGradientText>Everything in one place</ScrollGradientText>
-      </h2>
-    </div>
-    {/* Auto-scrolling carousel — CSS animation, no JS */}
-    <div className="relative">
-      <div className="absolute left-0 top-0 bottom-0 w-16 md:w-32 bg-gradient-to-r from-white dark:from-gray-950 to-transparent z-10 pointer-events-none" />
-      <div className="absolute right-0 top-0 bottom-0 w-16 md:w-32 bg-gradient-to-l from-white dark:from-gray-950 to-transparent z-10 pointer-events-none" />
-      <div
-        className="flex gap-5 pl-4 md:pl-16"
-        style={{ animation: 'marqueeShowcase 40s linear infinite' }}
-      >
-        {[...SHOWCASE_ITEMS, ...SHOWCASE_ITEMS].map((item, i) => (
-          <div key={i} className="flex-shrink-0 w-[260px] md:w-[320px]">
-            <SpotlightCard className="h-full">
-              <div className="relative bg-white dark:bg-gray-800/80 backdrop-blur-sm rounded-2xl p-6 border border-gray-200 dark:border-gray-700 h-full overflow-hidden group">
-                <div
-                  className={`w-11 h-11 rounded-xl bg-gradient-to-br ${item.color} flex items-center justify-center mb-4 shadow-lg text-white`}
-                >
-                  <svg
-                    className="w-5 h-5"
-                    fill="none"
-                    viewBox="0 0 24 24"
-                    stroke="currentColor"
-                    strokeWidth={1.5}
-                  >
-                    <path strokeLinecap="round" strokeLinejoin="round" d={item.icon} />
-                  </svg>
-                </div>
-                <h3 className="text-base font-bold text-gray-900 dark:text-white mb-1.5">
-                  {item.title}
-                </h3>
-                <p className="text-sm text-gray-500 dark:text-gray-400 leading-relaxed">
-                  {item.desc}
-                </p>
-                <div
-                  className={`absolute -bottom-6 -right-6 w-20 h-20 bg-gradient-to-br ${item.color} opacity-[0.06] rounded-full`}
-                />
-              </div>
-            </SpotlightCard>
-          </div>
-        ))}
+const SHOWCASE_CARDS = [...SHOWCASE_ITEMS, ...SHOWCASE_ITEMS, ...SHOWCASE_ITEMS]; // 3x for seamless loop
+
+const HorizontalShowcase = () => {
+  const scrollRef = useRef(null);
+  const [paused, setPaused] = useState(false);
+  const setWidthRef = useRef(0);
+
+  const CARD_GAP = 20; // gap-5
+  const CARD_W_SM = 260;
+  const CARD_W_MD = 320;
+
+  // Measure actual card width based on viewport
+  const getCardWidth = useCallback(() => {
+    return window.innerWidth >= 768 ? CARD_W_MD : CARD_W_SM;
+  }, []);
+
+  const getSetWidth = useCallback(() => {
+    return SHOWCASE_ITEMS.length * (getCardWidth() + CARD_GAP);
+  }, [getCardWidth]);
+
+  // Seamless infinite scroll: jump back/forward when reaching set boundaries
+  const handleScroll = useCallback(() => {
+    const el = scrollRef.current;
+    const sw = setWidthRef.current;
+    if (!el || !sw) return;
+    if (el.scrollLeft >= sw * 2) {
+      el.scrollLeft -= sw;
+    } else if (el.scrollLeft <= 0) {
+      el.scrollLeft += sw;
+    }
+  }, []);
+
+  // Auto-scroll: 1px per frame
+  useEffect(() => {
+    if (paused) return;
+    const el = scrollRef.current;
+    if (!el) return;
+    let raf;
+    const step = () => {
+      el.scrollLeft += 1;
+      raf = requestAnimationFrame(step);
+    };
+    raf = requestAnimationFrame(step);
+    return () => cancelAnimationFrame(raf);
+  }, [paused]);
+
+  // Position in middle set + recalc on resize
+  useEffect(() => {
+    const init = () => {
+      setWidthRef.current = getSetWidth();
+      const el = scrollRef.current;
+      if (el) el.scrollLeft = setWidthRef.current;
+    };
+    init();
+    const onResize = () => init();
+    window.addEventListener('resize', onResize);
+    return () => window.removeEventListener('resize', onResize);
+  }, [getSetWidth]);
+
+  // Resume auto-scroll 4s after user stops interacting
+  useEffect(() => {
+    if (!paused) return;
+    const timer = setTimeout(() => setPaused(false), 4000);
+    return () => clearTimeout(timer);
+  }, [paused]);
+
+  return (
+    <section className="py-10 md:py-14 overflow-hidden">
+      <div className="max-w-7xl mx-auto px-4 mb-8">
+        <motion.p
+          initial={{ opacity: 0 }}
+          whileInView={{ opacity: 1 }}
+          viewport={{ once: true }}
+          className="text-sm font-semibold text-blue-600 dark:text-blue-400 uppercase tracking-wider mb-3"
+        >
+          What you get
+        </motion.p>
+        <h2 className="text-2xl sm:text-3xl md:text-5xl font-extrabold text-gray-900 dark:text-white">
+          <ScrollGradientText>Everything in one place</ScrollGradientText>
+        </h2>
       </div>
-      <style>{`@keyframes marqueeShowcase { from { transform: translateX(0); } to { transform: translateX(-50%); } }`}</style>
-    </div>
-  </section>
-);
+      {/* Infinite scrollable carousel */}
+      <div className="relative">
+        <div className="absolute left-0 top-0 bottom-0 w-10 sm:w-16 md:w-32 bg-gradient-to-r from-white dark:from-gray-950 to-transparent z-10 pointer-events-none" />
+        <div className="absolute right-0 top-0 bottom-0 w-10 sm:w-16 md:w-32 bg-gradient-to-l from-white dark:from-gray-950 to-transparent z-10 pointer-events-none" />
+        <div
+          ref={scrollRef}
+          onScroll={handleScroll}
+          onMouseEnter={() => setPaused(true)}
+          onMouseLeave={() => setPaused(false)}
+          onTouchStart={() => setPaused(true)}
+          onTouchEnd={() => setPaused(true)}
+          className="flex gap-5 overflow-x-auto no-scrollbar cursor-grab active:cursor-grabbing"
+          style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
+          role="region"
+          aria-label="Feature showcase carousel"
+        >
+          {SHOWCASE_CARDS.map((item, i) => (
+            <div key={i} className="flex-shrink-0 w-[260px] md:w-[320px]">
+              <SpotlightCard className="h-full">
+                <div className="relative bg-white dark:bg-gray-800/80 backdrop-blur-sm rounded-2xl p-5 sm:p-6 border border-gray-200 dark:border-gray-700 h-full overflow-hidden group">
+                  <div
+                    className={`w-10 h-10 sm:w-11 sm:h-11 rounded-xl bg-gradient-to-br ${item.color} flex items-center justify-center mb-3 sm:mb-4 shadow-lg text-white`}
+                  >
+                    <svg
+                      className="w-5 h-5"
+                      fill="none"
+                      viewBox="0 0 24 24"
+                      stroke="currentColor"
+                      strokeWidth={1.5}
+                    >
+                      <path strokeLinecap="round" strokeLinejoin="round" d={item.icon} />
+                    </svg>
+                  </div>
+                  <h3 className="text-sm sm:text-base font-bold text-gray-900 dark:text-white mb-1 sm:mb-1.5">
+                    {item.title}
+                  </h3>
+                  <p className="text-xs sm:text-sm text-gray-500 dark:text-gray-400 leading-relaxed">
+                    {item.desc}
+                  </p>
+                  <div
+                    className={`absolute -bottom-6 -right-6 w-20 h-20 bg-gradient-to-br ${item.color} opacity-[0.06] rounded-full`}
+                  />
+                </div>
+              </SpotlightCard>
+            </div>
+          ))}
+        </div>
+      </div>
+    </section>
+  );
+};
 
 // ============================================
 // BEFORE/AFTER COMPARISON (Social proof)
