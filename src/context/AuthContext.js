@@ -259,15 +259,23 @@ export const AuthProvider = ({ children }) => {
         const profileResult = await ensureGoogleUserProfile(result.user);
         return { success: true, isNewUser: profileResult.isNewUser };
       } catch (popupError) {
+        // Only fall back to redirect for errors where popup genuinely can't work.
+        // Do NOT redirect for user-initiated cancellations — they closed it on purpose.
         const popupFallbackCodes = new Set([
           'auth/popup-blocked',
-          'auth/popup-closed-by-user',
-          'auth/cancelled-popup-request',
           'auth/operation-not-supported-in-this-environment',
           'auth/web-storage-unsupported',
           'auth/third-party-cookie-inaccessible',
           'auth/third-party-cookies-blocked',
         ]);
+
+        // User closed the popup intentionally — just return, don't redirect
+        if (
+          popupError?.code === 'auth/popup-closed-by-user' ||
+          popupError?.code === 'auth/cancelled-popup-request'
+        ) {
+          return { success: false, error: 'Sign-in cancelled.' };
+        }
 
         if (!popupFallbackCodes.has(popupError?.code)) {
           throw popupError;

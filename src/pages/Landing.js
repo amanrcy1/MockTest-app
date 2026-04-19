@@ -1819,6 +1819,7 @@ const Landing = () => {
                 </svg>
               </motion.div>
               <span className="font-bold text-lg gradient-text hidden sm:block">Mockzam</span>
+              <span className="hidden lg:block text-xs text-gray-500 dark:text-gray-400 font-medium -ml-1">Smart Mock Tests for UPSC & Defence</span>
             </motion.div>
             <div className="flex items-center gap-2">
               <div className="hidden md:flex items-center gap-1 mr-2">
@@ -1870,6 +1871,9 @@ const Landing = () => {
                 </span>
               </motion.div>
 
+              <p className="text-sm sm:text-base font-semibold tracking-widest uppercase text-blue-600 dark:text-blue-400 mb-3">
+                Smart Mock Test Platform
+              </p>
               <h1 className="text-3xl sm:text-4xl md:text-6xl lg:text-7xl font-extrabold text-gray-900 dark:text-white leading-tight mb-6">
                 Your path to <RotatingText />
                 <br />

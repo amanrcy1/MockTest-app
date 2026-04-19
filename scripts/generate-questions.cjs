@@ -554,7 +554,7 @@ questions.forEach(q => {
 });
 
 const csvContent = rows.join('\n');
-const outPath = path.join(__dirname, '..', 'questions_bank.csv');
+const outPath = path.join(__dirname, 'data', 'questions_bank.csv');
 fs.writeFileSync(outPath, csvContent, 'utf-8');
 
 console.log(`\nGenerated ${questions.length} questions`);

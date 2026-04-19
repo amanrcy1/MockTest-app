@@ -194,7 +194,7 @@ const Auth = () => {
           // If redirect did not happen (blocked), recover button state.
           setLoading(false);
           toast.info('If Google page did not open, allow popups/cookies and try again.');
-        }, 4000);
+        }, 3000);
         return;
       }
       // Popup success — show toast, then let PublicRoute handle the redirect

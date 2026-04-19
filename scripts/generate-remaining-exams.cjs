@@ -23,7 +23,7 @@ function writeCsv(filename, questions) {
   questions.forEach(q => {
     rows.push(HEADERS.map(h => esc(q[h])).join(','));
   });
-  const outPath = path.join(__dirname, '..', filename);
+  const outPath = path.join(__dirname, 'data', filename);
   fs.writeFileSync(outPath, rows.join('\n'), 'utf-8');
   console.log(`  ${filename}: ${questions.length} questions`);
 }

@@ -908,6 +908,7 @@ export default async function handler(req, res) {
 
     const groqApiKey = process.env.GROQ_API_KEY;
     if (!groqApiKey) return res.status(500).json({ error: 'AI service not configured.' });
+    if (groqApiKey === 'your_groq_api_key_here') return res.status(500).json({ error: 'AI service not configured. Set GROQ_API_KEY in environment.' });
 
     const safeContext = sanitizeContext(context);
     const boundary = classifyBoundary(message);

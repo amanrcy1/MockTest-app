@@ -1,6 +1,6 @@
 import { vi } from 'vitest';
 import { render, screen, fireEvent } from '@testing-library/react';
-import QuestionCard from '../test/QuestionCard';
+import QuestionCard from '../QuestionCard';
 
 describe('QuestionCard', () => {
   const mockQuestion = {

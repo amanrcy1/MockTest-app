@@ -1052,6 +1052,9 @@ const MockTest = () => {
               </svg>
               <div className="text-sm text-red-800 dark:text-red-200">
                 <p className="font-semibold">Fullscreen required • Auto-submit on time up</p>
+                <p className="text-xs text-red-700 dark:text-red-300 mt-0.5">
+                  Exiting fullscreen 2 times will auto-submit your test. Press Esc carefully.
+                </p>
               </div>
             </div>
           </div>

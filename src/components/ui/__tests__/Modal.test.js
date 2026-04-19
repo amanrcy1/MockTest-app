@@ -1,6 +1,6 @@
 import { vi } from 'vitest';
 import { render, screen, fireEvent } from '@testing-library/react';
-import Modal, { ConfirmModal } from '../ui/Modal';
+import Modal, { ConfirmModal } from '../Modal';
 
 describe('Modal', () => {
   const defaultProps = {
