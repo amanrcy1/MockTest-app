@@ -1108,7 +1108,7 @@ const AiChatWidget = memo(({ context = {} }) => {
               where('userId', '==', currentUser.uid),
               where('completed', '==', true),
               orderBy('endTime', 'desc'),
-              limit(20)
+              limit(50)
             )
           );
         } catch (indexedQueryError) {
@@ -1120,21 +1120,72 @@ const AiChatWidget = memo(({ context = {} }) => {
               collection(db, 'tests'),
               where('userId', '==', currentUser.uid),
               where('completed', '==', true),
-              limit(20)
+              limit(50)
             )
           );
         }
-        const tests = snap.docs.map((d) => d.data());
-        if (!tests.length) {
+        const allTests = snap.docs.map((d) => d.data());
+        if (!allTests.length) {
           setUserStats({ attempted: 0 });
           return;
         }
 
-        const attempted = tests.length;
-        const avgAccuracy = tests.reduce((s, t) => s + Number(t.accuracy || 0), 0) / attempted;
+        // Sort by endTime desc
+        const sorted = [...allTests].sort(
+          (a, b) => new Date(b.endTime) - new Date(a.endTime)
+        );
+
+        const attempted = sorted.length;
+        const avgAccuracy =
+          sorted.reduce((s, t) => s + Number(t.accuracy || 0), 0) / attempted;
+
+        // Best score
+        const bestScore = Math.max(...sorted.map((t) => Number(t.accuracy || 0)));
+
+        // Total correct
+        const totalCorrect = sorted.reduce((s, t) => s + (t.correct || 0), 0);
+
+        // Accuracy trend (last 8, oldest first)
+        const accuracyTrend = sorted
+          .slice(0, 8)
+          .reverse()
+          .map((t) => Number(t.accuracy || 0));
+
+        // Recent tests (last 5 with summary details)
+        const recentTests = sorted.slice(0, 5).map((t) => ({
+          examType: t.examType || '',
+          accuracy: Number(t.accuracy || 0),
+          correct: t.correct || 0,
+          incorrect: t.incorrect || 0,
+          skipped: t.skipped || 0,
+          endTime: t.endTime || '',
+        }));
+
+        // Streak: consecutive days with at least one test
+        let streak = 0;
+        if (sorted.length > 0) {
+          const today = new Date();
+          today.setHours(0, 0, 0, 0);
+          const dayMs = 86400000;
+          const testDays = new Set(
+            sorted.map((t) => {
+              const d = new Date(t.endTime);
+              d.setHours(0, 0, 0, 0);
+              return d.getTime();
+            })
+          );
+          let checkDay = today.getTime();
+          if (!testDays.has(checkDay)) checkDay -= dayMs;
+          while (testDays.has(checkDay)) {
+            streak++;
+            checkDay -= dayMs;
+          }
+        }
+
+        // Subject & topic maps
         const subjectMap = {};
         const topicMap = {};
-        for (const t of tests) {
+        for (const t of sorted) {
           if (t.subjectWise) {
             for (const [subj, d] of Object.entries(t.subjectWise)) {
               if (!subjectMap[subj]) subjectMap[subj] = { correct: 0, total: 0 };
@@ -1149,11 +1200,28 @@ const AiChatWidget = memo(({ context = {} }) => {
               topicMap[topic].total += d.total || 0;
             }
           }
+          // Also build from responses if subjectWise is missing
+          if (!t.subjectWise && t.responses) {
+            for (const r of t.responses) {
+              const subj = r.subject || 'General';
+              if (!subjectMap[subj]) subjectMap[subj] = { correct: 0, total: 0 };
+              subjectMap[subj].total++;
+              if (r.selectedAnswer !== null && r.selectedAnswer === r.correctAnswer) {
+                subjectMap[subj].correct++;
+              }
+            }
+          }
         }
+
         const subjects = Object.entries(subjectMap)
           .filter(([, d]) => d.total >= 3)
-          .map(([name, d]) => ({ name, accuracy: d.total > 0 ? (d.correct / d.total) * 100 : 0 }))
+          .map(([name, d]) => ({
+            name,
+            accuracy: d.total > 0 ? Math.round((d.correct / d.total) * 100) : 0,
+            count: d.total,
+          }))
           .sort((a, b) => a.accuracy - b.accuracy);
+
         const weakSubjects = subjects
           .filter((s) => s.accuracy < 50)
           .slice(0, 3)
@@ -1163,20 +1231,26 @@ const AiChatWidget = memo(({ context = {} }) => {
           .slice(-3)
           .map((s) => s.name);
 
+        // Subject breakdown (top 6 by question count)
+        const subjectBreakdown = [...subjects]
+          .sort((a, b) => b.count - a.count)
+          .slice(0, 6)
+          .map((s) => ({ subject: s.name, accuracy: s.accuracy, count: s.count }));
+
         // ML-style learning profile
-        const recentTests = tests.slice(0, 5);
-        const olderTests = tests.slice(5, 15);
+        const recentSlice = sorted.slice(0, 5);
+        const olderSlice = sorted.slice(5, 15);
         const recentAvg =
-          recentTests.length > 0
-            ? recentTests.reduce((s, t) => s + Number(t.accuracy || 0), 0) / recentTests.length
+          recentSlice.length > 0
+            ? recentSlice.reduce((s, t) => s + Number(t.accuracy || 0), 0) / recentSlice.length
             : 0;
         const olderAvg =
-          olderTests.length > 0
-            ? olderTests.reduce((s, t) => s + Number(t.accuracy || 0), 0) / olderTests.length
+          olderSlice.length > 0
+            ? olderSlice.reduce((s, t) => s + Number(t.accuracy || 0), 0) / olderSlice.length
             : 0;
-        const trend = recentTests.length >= 2 && olderTests.length >= 2 ? recentAvg - olderAvg : 0;
+        const trend =
+          recentSlice.length >= 2 && olderSlice.length >= 2 ? recentAvg - olderAvg : 0;
 
-        // Topic-level weaknesses (more granular than subject)
         const weakTopics = Object.entries(topicMap)
           .filter(([, d]) => d.total >= 2 && d.correct / d.total < 0.5)
           .sort((a, b) => a[1].correct / a[1].total - b[1].correct / b[1].total)
@@ -1189,8 +1263,7 @@ const AiChatWidget = memo(({ context = {} }) => {
           .slice(0, 5)
           .map(([name, d]) => ({ name, accuracy: Math.round((d.correct / d.total) * 100) }));
 
-        // Consistency score: std deviation of recent accuracies
-        const accuracies = recentTests.map((t) => Number(t.accuracy || 0));
+        const accuracies = recentSlice.map((t) => Number(t.accuracy || 0));
         const mean =
           accuracies.length > 0 ? accuracies.reduce((a, b) => a + b, 0) / accuracies.length : 0;
         const variance =
@@ -1209,7 +1282,19 @@ const AiChatWidget = memo(({ context = {} }) => {
           totalTests: attempted,
         };
 
-        const statsData = { attempted, avgAccuracy, weakSubjects, strongSubjects, learningProfile };
+        const statsData = {
+          attempted,
+          avgAccuracy,
+          weakSubjects,
+          strongSubjects,
+          learningProfile,
+          bestScore: Math.round(bestScore),
+          totalCorrect,
+          streak,
+          accuracyTrend,
+          recentTests,
+          subjectBreakdown,
+        };
         setUserStats(statsData);
         try {
           sessionStorage.setItem(
@@ -1236,6 +1321,9 @@ const AiChatWidget = memo(({ context = {} }) => {
         `${userStats.attempted} tests taken`,
         `${userStats.avgAccuracy?.toFixed(0)}% avg accuracy`,
       ];
+      if (userStats.bestScore) parts.push(`Best score: ${userStats.bestScore}%`);
+      if (userStats.totalCorrect) parts.push(`${userStats.totalCorrect} total correct answers`);
+      if (userStats.streak) parts.push(`${userStats.streak} day streak`);
       if (userStats.weakSubjects?.length)
         parts.push(`Weak in: ${userStats.weakSubjects.join(', ')}`);
       if (userStats.strongSubjects?.length)
@@ -1244,6 +1332,15 @@ const AiChatWidget = memo(({ context = {} }) => {
       if (userStats.learningProfile) {
         ctx.learningProfile = JSON.stringify(userStats.learningProfile);
       }
+      // Dashboard stats for AI to answer user questions about their performance
+      ctx.dashboardStats = JSON.stringify({
+        bestScore: userStats.bestScore,
+        totalCorrect: userStats.totalCorrect,
+        streak: userStats.streak,
+        accuracyTrend: userStats.accuracyTrend,
+        recentTests: userStats.recentTests,
+        subjectBreakdown: userStats.subjectBreakdown,
+      });
     }
     return ctx;
   }, [context, userDetails, userStats]);

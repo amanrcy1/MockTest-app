@@ -51,10 +51,11 @@ function sanitizeContext(raw = {}) {
   const safe = {
     userName: truncate(raw.userName || '', 100),
     examType: truncate(raw.examType || '', 50),
-    performanceSummary: truncate(raw.performanceSummary || '', 300),
+    performanceSummary: truncate(raw.performanceSummary || '', 500),
     currentPage: truncate(raw.currentPage || '', 100),
     learningProfile: null,
     currentQuestion: null,
+    dashboardStats: null,
   };
 
   if (raw.learningProfile) {
@@ -86,6 +87,39 @@ function sanitizeContext(raw = {}) {
       subject: truncate(raw.currentQuestion.subject || '', 50),
       topic: truncate(raw.currentQuestion.topic || '', 50),
     };
+  }
+
+  if (raw.dashboardStats) {
+    try {
+      const ds = typeof raw.dashboardStats === 'string' ? JSON.parse(raw.dashboardStats) : raw.dashboardStats;
+      safe.dashboardStats = {
+        bestScore: Number(ds?.bestScore ?? 0),
+        totalCorrect: Number(ds?.totalCorrect ?? 0),
+        streak: Number(ds?.streak ?? 0),
+        accuracyTrend: Array.isArray(ds?.accuracyTrend)
+          ? ds.accuracyTrend.slice(0, 8).map(Number)
+          : [],
+        recentTests: Array.isArray(ds?.recentTests)
+          ? ds.recentTests.slice(0, 5).map((t) => ({
+              examType: truncate(t?.examType || '', 50),
+              accuracy: Number(t?.accuracy ?? 0),
+              correct: Number(t?.correct ?? 0),
+              incorrect: Number(t?.incorrect ?? 0),
+              skipped: Number(t?.skipped ?? 0),
+              endTime: truncate(t?.endTime || '', 30),
+            }))
+          : [],
+        subjectBreakdown: Array.isArray(ds?.subjectBreakdown)
+          ? ds.subjectBreakdown.slice(0, 6).map((s) => ({
+              subject: truncate(s?.subject || '', 60),
+              accuracy: Number(s?.accuracy ?? 0),
+              count: Number(s?.count ?? 0),
+            }))
+          : [],
+      };
+    } catch {
+      safe.dashboardStats = null;
+    }
   }
 
   return safe;
@@ -352,7 +386,7 @@ function classifyQuery(message) {
     return 'conceptual';
   }
 
-  if (/\b(study plan|strategy|tips|improve|weak|strong|score|accuracy|revision|time management|mock test)\b/.test(lower)) {
+  if (/\b(study plan|strategy|tips|improve|weak|strong|score|accuracy|revision|time management|mock test|my performance|my stats|my progress|how am i doing|my streak|my rank|best score|recent test|subject breakdown|dashboard|my result|my tests|how many tests|total correct)\b/.test(lower)) {
     return 'strategy';
   }
 
@@ -423,6 +457,9 @@ function buildSystemPrompt(queryType) {
     'Use plain, clear language and short structure.',
     'If user asks about an active test question, explain approach and concept, not direct cheating.',
     'Stay in scope: academics, study strategy, and app-help only.',
+    'You have access to the user\'s dashboard data in context including: recent test scores, accuracy trend, best score, day streak, total correct answers, subject-wise breakdown, weak/strong topics, and recent test history with dates.',
+    'When the user asks about their performance, stats, progress, scores, accuracy, streak, weak areas, strong areas, recent tests, or any dashboard-related question, use the dashboardStats and performanceSummary from context to give specific, data-driven answers with actual numbers.',
+    'If user asks "how am I doing" or "what\'s my score" or similar, reference their actual data.',
     modeLine,
   ].join('\n');
 }
@@ -491,6 +528,7 @@ function compactContextForPrompt(safeContext) {
     performanceSummary: safeContext.performanceSummary,
     weakTopics: safeContext.learningProfile?.weakTopics?.slice(0, 5) || [],
     strongTopics: safeContext.learningProfile?.strongTopics?.slice(0, 3) || [],
+    dashboardStats: safeContext.dashboardStats || null,
     currentQuestion: safeContext.currentQuestion
       ? {
           subject: safeContext.currentQuestion.subject,

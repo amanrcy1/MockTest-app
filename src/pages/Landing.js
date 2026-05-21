@@ -1212,34 +1212,6 @@ const MorphingNumber = ({ target, suffix = '', duration = 2 }) => {
 };
 
 // ============================================
-// ENHANCEMENT 3: SCROLL-GRADIENT TEXT
-// ============================================
-const ScrollGradientText = ({ children, className = '' }) => {
-  const ref = useRef(null);
-  const { scrollYProgress } = useScroll({
-    target: ref,
-    offset: ['start 90%', 'start 40%'],
-  });
-  const progress = useSpring(scrollYProgress, { stiffness: 100, damping: 30 });
-  const clipRight = useTransform(progress, [0, 1], ['0%', '100%']);
-
-  return (
-    <span ref={ref} className={`relative inline-block ${className}`}>
-      {/* Gray base text */}
-      <span className="text-gray-300 dark:text-gray-600">{children}</span>
-      {/* Gradient overlay that reveals on scroll */}
-      <motion.span
-        className="absolute inset-0 gradient-text"
-        style={{ clipPath: useMotionTemplate`inset(0 calc(100% - ${clipRight}) 0 0)` }}
-        aria-hidden="true"
-      >
-        {children}
-      </motion.span>
-    </span>
-  );
-};
-
-// ============================================
 // ENHANCEMENT 4: HORIZONTAL SCROLL SHOWCASE
 // ============================================
 const SHOWCASE_ITEMS = [
@@ -1352,8 +1324,8 @@ const HorizontalShowcase = () => {
         >
           What you get
         </motion.p>
-        <h2 className="text-2xl sm:text-3xl md:text-5xl font-extrabold text-gray-900 dark:text-white">
-          <ScrollGradientText>Everything in one place</ScrollGradientText>
+        <h2 className="text-2xl sm:text-3xl md:text-5xl font-extrabold">
+          <span className="gradient-text">Everything in one place</span>
         </h2>
       </div>
       {/* Infinite scrollable carousel */}
@@ -1447,8 +1419,8 @@ const ComparisonSection = () => (
         viewport={{ once: true }}
         className="text-center mb-10"
       >
-        <h2 className="text-2xl md:text-4xl font-extrabold text-gray-900 dark:text-white">
-          <ScrollGradientText>Why aspirants switch to Mockzam</ScrollGradientText>
+        <h2 className="text-2xl md:text-4xl font-extrabold">
+          <span className="gradient-text">Why aspirants switch to Mockzam</span>
         </h2>
       </motion.div>
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -2015,8 +1987,8 @@ const Landing = () => {
                     Built for serious aspirants
                   </span>
                 </motion.div>
-                <h2 className="text-2xl sm:text-3xl md:text-5xl font-extrabold text-gray-900 dark:text-white mb-3">
-                  <ScrollGradientText>Stop guessing. Start preparing.</ScrollGradientText>
+                <h2 className="text-2xl sm:text-3xl md:text-5xl font-extrabold mb-3">
+                  <span className="gradient-text">Stop guessing. Start preparing.</span>
                 </h2>
                 <p className="text-gray-600 dark:text-gray-400 max-w-xl mx-auto text-lg">
                   Every feature solves a real problem aspirants face daily.
@@ -2106,8 +2078,8 @@ const Landing = () => {
                 viewport={{ once: true }}
                 className="text-center mb-10"
               >
-                <h2 className="text-2xl sm:text-3xl md:text-5xl font-extrabold text-gray-900 dark:text-white mb-4">
-                  <ScrollGradientText>Get started in 3 simple steps</ScrollGradientText>
+                <h2 className="text-2xl sm:text-3xl md:text-5xl font-extrabold mb-4">
+                  <span className="gradient-text">Get started in 3 simple steps</span>
                 </h2>
               </motion.div>
 
@@ -2202,8 +2174,8 @@ const Landing = () => {
                 viewport={{ once: true }}
                 className="text-center mb-10"
               >
-                <h2 className="text-2xl sm:text-3xl md:text-5xl font-extrabold text-gray-900 dark:text-white mb-4">
-                  <ScrollGradientText>Try it yourself</ScrollGradientText>
+                <h2 className="text-2xl sm:text-3xl md:text-5xl font-extrabold mb-4">
+                  <span className="gradient-text">Try it yourself</span>
                 </h2>
                 <p className="text-gray-600 dark:text-gray-400 text-lg">
                   Take a quick 5-question demo — no sign up needed

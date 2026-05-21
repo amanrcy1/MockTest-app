@@ -29,11 +29,16 @@ export const sendChatMessage = async (message, conversationHistory = [], context
     'performanceSummary',
     'currentPage',
     'learningProfile',
+    'dashboardStats',
   ];
   for (const key of allowedKeys) {
     if (context[key] !== undefined && context[key] !== null) {
-      safeContext[key] =
-        typeof context[key] === 'string' ? context[key].slice(0, 500) : context[key];
+      if (typeof context[key] === 'string') {
+        const maxLen = key === 'dashboardStats' ? 2000 : 500;
+        safeContext[key] = context[key].slice(0, maxLen);
+      } else {
+        safeContext[key] = context[key];
+      }
     }
   }
 
